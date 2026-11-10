@@ -4,6 +4,8 @@
 
 **遊ぶ:** https://ryuto1991.github.io/coil-snake/
 
+**言語 / Language:** タイトル画面の右上で 日本語 / English を切り替え。Switch between 日本語 and English at the top right of the title screen.
+
 ## 操作
 
 | | PC | スマホ |
@@ -21,4 +23,4 @@
 
 - 本体は `index.html` のみ（バニラ JS + Canvas）。
 - Claude Code 向け: `CLAUDE.md` / 詳細引き継ぎ: `HANDOFF.md`
-- テスト: `?demo` / `?demo&swarm` / `?tail=1900` / `?boss` / `?shell` / `?toxin` / `?nosave`
+- テスト: `?demo` / `?demo&swarm` / `?tail=1900` / `?boss` / `?shell` / `?toxin` / `?nosave` / `?lang=en`

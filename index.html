@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v6）</title>
+<title>コイル・バクテリア（試作 v6.1）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -20,7 +20,9 @@ let W=0,H=0,DPR=1,vign=null,NARROW=false;const OFF={x:0,y:0};
 // quality: 3 = full. Drops (never rises) when frames stay slow; ?q=0..3 forces a level.
 const QS=new URLSearchParams(location.search),QDPR=[1,1.25,1.5,2],PCAP=[500,900,1500,2200];
 let QL=QS.has('q')?Math.max(0,Math.min(3,+QS.get('q')|0)):3,QFORCED=QS.has('q'),perfEma=16,perfBad=0,perfCool=2;
-const FONT='"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic","Meiryo",sans-serif';
+const FONTS=['"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic","Meiryo",sans-serif',
+  'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Hiragino Sans","Noto Sans JP",sans-serif'];
+let FONT=FONTS[0]; // follows the language, see setLang()
 function resize(){
   DPR=Math.min(QDPR[QL],window.devicePixelRatio||1);const rc=cv.getBoundingClientRect();W=Math.max(1,Math.round(rc.width));H=Math.max(1,Math.round(rc.height));OFF.x=rc.left;OFF.y=rc.top;NARROW=W<620;
   cv.width=Math.max(1,W*DPR|0);cv.height=Math.max(1,H*DPR|0);
@@ -37,7 +39,7 @@ const TAU=Math.PI*2,rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b
 const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d;};
 
 // ---------- enemy types (world units) ----------
-const STAGES=['細菌','細胞','細胞核'],STAGE_TAIL=[0,1000,1700],STAGE_S=[1,1.25,1.63],MAX_TAIL=3600,FINAL_TAIL=2500;
+const STAGE_N=[['細菌','Bacteria'],['細胞','Cell'],['細胞核','Nucleus']],STAGE_TAIL=[0,1000,1700],STAGE_S=[1,1.25,1.63],MAX_TAIL=3600,FINAL_TAIL=2500;
 const ETYPES=[
  // stage 0: bacteria
  {k:'germ',  st:0,r:9, hp:1, spd:80, dmg:7, xp:1, col:'#ff3b4e',core:'#ffb3bb',glow:'rgba(255,50,70,0.6)'},
@@ -61,9 +63,9 @@ const TOXIN_T=[
 const GAS_DPS=[8,10,12];
 // one boss per scale; shells = wraps needed
 const BOSS_T=[
- {k:'blob',   st:0,r:46, hp:40, spd:50,dmg:18,xp:140,col:'#ffcf3f',core:'#fff2b8',glow:'rgba(255,200,60,0.55)',name:'巨大菌',sh:3},
- {k:'bigcell',st:1,r:84, hp:110,spd:58,dmg:24,xp:360,col:'#45c8ff',core:'#0a3550',glow:'rgba(70,200,255,0.5)',name:'巨大細胞',sh:4},
- {k:'giant',  st:2,r:150,hp:260,spd:66,dmg:30,xp:900,col:'#e9e4ff',core:'#4b3f8f',glow:'rgba(220,210,255,0.45)',name:'マクロファージ',sh:5},
+ {k:'blob',   st:0,r:46, hp:40, spd:50,dmg:18,xp:140,col:'#ffcf3f',core:'#fff2b8',glow:'rgba(255,200,60,0.55)',name:['巨大菌','Giant Germ'],sh:3},
+ {k:'bigcell',st:1,r:84, hp:110,spd:58,dmg:24,xp:360,col:'#45c8ff',core:'#0a3550',glow:'rgba(70,200,255,0.5)',name:['巨大細胞','Giant Cell'],sh:4},
+ {k:'giant',  st:2,r:150,hp:260,spd:66,dmg:30,xp:900,col:'#e9e4ff',core:'#4b3f8f',glow:'rgba(220,210,255,0.45)',name:['マクロファージ','Macrophage'],sh:5},
 ];
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);
@@ -120,13 +122,119 @@ if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'
 if(!Array.isArray(META.unlocked))META.unlocked=[];if(!META.unlocked.includes('spike'))META.unlocked.push('spike');
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.stringify(META));}catch(e){}}
+// ---------- language (ja / en) ----------
+// Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
+// Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
+const LANGS=['ja','en'],VER='v6.1';
+let LI=0;
+function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
+function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
+function stageName(i){return STAGE_N[i][LI];}
+function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+(s<10?'0':'')+s;}
+function setLang(i,save){LI=i?1:0;FONT=FONTS[LI];document.documentElement.lang=LANGS[LI];document.title=TX('doc',VER);if(save){META.lang=LANGS[LI];saveMeta();}}
+const STR={
+ // title
+ doc:['コイル・バクテリア（試作 {0}）','Coil Bacteria (prototype {0})'],
+ title:['コイル・バクテリア','Coil Bacteria'],
+ tagline:['らせんで囲って、ダッシュで締める（試作 {0}）','Coil around them, dash to squeeze (prototype {0})'],
+ how_touch:['指でなぞって移動 ／ 短くタップでダッシュ','Drag to steer / Quick tap to dash'],
+ how_mouse:['マウスか WASD で移動 ／ クリックかスペースでダッシュ','Mouse or WASD to steer / Click or Space to dash'],
+ goal:['尾が伸びるとボスが出る。3体倒すとクリア','Grow your tail to call a boss. Beat all 3 to win'],
+ in_use:['（使用中）',' (in use)'],
+ buy:['DNA {0} で解放','Unlock for {0} DNA'],
+ need:['DNA {0} が必要','Need {0} DNA'],
+ skin_n:['スキン {0} / {1}　左右で切り替え','Skin {0} / {1} - arrows to switch'],
+ start:['スタート','Start'],
+ start_key:['スタート（Enter）','Start (Enter)'],
+ best:['DNA {0}　最長 {1}　最高到達 {2}　クリア {3}回','DNA {0}   Best {1}   Reached {2}   Clears {3}'],
+ rare_n:['レアカード解放 {0} / {1}','Rare cards unlocked {0} / {1}'],
+ // HUD
+ kills:['撃破 {0}','Kills {0}'],
+ combo:['最大コンボ x{0}','Best combo x{0}'],
+ scale:['スケール:','Scale:'],
+ boss_hud:['ボス {0}　殻 {1}/{2}','Boss: {0}   Shell {1}/{2}'],
+ gate:['尾が伸びるとボスが出る','Grow your tail to call the boss'],
+ key_dash:['SPACE / クリック','SPACE / Click'],
+ charge:['巻きチャージ','Coil charge'],
+ charge_hint:['尾で敵を囲むとたまる','Coil around enemies to charge'],
+ now_touch:['今だ！DASH →','Now! DASH →'],
+ now_mouse:['今だ！ダッシュで締めろ','Now! Dash to squeeze'],
+ boss_tag:['ボス','BOSS'],
+ // messages during play
+ ev_stream:['群れが横切る！','Swarm crossing!'],
+ ev_stream_s:['流れに尾をかぶせて巻き込め','Lay your tail across their path and coil them up'],
+ ev_ring:['囲まれた！','Surrounded!'],
+ ev_ring_s:['ダッシュで外へ抜けろ','Dash out through the ring'],
+ ev_toxin:['毒素菌が来た','Toxin germs incoming'],
+ ev_toxin_s:['倒すと毒の霧が残る。頭で入るとダメージ','They leave poison fog when killed. Keep your head out of it'],
+ poison:['毒','Poison'],
+ boss_in:['ボス出現！','BOSS INCOMING!'],
+ boss_in_s:['{0}：殻{1}枚。尾で{1}回巻いて割る','{0}: {1} shells. Coil around it {1} times to crack them'],
+ regen:['殻が再生','Shell regrown'],
+ boss_down:['{0} 撃破！','{0} defeated!'],
+ scale_up:['スケールアップ！','SCALE UP!'],
+ scale_up_s:['{0}の世界へ','Now at {0} scale'],
+ unlock:['レアカード解放：{0}','Rare card unlocked: {0}'],
+ unlock_s:['レベルアップで出るようになった','It can now show up on level-up'],
+ cracked:['殻が割れた！','Shell cracked!'],
+ shell_left:['殻 あと{0}','Shells left: {0}'],
+ coil_n:['{0}重巻き！','{0}x coil!'],
+ enclose:['包囲！','Encircled!'],
+ enclose_n:['包囲！ {0}重','Encircled! {0}x'],
+ dash_xp:['ダッシュ締め ×2 XP','Dash squeeze ×2 XP'],
+ bonus:['{0}重 BONUS','{0}x BONUS'],
+ shell_held:['殻が残った','Shell held'],
+ miss:['空振り…','Missed…'],
+ // first-play tips (see tip())
+ tip_coil:['尾で敵を囲もう','Coil around enemies'],
+ tip_coil_s:['ぐるっと回って、自分の尾をまたぐ','Circle around and cross your own tail'],
+ tip_dash:['ダッシュで締める','Dash to squeeze'],
+ tip_dash_st:['短くタップ、または右下の DASH。囲いの中を一掃','Quick tap or the DASH button. Wipes out everything inside'],
+ tip_dash_sm:['クリックかスペース。囲いの中を一掃','Click or Space. Wipes out everything inside'],
+ tip_charge:['何周も巻くとチャージUP','More laps, bigger charge'],
+ tip_charge_s:['最大6重。ダッシュは長押しで伸びる','Up to 6x. Hold to dash longer'],
+ tip_shell:['殻のある敵','Shelled enemy'],
+ tip_shell_s:['殻の数だけ巻いて割る','Coil once per shell to crack it'],
+ // cards
+ cat_body:['体質','Body'],
+ cat_atk:['攻撃','Attack'],
+ evo_base:['進化：{0}（MAXで）','Evolves: {0} (at MAX)'],
+ evo_need:['進化：{0}の素材','Evolves: {0} (ingredient)'],
+ rare:['レア','RARE'],
+ lvup:['LEVEL UP！ 強化をえらぶ','LEVEL UP! Pick an upgrade'],
+ pick_touch:['タップでえらぶ','Tap to pick'],
+ pick_mouse:['クリック または 1 / 2 / 3 キー','Click, or press 1 / 2 / 3'],
+ chest_boss:['ボスのカプセルを開けた！','Boss capsule opened!'],
+ chest:['カプセルを開けた！','Capsule opened!'],
+ chest_miss:['進化の条件がそろっていない（土台のカードをMAXに）','No evolution ready (get a base card to MAX)'],
+ evo_tag:['進化','EVO'],
+ cont_touch:['タップで続ける','Tap to continue'],
+ cont_mouse:['クリック / Enter で続ける','Click / Enter to continue'],
+ // end of run
+ end1:['生存 {0}  /  撃破 {1}  /  Lv {2}','Survived {0}  /  Kills {1}  /  Lv {2}'],
+ end2:['最大コンボ x{0}  /  到達 {1}  /  ボス撃破 {2}','Best combo x{0}  /  Reached {1}  /  Bosses {2}'],
+ end_dna:['DNA +{0}（合計 {1}）','DNA +{0} (total {1})'],
+ end_new:['新しく解放：{0}','Newly unlocked: {0}'],
+ sep:['、',', '],
+ retry:['もう一度','Retry'],
+ to_title:['タイトルへ','Title'],
+ end_touch:['DNAはタイトルでスキンの解放に使える','Spend DNA on skins at the title screen'],
+ end_mouse:['R：もう一度　T：タイトルへ（DNAでスキン解放）','R: Retry   T: Title (spend DNA on skins)'],
+ clear:['クリア！','CLEAR!'],
+ clear_s:['{0}を倒した','You beat the {0}'],
+};
+loc(BOSS_T,'name');
+// ?lang=ja|en wins, then the saved choice, then the browser's language
+{const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
+ setLang(saved!==undefined?saved:/^ja\b/i.test(nav)?0:1);}
 const SKINS=[
- {id:'green',n:'緑藻',h:142,cost:0},
- {id:'blue', n:'藍藻',h:198,cost:40},
- {id:'pink', n:'紅藻',h:330,cost:60},
- {id:'gold', n:'黄金菌',h:46,cost:150},
- {id:'prism',n:'虹色菌',h:-1,cost:300},
+ {id:'green',n:['緑藻','Green Algae'],h:142,cost:0},
+ {id:'blue', n:['藍藻','Blue-Green Algae'],h:198,cost:40},
+ {id:'pink', n:['紅藻','Red Algae'],h:330,cost:60},
+ {id:'gold', n:['黄金菌','Golden Germ'],h:46,cost:150},
+ {id:'prism',n:['虹色菌','Prism Germ'],h:-1,cost:300},
 ];
+loc(SKINS,'n');
 function skin(){return SKINS.find(s=>s.id===META.skin)||SKINS[0];}
 function hueAt(){const s=skin();return s.h<0?(performance.now()/20)%360:s.h;}
 const ORBGLOW=glowSprite(14,'rgba(70,170,255,0.8)');
@@ -148,7 +256,7 @@ addEventListener('keydown',e=>{
   if(k==='t'&&(state==='over'||state==='clear'))reset(false);
   if(state==='level'&&['1','2','3'].includes(k))pick(+k-1);
   if(state==='chest'&&k==='enter')closeChest();
-  if(state==='title'){if(k==='enter')reset(true);else if(k==='arrowleft')cycleSkin(-1);else if(k==='arrowright')cycleSkin(1);else if(k==='b')buySkin();}
+  if(state==='title'){if(k==='enter')reset(true);else if(k==='arrowleft')cycleSkin(-1);else if(k==='arrowright')cycleSkin(1);else if(k==='b')buySkin();else if(k==='l')setLang(1-LI,true);}
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 cv.addEventListener('mousedown',e=>{mx=(e.clientX-OFF.x);my=(e.clientY-OFF.y);if(e.button===0){mdown=true;act('click');}});
@@ -211,10 +319,11 @@ setInterval(()=>{
   if(tapCand&&!tapCand.moved&&steerTouch===tapCand.id&&performance.now()-tapCand.t>=TAP_MS)promoteSteer(tapCand);
 },40);
 function act(kind){
-  if(state==='title'){if(kind!=='dash')titleAct();return;}
-  if(state==='over'||state==='clear'){if(overT<0.6||kind==='dash')return;const L=endLayout();
-    if(inR(L.title))reset(false);else if(inR(L.retry)||state==='over')reset(true);return;}
-  if(state==='level'){if(kind!=='dash'){const i=cardAt(mx,my);if(i>=0)pick(i);}return;}
+  const k=uiK(),uw=W/k,uh=H/k,ux=mx/k,uy=my/k; // screen size and pointer in UI units, see ui()
+  if(state==='title'){if(kind!=='dash')titleAct(uw,uh,ux,uy);return;}
+  if(state==='over'||state==='clear'){if(overT<0.6||kind==='dash')return;const L=endLayout(uw,uh);
+    if(inR(L.title,ux,uy))reset(false);else if(inR(L.retry,ux,uy)||state==='over')reset(true);return;}
+  if(state==='level'){if(kind!=='dash'){const i=cardAt(uw,uh,ux,uy);if(i>=0)pick(i);}return;}
   if(state==='chest'){closeChest();return;}
   if(state==='play'&&kind!=='tap')dash();
 }
@@ -231,10 +340,10 @@ function reset(start){
      trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,S:targetS(tl),stage:stageOf(tl),
      pulseR:72,pulseDmg:1,pulseInt:1.1,pulseT:0.5,magnet:95,blast:1,lvl:1,xp:0,xpNeed:55,
      spike:0,cilia:false,enzyme:0,helix:false,devour:false,zap:false,pulseLv:0,blastLv:0,flag:0,memb:0,rareMiss:0,
-     boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0};
+     boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;stageT=0;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -305,11 +414,18 @@ function waveTick(dt){
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));}
   else if(Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle
 }
-function evt(s,sub){evtMsg={s,sub,t:2.6,max:2.6};}
+function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
+// first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
+// They use the event line but never cut off a wave event, and a newer tip may replace an older one after 1.2 s.
+let tipQ=[],tipSeen={};
+function tip(id){if(tipSeen[id])return;tipSeen[id]=1;if(((META.tips||{})[id]||0)<2)tipQ.push(id);}
+function tipTick(){if(!tipQ.length||state!=='play'||(evtMsg&&(!evtMsg.tip||evtMsg.max-evtMsg.t<1.2)))return;
+  const id=tipQ.shift();if(!META.tips||typeof META.tips!=='object')META.tips={};META.tips[id]=(META.tips[id]||0)+1;saveMeta();
+  evt(TX('tip_'+id),TX('tip_'+id+'_s'+(id==='dash'?(TOUCH?'t':'m'):'')),3.6,true);}
 function waveEvent(k){
-  if(k==='stream'){streamEvent();evt('群れが横切る！','流れに尾をかぶせて巻き込め');}
-  else if(k==='ring'){ringEvent();evt('囲まれた！','ダッシュで外へ抜けろ');}
-  else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt('毒素菌が来た','倒すと毒の霧が残る。頭で入るとダメージ');}
+  if(k==='stream'){streamEvent();evt(TX('ev_stream'),TX('ev_stream_s'));}
+  else if(k==='ring'){ringEvent();evt(TX('ev_ring'),TX('ev_ring_s'));}
+  else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt(TX('ev_toxin'),TX('ev_toxin_s'));}
 }
 function streamEvent(){const st=P.stage,Sx=Math.max(P.S,targetS(P.tailLen)),base=ETYPES.filter(t=>t.st===st)[0],n=[18,14,10][st];
   const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=Math.min(W,H)*0.5*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
@@ -325,7 +441,7 @@ function gasTick(dt){
   for(const g of gas){g.life-=dt;g.r+=(g.R-g.r)*Math.min(1,dt*1.6);}compact(gas,g=>g.life>0);
   let inG=false;for(const g of gas){const dx=P.x-g.x,dy=P.y-g.y,rr=g.r*0.85;if(g.life>0.25&&dx*dx+dy*dy<rr*rr){inG=true;break;}}
   P.gasT=inG?P.gasT+dt:0;
-  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*dt;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'毒',16,'#d8f070',0.5);}
+  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*dt;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,TX('poison'),16,'#d8f070',0.5);}
     if(P.hp<=0){P.hp=0;state='over';overT=0;burst(P.x,P.y,80,'#7dffb0',380,1.2,4);endRun(false);}}
 }
 // ---------- capsules (VS-style chests): bosses carry evolutions ----------
@@ -345,27 +461,27 @@ function maybeShell(e){const t=e.t,st=P.stage;let n=0;
   if(st===0&&t.k==='blob'&&T>40&&Math.random()<0.035)n=1;
   else if(st===1&&t.st===1&&t.k!=='mito'&&Math.random()<0.05)n=Math.random()<0.6?1:2;
   else if(st===2&&t.st===2&&t.k!=='nucleus'&&Math.random()<0.07)n=Math.random()<0.5?2:3;
-  if(n){e.sh=e.shMax=n;e.spd*=0.8;e.xpB=1+1.5*n;}}
+  if(n){e.sh=e.shMax=n;e.spd*=0.8;e.xpB=1+1.5*n;tip('shell');}}
 function spawnBoss(){
   const t=BOSS_T[P.stage],Sx=Math.max(P.S,targetS(P.tailLen)),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
   const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx;
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:t.hp,r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh:t.sh,shMax:t.sh,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;
-  banner={t:3,max:3,title:'ボス出現！',sub:t.name+'：殻'+t.sh+'枚。尾で'+t.sh+'回巻いて割る'};shake=Math.max(shake,8);
+  banner={t:3,max:3,title:TX('boss_in'),sub:TX('boss_in_s',t.name,t.sh)};shake=Math.max(shake,8);
 }
 function bossTick(e,dt){
-  if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,'殻が再生',18,'#9fc9e8',0.8);}}
+  if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}}
   e.minT-=dt;if(e.minT<=0){e.minT=9;spawnCluster(P.stage===0?6:5,{x:e.x,y:e.y,r:e.r});}
 }
 function bossDown(e){
   P.boss=null;bossKills++;banner=null;hitstop=Math.max(hitstop,0.18);shake=Math.max(shake,24);flashT=0.4;P.inv=Math.max(P.inv,2);
-  text(e.x,e.y,e.t.name+' 撃破！',40,'#ffe680',1.6);
+  text(e.x,e.y,TX('boss_down',e.t.name),40,'#ffe680',1.6);
   if(P.stage<2){dropChest(e.x,e.y,true);stageUp();}else{P.clearAt=T+1.4;calmUntil=1e9;}
 }
 function stageUp(){
   const s=++P.stage;stageT=T;calmUntil=T+6;P.st0=P.tailLen;P.waveKey='';P.waveT=0.5;
-  banner={t:2.6,max:2.6,title:'スケールアップ！',sub:STAGES[s]+'の世界へ'};flashT=0.35;shake=Math.max(shake,12);P.inv=Math.max(P.inv,1.6);
+  banner={t:2.6,max:2.6,title:TX('scale_up'),sub:TX('scale_up_s',stageName(s))};flashT=0.35;shake=Math.max(shake,12);P.inv=Math.max(P.inv,1.6);
   for(const e of enemies){if(e.boss)continue;if(e.t.st<s){e.hp=Math.min(e.hp,1);e.sh=0;}
     const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*700*P.S;e.vy+=dy/d*700*P.S;}
   rings.push({x:P.x,y:P.y,r:20*P.S,R:520*P.S,life:0.8,max:0.8,col:'#eaffb0',w:8*P.S});
@@ -379,7 +495,7 @@ function endRun(clear){if(runRes)return;
   saveMeta();runRes={dna,clear,newU:runNew.slice()};
 }
 function unlock(id){if(META.unlocked.includes(id))return;META.unlocked.push(id);saveMeta();
-  const c=RARE.find(r=>r.id===id);if(c){toasts.push({s:'レアカード解放：'+c.n,sub:'レベルアップで出るようになった',life:3.2,max:3.2});runNew.push(c.n);}}
+  const c=RARE.find(r=>r.id===id);if(c){toasts.push({s:TX('unlock',c.n),sub:TX('unlock_s'),life:3.2,max:3.2});runNew.push(c.n);}}
 
 // ---------- obstacles: air bubbles under the cover glass ----------
 const bub={cache:new Map(),act:[],fade:[],key:''};
@@ -420,8 +536,8 @@ function kill(e,xpMul){
 }
 function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
   burst(e.x,e.y,10+k*6,'#d8f4ff',220*(e.boss?1.6:1),0.55,3);shake=Math.max(shake,e.boss?6:3);
-  if(e.sh===0)text(e.x,e.y-e.r-10*P.S,'殻が割れた！',e.boss?26:16,'#d8f4ff',0.9);
-  else if(e.boss)text(e.x,e.y-e.r-10*P.S,'殻 あと'+e.sh,22,'#d8f4ff',0.8);}
+  if(e.sh===0)text(e.x,e.y-e.r-10*P.S,TX('cracked'),e.boss?26:16,'#d8f4ff',0.9);
+  else if(e.boss)text(e.x,e.y-e.r-10*P.S,TX('shell_left',e.sh),22,'#d8f4ff',0.8);}
 function addXP(v){P.xp+=v;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
 function dash(){
   if(state!=='play'||P.dashCdT>0)return;
@@ -436,10 +552,10 @@ function onLoop(poly){
   const c=centroid(poly);let rad=0;for(const q of poly)rad+=Math.hypot(q.x-c.x,q.y-c.y);rad/=poly.length;
   let cap=captures.find(k=>k.cinchT<0&&Math.hypot(k.c.x-c.x,k.c.y-c.y)<k.rad*1.2+30*P.S),crack=1;
   if(cap){cap.charge=Math.min(6,cap.charge+1);cap.poly=poly;cap.c=c;cap.rad=rad;cap.timer=CAPT_TIME;cap.pop=1;
-    text(c.x,c.y-rad,cap.charge+'重巻き！',22+cap.charge*3,'#b6ffd2',0.8);}
+    text(c.x,c.y-rad,TX('coil_n',cap.charge),22+cap.charge*3,'#b6ffd2',0.8);}
   else{const c0=P.bigcoil?3:P.helix?2:1;cap={poly,c,rad,charge:c0,timer:CAPT_TIME,cinchT:-1,dash:false,pop:1};captures.push(cap);crack=c0;
-    text(c.x,c.y-rad,c0>1?'包囲！ '+c0+'重':'包囲！',22,'#b6ffd2',0.7);}
-  if(cap.charge>=6)unlock('helix');
+    text(c.x,c.y-rad,c0>1?TX('enclose_n',c0):TX('enclose'),22,'#b6ffd2',0.7);tip('dash');}
+  P.loops++;if(cap.charge>=6)unlock('helix');
   crack+=P.enzyme;
   const b=bbox(poly);
   for(const e of enemies){if(e.dead||e.x<b.x0||e.x>b.x1||e.y<b.y0||e.y>b.y1)continue;if(inPoly(e.x,e.y,poly)){e.cap=cap;if(e.sh>0)crackShell(e,crack);}}
@@ -451,7 +567,7 @@ function explode(cap){
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
-        if(!e.boss)text(e.x,e.y-e.r-6*S,'殻 あと'+e.sh,14,'#bfe9ff',0.7);continue;}
+        if(!e.boss)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       kill(e,xpMul);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
   const R=(55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6,dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage);
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
@@ -462,13 +578,13 @@ function explode(cap){
   for(const e of enemies)if(e.cap===cap)e.cap=null;
   if(n>0){const big=Math.min(1,n/40);
     text(c.x,c.y,'x'+n+'!',30+big*46+(dsh?10:0),dsh?'#ffffff':'#c8ffd9',1.2);
-    if(dsh)text(c.x,c.y+44*S,'ダッシュ締め ×2 XP',18,'#7dffb0',1.1);
-    if(ch>1)text(c.x,c.y-44*S,ch+'重 BONUS',18,'#7fc9ff',1.1);
-    bestCombo=Math.max(bestCombo,n);
+    if(dsh)text(c.x,c.y+44*S,TX('dash_xp'),18,'#7dffb0',1.1);
+    if(ch>1)text(c.x,c.y-44*S,TX('bonus',ch),18,'#7fc9ff',1.1);
+    bestCombo=Math.max(bestCombo,n);tip('charge');
     hitstop=Math.max(hitstop,0.05+Math.min(0.13,n*0.004)+(dsh?0.03:0));
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));flashT=Math.min(0.25,0.06+n*0.004);
-  }else if(kept){text(c.x,c.y,'殻が残った',18,'#bfe9ff',0.8);shake=Math.max(shake,3);}
-  else{text(c.x,c.y,'空振り…',18,'#8fb3a0',0.7);shake=Math.max(shake,3);}
+  }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);shake=Math.max(shake,3);}
+  else{text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);shake=Math.max(shake,3);}
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
 }
 function advanceTrail(dt){
@@ -490,34 +606,35 @@ function advanceTrail(dt){
 function gateLen(){return P.stage<2?STAGE_TAIL[P.stage+1]:FINAL_TAIL;}
 function growTail(m){P.tailLen=Math.min(Math.min(MAX_TAIL,gateLen()*1.3),Math.max(P.tailLen,P.tailLen*m));}
 const UPG=[
- {id:'tail', cat:'体質',max:5,n:'尾が伸びる',d:'尾の長さ +18%\nボスの出現が早まる',f:()=>growTail(1.18)},
- {id:'dcd',  cat:'体質',max:5,n:'ダッシュ回復',d:'ダッシュの\nクールダウン -18%',f:()=>P.dashCd=Math.max(0.6,P.dashCd*0.82)},
- {id:'dlen', cat:'体質',max:5,n:'ダッシュ延長',d:'ダッシュ時間 +0.12秒、\n長押し延長も伸びる',f:()=>{P.dashStacks++;P.dashBase+=0.12;P.dashHoldMax+=0.185;}},
- {id:'pulse',cat:'攻撃',max:5,n:'パルス強化',d:'自動パルスの\n範囲+16 / 威力+1',f:()=>{P.pulseLv++;P.pulseR+=16;P.pulseDmg+=1;P.pulseInt=Math.max(0.45,P.pulseInt*0.92);}},
- {id:'blast',cat:'攻撃',max:5,n:'締め爆発',d:'締めた時の\n衝撃波 +25%',f:()=>{P.blastLv++;P.blast+=0.25;}},
- {id:'flag', cat:'体質',max:5,n:'鞭毛ブースト',d:'移動速度 +8%\n旋回 +8%',f:()=>{P.flag++;P.spd*=1.08;P.turn*=1.08;}},
- {id:'mag',  cat:'体質',max:4,n:'DNA吸引',d:'XP吸引範囲 +45',f:()=>P.magnet+=45},
- {id:'memb', cat:'体質',max:5,n:'細胞膜',d:'最大HP +20\nHP全回復',f:()=>{P.memb++;P.maxHp+=20;P.hp=P.maxHp;}},
+ {id:'tail', cat:'body',max:5,n:['尾が伸びる','Longer Tail'],d:['尾の長さ +18%\nボスの出現が早まる','Tail length +18%\nThe boss comes sooner'],f:()=>growTail(1.18)},
+ {id:'dcd',  cat:'body',max:5,n:['ダッシュ回復','Dash Recovery'],d:['ダッシュの\nクールダウン -18%','Dash cooldown\n-18%'],f:()=>P.dashCd=Math.max(0.6,P.dashCd*0.82)},
+ {id:'dlen', cat:'body',max:5,n:['ダッシュ延長','Longer Dash'],d:['ダッシュ時間 +0.12秒、\n長押し延長も伸びる','Dash time +0.12s,\nhold-to-extend grows too'],f:()=>{P.dashStacks++;P.dashBase+=0.12;P.dashHoldMax+=0.185;}},
+ {id:'pulse',cat:'atk', max:5,n:['パルス強化','Stronger Pulse'],d:['自動パルスの\n範囲+16 / 威力+1','Auto pulse:\nrange +16 / power +1'],f:()=>{P.pulseLv++;P.pulseR+=16;P.pulseDmg+=1;P.pulseInt=Math.max(0.45,P.pulseInt*0.92);}},
+ {id:'blast',cat:'atk', max:5,n:['締め爆発','Squeeze Blast'],d:['締めた時の\n衝撃波 +25%','Shockwave when\nyou squeeze +25%'],f:()=>{P.blastLv++;P.blast+=0.25;}},
+ {id:'flag', cat:'body',max:5,n:['鞭毛ブースト','Flagella Boost'],d:['移動速度 +8%\n旋回 +8%','Move speed +8%\nTurning +8%'],f:()=>{P.flag++;P.spd*=1.08;P.turn*=1.08;}},
+ {id:'mag',  cat:'body',max:4,n:['DNA吸引','DNA Magnet'],d:['XP吸引範囲 +45','XP pickup range +45'],f:()=>P.magnet+=45},
+ {id:'memb', cat:'body',max:5,n:['細胞膜','Cell Membrane'],d:['最大HP +20\nHP全回復','Max HP +20\nFull heal'],f:()=>{P.memb++;P.maxHp+=20;P.hp=P.maxHp;}},
 ];
 const RARE=[
- {id:'spike', r:1,cat:'攻撃',max:3,n:'トゲ膜',   d:'尾に触れた敵に\nダメージ（重ねて強化）',f:()=>P.spike++},
- {id:'cilia', r:1,cat:'体質',max:1,n:'繊毛',     d:'尾に触れた敵の\n動きが半分になる',f:()=>P.cilia=true},
- {id:'enzyme',r:1,cat:'攻撃',max:2,n:'酵素',     d:'1回巻くごとに\n割れる殻 +1',f:()=>P.enzyme++},
- {id:'helix', r:1,cat:'攻撃',max:1,n:'二重らせん',d:'包囲が2重から\n始まる',f:()=>P.helix=true},
+ {id:'spike', r:1,cat:'atk', max:3,n:['トゲ膜','Spiked Membrane'],d:['尾に触れた敵に\nダメージ（重ねて強化）','Enemies touching the\ntail take damage (stacks)'],f:()=>P.spike++},
+ {id:'cilia', r:1,cat:'body',max:1,n:['繊毛','Cilia'],d:['尾に触れた敵の\n動きが半分になる','Enemies touching the\ntail move at half speed'],f:()=>P.cilia=true},
+ {id:'enzyme',r:1,cat:'atk', max:2,n:['酵素','Enzyme'],d:['1回巻くごとに\n割れる殻 +1','Each coil cracks\n+1 shell'],f:()=>P.enzyme++},
+ {id:'helix', r:1,cat:'atk', max:1,n:['二重らせん','Double Helix'],d:['包囲が2重から\n始まる','Coils start\nat 2x'],f:()=>P.helix=true},
 ];
 // evolutions: base card at MAX + one other card, then open a boss capsule
 const EVO=[
- {id:'devour',r:2,n:'捕食',  d:'ダッシュ締めで倒すと\nHPが回復する',base:'dlen', need:'blast',f:()=>P.devour=true,has:()=>P.devour},
- {id:'zap',   r:2,n:'放電',  d:'パルスが尾の4か所\nからも出る',      base:'pulse',need:'spike',f:()=>P.zap=true,has:()=>P.zap},
- {id:'coil',  r:2,n:'大らせん',d:'包囲が3重から始まり\n締めの衝撃波 +50%',base:'tail',need:'helix',f:()=>{P.bigcoil=true;P.blast+=0.5;},has:()=>P.bigcoil},
+ {id:'devour',r:2,n:['捕食','Devour'],d:['ダッシュ締めで倒すと\nHPが回復する','Kills by dash squeeze\nrestore HP'],base:'dlen', need:'blast',f:()=>P.devour=true,has:()=>P.devour},
+ {id:'zap',   r:2,n:['放電','Discharge'],d:['パルスが尾の4か所\nからも出る','Pulse also fires from\n4 points on the tail'],base:'pulse',need:'spike',f:()=>P.zap=true,has:()=>P.zap},
+ {id:'coil',  r:2,n:['大らせん','Great Helix'],d:['包囲が3重から始まり\n締めの衝撃波 +50%','Coils start at 3x,\nsqueeze shockwave +50%'],base:'tail',need:'helix',f:()=>{P.bigcoil=true;P.blast+=0.5;},has:()=>P.bigcoil},
 ];
-const FALLBACK={n:'栄養補給',cat:'体質',d:'HPを40回復',f:()=>{P.hp=Math.min(P.maxHp,P.hp+40);}};
+const FALLBACK={n:['栄養補給','Nutrients'],cat:'body',d:['HPを40回復','Restore 40 HP'],f:()=>{P.hp=Math.min(P.maxHp,P.hp+40);}};
+loc(UPG,'n','d');loc(RARE,'n','d');loc(EVO,'n','d');loc([FALLBACK],'n','d');
 function oneLine(d){return d.replace(/([ぁ-んァ-ヶ一-龠ー])\n([ぁ-んァ-ヶ一-龠ー])/g,'$1$2').replace('\n',' ');}
 const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id);
 function avail(u){return (P.lv[u.id]||0)<u.max;}
 function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;}
 function evoCan(e){return (P.lv[e.base]||0)>=CARD(e.base).max&&(P.lv[e.need]||0)>0;}
-function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(u.id===e.base)return'進化：'+e.n+'（MAXで）';if(u.id===e.need)return'進化：'+e.n+'の素材';}return'';}
+function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
 function openLevel(){
   choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
   while(choices.length<3&&(com.length||rare.length)){
@@ -530,10 +647,10 @@ function openLevel(){
 function pick(i){if(!choices||!choices[i])return;applyCard(choices[i]);pendingLv--;choices=null;state='play';
   growTail(1.06); // tail grows a little every level
   text(P.x,P.y-40*P.S,'LEVEL UP!',24,'#ffe680',1);burst(P.x,P.y,30,'#ffe680',260,0.7,3);}
-function cardRects(){
+function cardRects(W,H){
   if(NARROW){const cw=Math.min(380,W-28),ch=90,gap=12,x=W/2-cw/2,y0=H/2-(ch*3+gap*2)/2+20;return[0,1,2].map(i=>({x,y:y0+i*(ch+gap),w:cw,h:ch}));}
   const cw=Math.min(220,(W-80)/3),ch=150,gap=16,x0=W/2-(cw*3+gap*2)/2,y=H/2-ch/2+20;return[0,1,2].map(i=>({x:x0+i*(cw+gap),y,w:cw,h:ch}));}
-function cardAt(x,y){const r=cardRects();for(let i=0;i<3;i++){const c=r[i];if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)return i;}return -1;}
+function cardAt(W,H,x,y){const r=cardRects(W,H);for(let i=0;i<3;i++){const c=r[i];if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h)return i;}return -1;}
 
 // ---------- spatial hash ----------
 let CELL=32;const grid=new Map();
@@ -562,6 +679,7 @@ function update(dt){
   if(P.inv>0)P.inv-=dt;
   if(DEMO&&captures.some(c=>c.cinchT<0&&c.charge>=2))dash();
   advanceTrail(dt);
+  if(T>1.5&&!P.loops)tip('coil');tipTick();
   updateBubbles(dt);
   // boss gate + clear
   if(!P.boss&&!P.clearAt&&P.tailLen>=gateLen())spawnBoss();
@@ -698,9 +816,7 @@ function drawChests(){const S=P.S;
 function drawShell(e,S){const B=e.boss,gap=B?9:5.5;ctx.lineWidth=(B?3.2:2)*S;
   for(let i=0;i<e.sh;i++){const R=e.r+(5+i*gap)*S,rot=T*0.7*(i%2?1:-1)+e.ph+i;ctx.strokeStyle=`rgba(214,242,255,${0.95-i*0.1})`;
     for(let k=0;k<5;k++){const a0=rot+k*TAU/5;ctx.beginPath();ctx.arc(e.x,e.y,R,a0,a0+TAU/5-0.32);ctx.stroke();}}
-  if(B&&e.regenT>0){const R=e.r+(5+e.sh*gap)*S;ctx.strokeStyle=`rgba(160,200,230,${0.6*e.regenT/3.5})`;ctx.setLineDash([6*S,6*S]);ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();ctx.setLineDash([]);}
-  if(B){const y=e.y-e.r-(16+e.shMax*gap)*S,t=e.t.name+'　殻 '+e.sh+'/'+e.shMax;ctx.font=`900 ${16*S}px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.lineWidth=4*S;ctx.strokeStyle='rgba(0,10,20,0.85)';ctx.strokeText(t,e.x,y);ctx.fillStyle='#ffd86a';ctx.fillText(t,e.x,y);}}
+  if(B&&e.regenT>0){const R=e.r+(5+e.sh*gap)*S;ctx.strokeStyle=`rgba(160,200,230,${0.6*e.regenT/3.5})`;ctx.setLineDash([6*S,6*S]);ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
 function render(){
   const S=P.S,Z=1/S;
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -801,14 +917,21 @@ function render(){
   if(mouseUsed&&!TOUCH&&state==='play'){ctx.strokeStyle='rgba(180,255,210,0.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mx,my,7,0,TAU);ctx.moveTo(mx-12,my);ctx.lineTo(mx-4,my);ctx.moveTo(mx+4,my);ctx.lineTo(mx+12,my);ctx.stroke();}
   if(TOUCH&&state==='play'&&steerTouch!==null){ctx.strokeStyle='rgba(180,255,210,0.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,22,0,TAU);ctx.stroke();}
   if(state==='play'||state==='over'||state==='clear'){drawEvt();drawToasts();}
-  if(state==='title')titleScreen();
-  if(state==='level')levelScreen();
-  if(state==='over')overScreen();
-  if(state==='clear')clearScreen();
-  if(state==='chest')chestScreen();
+  if(state==='title')ui(titleScreen);
+  if(state==='level')ui(levelScreen);
+  if(state==='over')ui(overScreen);
+  if(state==='clear')ui(clearScreen);
+  if(state==='chest')ui(chestScreen);
 }
 function panel(x,y,w,h,a){ctx.fillStyle=`rgba(3,14,34,${a||0.7})`;ctx.strokeStyle='rgba(100,200,255,0.25)';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,10):ctx.rect(x,y,w,h);ctx.fill();ctx.stroke();}
-function hud(){
+// ----- screen-space UI -----
+// The UI is laid out for a phone. On wide screens it is drawn scaled up by uiK() so the text stays readable:
+// ui(fn) calls fn(W,H,mx,my) with the screen size and pointer divided by that scale (the parameters shadow the globals).
+// Layout helpers (titleLayout, cardRects, endLayout) take the same W,H, and act() divides the pointer the same way for hit tests.
+function uiK(){return NARROW?1:clamp(Math.min(W/1024,H/600),1,1.6);}
+function ui(fn){const k=uiK();ctx.save();ctx.scale(k,k);fn(W/k,H/k,mx/k,my/k);ctx.restore();}
+function hud(){ui(hudDraw);bossArrow();}
+function hudDraw(W,H){const k=uiK();
   ctx.textBaseline='middle';
   ctx.fillStyle='rgba(10,30,60,0.8)';ctx.fillRect(0,0,W,6);ctx.fillStyle='#4aa8ff';ctx.fillRect(0,0,W*Math.min(1,P.xp/P.xpNeed),6);
   const lw=NARROW?Math.min(170,W*0.44):230,bw=lw-50;
@@ -819,147 +942,152 @@ function hud(){
   ctx.fillStyle='#bfe3ff';ctx.font=`bold 12px ${FONT}`;ctx.fillText('Lv '+P.lvl+'  XP '+Math.floor(P.xp)+'/'+P.xpNeed,18,54);
   const rw=NARROW?Math.min(140,W*0.36):200;
   panel(W-rw-10,12,rw,58);ctx.font=`bold ${NARROW?12:14}px ${FONT}`;ctx.fillStyle='#ffb3bb';
-  ctx.fillText('撃破 '+kills,W-rw,29);ctx.fillStyle='#b6ffd2';ctx.fillText('最大コンボ x'+bestCombo,W-rw,52);
+  ctx.fillText(TX('kills',kills),W-rw,29);ctx.fillStyle='#b6ffd2';ctx.fillText(TX('combo',bestCombo),W-rw,52);
   // timer + scale
-  const m=Math.floor(T/60),s=Math.floor(T%60),ty=NARROW?90:34;
-  ctx.textAlign='center';ctx.font=`900 ${NARROW?22:28}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(m+':'+(s<10?'0':'')+s,W/2,ty);
-  const parts2=['スケール:',...STAGES.flatMap((n,i)=>i?['→',n]:[n])];
+  const ty=NARROW?90:34;
+  ctx.textAlign='center';ctx.font=`900 ${NARROW?22:28}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(fmtT(T),W/2,ty);
+  const parts2=[TX('scale'),stageName(0),'→',stageName(1),'→',stageName(2)]; // odd slots are the scale names
   ctx.font=`bold ${NARROW?12:13}px ${FONT}`;let tw=0;const ws=parts2.map(p=>{const w=ctx.measureText(p).width+6;tw+=w;return w;});
   let x=W/2-tw/2;const sy=ty+(NARROW?24:28);ctx.textAlign='left';
-  parts2.forEach((p,i)=>{const si=STAGES.indexOf(p);ctx.fillStyle=si<0?'#7f9db8':si===P.stage?'#eaffb0':si<P.stage?'#5f9c78':'#4a6070';
+  parts2.forEach((p,i)=>{const si=i%2?(i-1)/2:-1;ctx.fillStyle=si<0?'#7f9db8':si===P.stage?'#eaffb0':si<P.stage?'#5f9c78':'#4a6070';
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
-  // progress toward this scale's boss
-  if(P.boss){const b=P.boss,t='ボス '+b.t.name+'　殻 '+b.sh+'/'+b.shMax;ctx.textAlign='center';fitFont(t,NARROW?13:14,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+20);ctx.textAlign='left';}
+  // boss name + shells, or progress toward this scale's boss
+  if(P.boss){const b=P.boss,t=TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
     ctx.fillStyle='rgba(90,140,170,0.35)';ctx.fillRect(W/2-tw/2,sy+12,tw,3);ctx.fillStyle='#7dffb0';ctx.fillRect(W/2-tw/2,sy+12,tw*f,3);
-    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText('尾が伸びるとボスが出る',W/2,sy+25);ctx.textAlign='left';}
-  bossArrow();
+    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('gate'),W/2,sy+25);ctx.textAlign='left';}
   // dash + charge
   const ready=P.dashCdT<=0,best=captures.filter(c=>c.cinchT<0).reduce((a,c)=>c.charge>a.charge?c:a,{charge:0});
   let bx,by,br,x0,cy2;
-  if(TOUCH){const b=dashBtn();bx=b.x;by=b.y;br=b.r;x0=16;cy2=H-60;}else{bx=W/2;by=H-58;br=34;x0=W/2+52;cy2=by;}
+  if(TOUCH){const b=dashBtn();bx=b.x/k;by=b.y/k;br=b.r/k;x0=16;cy2=H-60;}else{bx=W/2;by=H-64;br=34;x0=W/2+52;cy2=by;} // touch button stays where inDashBtn() expects it
   ctx.fillStyle=TOUCH?(ready?'rgba(40,140,80,0.55)':'rgba(3,14,34,0.75)'):'rgba(3,14,34,0.75)';ctx.beginPath();ctx.arc(bx,by,br,0,TAU);ctx.fill();
   ctx.strokeStyle=ready?'#7dffb0':'#3a6d88';ctx.lineWidth=5;ctx.beginPath();ctx.arc(bx,by,br-4,-Math.PI/2,-Math.PI/2+TAU*(ready?1:1-P.dashCdT/P.dashCd));ctx.stroke();
   if(TOUCH&&best.charge&&ready){ctx.strokeStyle=`rgba(234,255,176,${0.5+0.5*Math.sin(T*14)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(bx,by,br+7,0,TAU);ctx.stroke();}
-  ctx.textAlign='center';ctx.fillStyle=ready?'#eafff2':'#7f9db8';ctx.font=`900 ${TOUCH?16:13}px ${FONT}`;ctx.fillText(ready?'DASH':P.dashCdT.toFixed(1),bx,by-(TOUCH?0:2));
-  if(!TOUCH){ctx.font=`10px ${FONT}`;ctx.fillText('SPACE/クリック',bx,by+13);}
-  ctx.textAlign='left';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#b6ffd2';ctx.fillText('巻きチャージ',x0,cy2-18);
+  ctx.textAlign='center';ctx.fillStyle=ready?'#eafff2':'#7f9db8';ctx.font=`900 ${TOUCH?16:13}px ${FONT}`;ctx.fillText(ready?'DASH':P.dashCdT.toFixed(1),bx,by);
+  if(!TOUCH){ctx.font=`10px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('key_dash'),bx,by+br+11);}
+  ctx.textAlign='left';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#b6ffd2';ctx.fillText(TX('charge'),x0,cy2-18);
   for(let i=0;i<6;i++){ctx.fillStyle=i<best.charge?(best.charge>=4?'#eaffb0':'#5dff9a'):'rgba(90,140,170,0.35)';ctx.fillRect(x0+i*18,cy2-6,14,14);}
   if(best.charge){ctx.fillStyle='rgba(180,255,210,0.8)';ctx.fillRect(x0,cy2+14,104*best.timer/CAPT_TIME,4);
-    if(ready&&Math.floor(T*6)%2){ctx.fillStyle='#ffffff';ctx.font=`900 15px ${FONT}`;
-      if(TOUCH){ctx.textAlign='right';ctx.fillText('今だ！DASH →',bx-br-10,by);}else{ctx.textAlign='right';ctx.fillText('今だ！ダッシュで締めろ',bx-br-16,by);}}}
-  else{ctx.fillStyle='#7f9db8';ctx.font=`11px ${FONT}`;ctx.fillText('尾で敵を囲むとたまる',x0,cy2+24);}
+    if(ready&&Math.floor(T*6)%2){ctx.fillStyle='#ffffff';ctx.font=`900 15px ${FONT}`;ctx.textAlign='right';ctx.fillText(TX(TOUCH?'now_touch':'now_mouse'),bx-br-(TOUCH?10:16),by);}}
+  else{ctx.fillStyle='#7f9db8';ctx.font=`11px ${FONT}`;ctx.fillText(TX('charge_hint'),x0,cy2+24);}
 }
 function fitFont(txt,size,weight,maxW){let f=size;ctx.font=`${weight} ${f}px ${FONT}`;while(f>9&&ctx.measureText(txt).width>maxW){f-=1;ctx.font=`${weight} ${f}px ${FONT}`;}return f;}
-function inR(r){return !!r&&mx>=r.x&&mx<=r.x+r.w&&my>=r.y&&my<=r.y+r.h;}
+function inR(r,x,y){return !!r&&x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h;}
 function rrect(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);}
 function btn(r,label,kind,dis){
   ctx.fillStyle=dis?'rgba(20,34,50,0.85)':kind===1?'rgba(36,140,80,0.92)':'rgba(8,26,52,0.92)';ctx.strokeStyle=dis?'#3a5068':kind===1?'#9dffc4':'#6fb8ff';ctx.lineWidth=2;
   rrect(r.x,r.y,r.w,r.h,12);ctx.fill();ctx.stroke();
   ctx.textAlign='center';ctx.textBaseline='middle';fitFont(label,kind===1?20:15,900,r.w-16);ctx.fillStyle=dis?'#6f8aa0':'#ffffff';ctx.fillText(label,r.x+r.w/2,r.y+r.h/2+1);}
-function bossArrow(){const b=P.boss;if(!b)return;const Z=1/P.S,sx=W/2+(b.x-P.x)*Z,sy=H/2+(b.y-P.y)*Z,rr=b.r*Z;
+function bossArrow(){const b=P.boss;if(!b)return;const Z=1/P.S,sx=W/2+(b.x-P.x)*Z,sy=H/2+(b.y-P.y)*Z,rr=b.r*Z,k=uiK();
   if(sx>-rr&&sx<W+rr&&sy>-rr&&sy<H+rr)return;
-  const ang=Math.atan2(sy-H/2,sx-W/2),dx=Math.cos(ang),dy=Math.sin(ang),x0=34,x1=W-34,y0=NARROW?172:118,y1=H-(TOUCH?170:100);
+  const ang=Math.atan2(sy-H/2,sx-W/2),dx=Math.cos(ang),dy=Math.sin(ang),x0=34,x1=W-34,y0=NARROW?172:118*k,y1=H-(TOUCH?170:100*k);
   let t=1e9;if(dx>0)t=Math.min(t,(x1-W/2)/dx);if(dx<0)t=Math.min(t,(x0-W/2)/dx);if(dy>0)t=Math.min(t,(y1-H/2)/dy);if(dy<0)t=Math.min(t,(y0-H/2)/dy);
   const ax=W/2+dx*t,ay=H/2+dy*t;
   ctx.save();ctx.translate(ax,ay);ctx.rotate(ang);ctx.globalAlpha=0.7+0.3*Math.sin(performance.now()/120);ctx.fillStyle='#ffd23f';
   ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore();ctx.globalAlpha=1;
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 12px ${FONT}`;ctx.fillStyle='#ffd23f';ctx.fillText('ボス',ax-dx*26,ay-dy*26);}
-function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),y=NARROW?168:124;ctx.globalAlpha=a;
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,15,10,0.85)';
-  fitFont(m.s,NARROW?20:24,900,W-24);ctx.strokeText(m.s,W/2,y);ctx.fillStyle='#ffffff';ctx.fillText(m.s,W/2,y);
-  if(m.sub){fitFont(m.sub,13,'bold',W-24);ctx.strokeText(m.sub,W/2,y+24);ctx.fillStyle='#d8f070';ctx.fillText(m.sub,W/2,y+24);}ctx.globalAlpha=1;}
-function drawToasts(){let y=NARROW?226:178;const w=Math.min(330,W-24);
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${12*k|0}px ${FONT}`;ctx.fillStyle='#ffd23f';ctx.fillText(TX('boss_tag'),ax-dx*26,ay-dy*26);}
+function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?168:124;
+  ctx.save();ctx.scale(k,k);ctx.globalAlpha=a;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,15,10,0.85)';
+  fitFont(m.s,NARROW?20:24,900,w-24);ctx.strokeText(m.s,w/2,y);ctx.fillStyle='#ffffff';ctx.fillText(m.s,w/2,y);
+  if(m.sub){fitFont(m.sub,14,'bold',w-24);ctx.strokeText(m.sub,w/2,y+25);ctx.fillStyle='#d8f070';ctx.fillText(m.sub,w/2,y+25);}ctx.restore();ctx.globalAlpha=1;}
+function drawToasts(){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=NARROW?226:178;ctx.save();ctx.scale(k,k);
   for(const t of toasts){ctx.globalAlpha=Math.max(0,Math.min(1,t.life*2,(t.max-t.life)*5));
-    ctx.fillStyle='rgba(40,30,4,0.92)';ctx.strokeStyle='#ffd23f';ctx.lineWidth=1.5;rrect(W/2-w/2,y-24,w,48,10);ctx.fill();ctx.stroke();
-    ctx.textAlign='center';ctx.textBaseline='middle';fitFont(t.s,15,900,w-16);ctx.fillStyle='#ffe680';ctx.fillText(t.s,W/2,y-8);
-    if(t.sub){fitFont(t.sub,12,'bold',w-16);ctx.fillStyle='#e8d9a8';ctx.fillText(t.sub,W/2,y+12);}y+=56;}
-  ctx.globalAlpha=1;}
-// ----- title: skins bought with DNA -----
-function titleLayout(){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,py=Math.round(H*0.52),bw=Math.min(300,W-60);
-  return{panel:{x:px,y:py,w:pw,h:ph},left:{x:px,y:py,w:58,h:ph},right:{x:px+pw-58,y:py,w:58,h:ph},buy:{x:W/2-95,y:py+ph-42,w:190,h:32},start:{x:W/2-bw/2,y:py+ph+20,w:bw,h:56}};}
+    ctx.fillStyle='rgba(40,30,4,0.92)';ctx.strokeStyle='#ffd23f';ctx.lineWidth=1.5;rrect(sw/2-w/2,y-24,w,48,10);ctx.fill();ctx.stroke();
+    ctx.textAlign='center';ctx.textBaseline='middle';fitFont(t.s,15,900,w-16);ctx.fillStyle='#ffe680';ctx.fillText(t.s,sw/2,y-8);
+    if(t.sub){fitFont(t.sub,12,'bold',w-16);ctx.fillStyle='#e8d9a8';ctx.fillText(t.sub,sw/2,y+12);}y+=56;}
+  ctx.restore();ctx.globalAlpha=1;}
+// ----- title: language switch, skins bought with DNA -----
+// One stack (title, tagline, two how-to lines, skin panel, start, records) placed a little above centre.
+// Short screens (tight) drop the how-to lines; the rest is taught by tips during play.
+function titleLayout(W,H){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,bw=Math.min(300,W-60),fs=Math.min(17,(W-30)/19),step=fs*1.7,tight=H<500,lw=152;
+  // keep the title clear of the language switch: on a short, wide screen shrink the title to sit beside it; otherwise start lower
+  const side=W-2*(lw+28),beside=tight&&side>=260,tw=beside?Math.min(W-30,side):W-30,clash=!beside&&Math.min(W-30,520)>side;
+  const gap=tight?64:Math.round(92+step*1.5),top=Math.max(clash?54:10,(H-gap-290)*0.42),ty=Math.round(top+30),py=ty+gap;
+  return{ty,tw,fs,step,tight,panel:{x:px,y:py,w:pw,h:ph},left:{x:px,y:py,w:58,h:ph},right:{x:px+pw-58,y:py,w:58,h:ph},buy:{x:W/2-95,y:py+ph-42,w:190,h:32},
+    start:{x:W/2-bw/2,y:py+ph+20,w:bw,h:56},lang:{x:W-10-lw,y:10,w:lw,h:34}};}
 function cycleSkin(d){skinIdx=(skinIdx+d+SKINS.length)%SKINS.length;const k=SKINS[skinIdx];if(META.skins.includes(k.id)){META.skin=k.id;saveMeta();}}
 function buySkin(){const k=SKINS[skinIdx];if(META.skins.includes(k.id)||META.dna<k.cost)return;META.dna-=k.cost;META.skins.push(k.id);META.skin=k.id;saveMeta();}
-function titleAct(){const L=titleLayout();if(inR(L.left))cycleSkin(-1);else if(inR(L.right))cycleSkin(1);else if(inR(L.buy))buySkin();else if(inR(L.start))reset(true);}
-function titleScreen(){
+function titleAct(W,H,x,y){const L=titleLayout(W,H);if(inR(L.lang,x,y))setLang(x<L.lang.x+L.lang.w/2?0:1,true);else if(inR(L.left,x,y))cycleSkin(-1);else if(inR(L.right,x,y))cycleSkin(1);else if(inR(L.buy,x,y))buySkin();else if(inR(L.start,x,y))reset(true);}
+function titleScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.74)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
-  const L=titleLayout(),fs=Math.min(17,(W-30)/19),ty=Math.max(56,H*0.12);
-  fitFont('コイル・バクテリア',56,900,W-30);ctx.fillStyle='#7dffb0';ctx.fillText('コイル・バクテリア',W/2,ty);
-  ctx.font=`${Math.min(14,fs)|0}px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText('らせんで囲って、ダッシュで締める（試作 v6）',W/2,ty+40);
-  const lines=TOUCH?['指でなぞった方向へ進む','尾で敵を囲み、何周も巻いてチャージ','短タップ / 右下DASHで締める（長押しで延長）','殻のある敵は、殻の数だけ巻いて割る','ボスを倒すと次の大きさへ。細胞核のボスでクリア']
-                   :['マウスで移動（WASD / 矢印キーでも可）','尾で敵を囲み、何周も巻いてチャージ','クリック / スペースで締める（長押しで延長）','殻のある敵は、殻の数だけ巻いて割る','ボスを倒すと次の大きさへ。細胞核のボスでクリア'];
-  const step=Math.min(fs*1.75,(L.panel.y-ty-100)/lines.length);ctx.fillStyle='#e8f6ff';
-  lines.forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,ty+84+i*step);});
+  const L=titleLayout(W,H),fs=L.fs,ty=L.ty,g=L.lang;
+  // language switch: left half 日本語, right half English (L key toggles)
+  ctx.fillStyle='rgba(3,14,34,0.88)';ctx.strokeStyle='rgba(100,200,255,0.3)';ctx.lineWidth=1;rrect(g.x,g.y,g.w,g.h,g.h/2);ctx.fill();ctx.stroke();
+  ['日本語','English'].forEach((s,i)=>{const x=g.x+i*g.w/2;if(i===LI){ctx.fillStyle='rgba(36,140,80,0.92)';rrect(x+3,g.y+3,g.w/2-6,g.h-6,(g.h-6)/2);ctx.fill();}
+    ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
+  fitFont(TX('title'),56,900,L.tw);ctx.fillStyle='#7dffb0';ctx.fillText(TX('title'),W/2,ty);
+  fitFont(TX('tagline',VER),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',VER),W/2,ty+40);
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),TX('goal')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,ty+82+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+22,cy=p.y+40;ctx.globalAlpha=own?1:0.35;
   for(let j=13;j>=0;j--){const x=cx-24-j*8,y=cy+Math.sin(j*0.6+now/300)*6,hh=k.h<0?(hue+j*12)%360:hue;ctx.fillStyle=j%2?`hsl(${hh},88%,68%)`:`hsl(${hh},72%,56%)`;ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/14)*4)*1.3,0,TAU);ctx.fill();}
   drawHead(cx,cy,0,2,own?1:0.35,hue,false);ctx.globalAlpha=1;
   ctx.fillStyle='#9dc4e0';for(const [r,dir] of [[L.left,-1],[L.right,1]]){const ax=r.x+r.w/2,ay=r.y+r.h/2;ctx.beginPath();ctx.moveTo(ax+dir*9,ay);ctx.lineTo(ax-dir*7,ay-13);ctx.lineTo(ax-dir*7,ay+13);ctx.closePath();ctx.fill();}
-  ctx.textAlign='center';ctx.font=`900 17px ${FONT}`;ctx.fillStyle=own?'#eafff2':'#9fb3c4';ctx.fillText(k.n+(own&&META.skin===k.id?'（使用中）':''),W/2,p.y+78);
-  if(!own){const can=META.dna>=k.cost;btn(L.buy,can?'DNA '+k.cost+' で解放':'DNA '+k.cost+' が必要',0,!can);}
-  else{ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText('スキン '+(skinIdx+1)+' / '+SKINS.length+'　左右で切り替え',W/2,p.y+p.h-24);}
-  btn(L.start,TOUCH?'スタート':'スタート（Enter）',1);
-  const b=META.best,bm=Math.floor(b.t/60),bs=b.t%60,ur=RARE.filter(c=>META.unlocked.includes(c.id)).length;
-  const f1='DNA '+META.dna+'　最長 '+bm+':'+(bs<10?'0':'')+bs+'　最高到達 '+STAGES[b.stage||0]+'　クリア '+(b.clears||0)+'回';
+  ctx.textAlign='center';ctx.font=`900 17px ${FONT}`;ctx.fillStyle=own?'#eafff2':'#9fb3c4';ctx.fillText(k.n+(own&&META.skin===k.id?TX('in_use'):''),W/2,p.y+78);
+  if(!own){const can=META.dna>=k.cost;btn(L.buy,TX(can?'buy':'need',k.cost),0,!can);}
+  else{ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('skin_n',skinIdx+1,SKINS.length),W/2,p.y+p.h-24);}
+  btn(L.start,TX(TOUCH?'start':'start_key'),1);
+  const b=META.best,ur=RARE.filter(c=>META.unlocked.includes(c.id)).length;
+  const f1=TX('best',META.dna,fmtT(b.t),stageName(b.stage||0),b.clears||0);
   fitFont(f1,13,'bold',W-20);ctx.fillStyle='#bfe3ff';ctx.fillText(f1,W/2,L.start.y+L.start.h+26);
-  ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText('レアカード解放 '+ur+' / '+RARE.length,W/2,L.start.y+L.start.h+46);
+  ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('rare_n',ur,RARE.length),W/2,L.start.y+L.start.h+46);
 }
 // ----- level up -----
 const RC=['#7dffb0','#6fb8ff','#ffd23f'],RF=['rgba(3,14,34,','rgba(6,22,60,','rgba(44,32,4,'];
-function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?'レア ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
-function levelScreen(){
+function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?TX('rare')+' ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
+function levelScreen(W,H,mx,my){
   ctx.fillStyle='rgba(2,8,22,0.6)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
-  const r=cardRects(),hov=TOUCH?-1:cardAt(mx,my);
-  ctx.fillStyle='#ffe680';fitFont('LEVEL UP！ 強化をえらぶ',NARROW?26:34,900,W-24);ctx.fillText('LEVEL UP！ 強化をえらぶ',W/2,r[0].y-(NARROW?34:56));
-  r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),catc=u.cat==='攻撃'?'#ff9a7a':'#7fd8ff';
+  const r=cardRects(W,H),hov=TOUCH?-1:cardAt(W,H,mx,my),head=TX('lvup');
+  ctx.fillStyle='#ffe680';fitFont(head,NARROW?26:34,900,W-24);ctx.fillText(head,W/2,r[0].y-(NARROW?34:56));
+  r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),cat=u.cat?TX('cat_'+u.cat):'',catc=u.cat==='atk'?'#ff9a7a':'#7fd8ff',sp=LI?'   ':'　';
     ctx.fillStyle=RF[q]+(hov===i?0.97:0.9)+')';ctx.strokeStyle=RC[q];ctx.lineWidth=q?2.5:1;rrect(c.x,c.y,c.w,c.h,10);ctx.fill();ctx.stroke();
     if(hov===i){ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.strokeRect(c.x+3,c.y+3,c.w-6,c.h-6);}
-    if(chip){ctx.font=`900 12px ${FONT}`;const tw=ctx.measureText(chip).width+14;ctx.fillStyle=RC[q];ctx.fillRect(c.x+c.w-tw-8,c.y+8,tw,20);ctx.fillStyle='#04102a';ctx.textAlign='center';ctx.fillText(chip,c.x+c.w-tw/2-8,c.y+18);}
-    const foot=(u.cat||'')+(hint?'　'+hint:'');
+    let chipW=0;if(chip){ctx.font=`900 12px ${FONT}`;const tw=ctx.measureText(chip).width+14;chipW=tw+8;ctx.fillStyle=RC[q];ctx.fillRect(c.x+c.w-tw-8,c.y+8,tw,20);ctx.fillStyle='#04102a';ctx.textAlign='center';ctx.fillText(chip,c.x+c.w-tw/2-8,c.y+18);}
+    const foot=cat+(hint?sp+hint:'');
     if(NARROW){ctx.textAlign='left';ctx.fillStyle=RC[q];ctx.font=`900 14px ${FONT}`;ctx.fillText(String(i+1),c.x+14,c.y+c.h/2);
-      ctx.fillStyle='#fff';ctx.font=`900 19px ${FONT}`;ctx.fillText(u.n,c.x+36,c.y+24);
+      ctx.fillStyle='#fff';fitFont(u.n,19,900,c.w-50-chipW);ctx.fillText(u.n,c.x+36,c.y+24);
       const dd=oneLine(u.d);fitFont(dd,14,'normal',c.w-50);ctx.fillStyle='#bfe3ff';ctx.fillText(dd,c.x+36,c.y+50);
-      fitFont(foot,12,'bold',c.w-50);ctx.fillStyle=catc;ctx.fillText(u.cat||'',c.x+36,c.y+73);
-      if(hint){const cw=ctx.measureText((u.cat||'')+'　').width;ctx.fillStyle='#ffd86a';ctx.fillText(hint,c.x+36+cw,c.y+73);}ctx.textAlign='center';}
+      fitFont(foot,12,'bold',c.w-50);ctx.fillStyle=catc;ctx.fillText(cat,c.x+36,c.y+73);
+      if(hint){const cw=ctx.measureText(cat+sp).width;ctx.fillStyle='#ffd86a';ctx.fillText(hint,c.x+36+cw,c.y+73);}ctx.textAlign='center';}
     else{ctx.textAlign='left';ctx.fillStyle=RC[q];ctx.font=`900 14px ${FONT}`;ctx.fillText('['+(i+1)+']',c.x+12,c.y+18);
-      const nw=ctx.measureText('['+(i+1)+'] ').width;ctx.font=`bold 12px ${FONT}`;ctx.fillStyle=catc;ctx.fillText(u.cat||'',c.x+12+nw,c.y+18);ctx.textAlign='center';
+      const nw=ctx.measureText('['+(i+1)+'] ').width;ctx.font=`bold 12px ${FONT}`;ctx.fillStyle=catc;ctx.fillText(cat,c.x+12+nw,c.y+18);ctx.textAlign='center';
       ctx.fillStyle='#ffffff';fitFont(u.n,20,900,c.w-20);ctx.fillText(u.n,c.x+c.w/2,c.y+50);
       ctx.fillStyle='#bfe3ff';u.d.split('\n').forEach((t,k)=>{fitFont(t,14,'normal',c.w-16);ctx.fillText(t,c.x+c.w/2,c.y+82+k*21);});
       if(hint){fitFont(hint,12,'bold',c.w-14);ctx.fillStyle='#ffd86a';ctx.fillText(hint,c.x+c.w/2,c.y+c.h-14);}}});
-  ctx.font=`13px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TOUCH?'タップでえらぶ':'クリック または 1 / 2 / 3 キー',W/2,r[2].y+r[2].h+24);
+  ctx.font=`13px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TX(TOUCH?'pick_touch':'pick_mouse'),W/2,r[2].y+r[2].h+24);
 }
-function chestScreen(){
+function chestScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.66)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   const R=chestRes,w=Math.min(360,W-36),h=54,gap=10,n=R.items.length,y0=H/2-((h+gap)*n-gap)/2+10;
-  const ttl=R.evo?'ボスのカプセルを開けた！':'カプセルを開けた！';fitFont(ttl,NARROW?24:30,900,W-24);ctx.fillStyle='#ffe680';ctx.fillText(ttl,W/2,y0-(R.miss?62:44));
-  if(R.miss){fitFont('進化の条件がそろっていない（土台のカードをMAXに）',13,'bold',W-24);ctx.fillStyle='#bfa86a';ctx.fillText('進化の条件がそろっていない（土台のカードをMAXに）',W/2,y0-30);}
+  const ttl=TX(R.evo?'chest_boss':'chest');fitFont(ttl,NARROW?24:30,900,W-24);ctx.fillStyle='#ffe680';ctx.fillText(ttl,W/2,y0-(R.miss?62:44));
+  if(R.miss){fitFont(TX('chest_miss'),13,'bold',W-24);ctx.fillStyle='#bfa86a';ctx.fillText(TX('chest_miss'),W/2,y0-30);}
   R.items.forEach((it,i)=>{const y=y0+i*(h+gap),q=it.r||0;ctx.fillStyle=RF[q]+'0.94)';ctx.strokeStyle=RC[q];ctx.lineWidth=q?2.5:1;rrect(W/2-w/2,y,w,h,10);ctx.fill();ctx.stroke();
     ctx.textAlign='left';ctx.fillStyle='#fff';fitFont(it.n,18,900,w*0.55);ctx.fillText(it.n,W/2-w/2+16,y+h/2-(it.d?9:0));
     if(it.d){fitFont(it.d,12,'bold',w-90);ctx.fillStyle='#ffe9a8';ctx.fillText(it.d,W/2-w/2+16,y+h/2+13);}
-    const tag=q===2?'進化':it.lv?(it.lv>=it.max?'MAX':'Lv'+it.lv):'';if(tag){ctx.textAlign='right';ctx.font=`900 14px ${FONT}`;ctx.fillStyle=RC[q];ctx.fillText(tag,W/2+w/2-16,y+h/2);}
+    const tag=q===2?TX('evo_tag'):it.lv?(it.lv>=it.max?'MAX':'Lv'+it.lv):'';if(tag){ctx.textAlign='right';ctx.font=`900 14px ${FONT}`;ctx.fillStyle=RC[q];ctx.fillText(tag,W/2+w/2-16,y+h/2);}
     ctx.textAlign='center';});
-  ctx.font=`13px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TOUCH?'タップで続ける':'クリック / Enter で続ける',W/2,y0+(h+gap)*n+18);
+  ctx.font=`13px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TX(TOUCH?'cont_touch':'cont_mouse'),W/2,y0+(h+gap)*n+18);
 }
 // ----- end of run -----
-function endLayout(){const bw=Math.min(170,(W-50)/2),y=Math.round(H/2+96);return{retry:{x:W/2-bw-8,y,w:bw,h:52},title:{x:W/2+8,y,w:bw,h:52}};}
-function endStats(y){const m=Math.floor(T/60),s2=Math.floor(T%60);
-  const l1='生存 '+m+':'+(s2<10?'0':'')+s2+'  /  撃破 '+kills+'  /  Lv '+P.lvl;fitFont(l1,NARROW?16:20,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
-  const l2='最大コンボ x'+bestCombo+'  /  到達 '+STAGES[P.stage]+'  /  ボス撃破 '+bossKills;fitFont(l2,NARROW?15:18,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+32);
-  if(runRes){const l3='DNA +'+runRes.dna+'（合計 '+META.dna+'）';fitFont(l3,NARROW?17:20,900,W-24);ctx.fillStyle='#8fd0ff';ctx.fillText(l3,W/2,y+68);
-    if(runRes.newU.length){const l4='新しく解放：'+runRes.newU.join('、');fitFont(l4,14,'bold',W-24);ctx.fillStyle='#ffd86a';ctx.fillText(l4,W/2,y+96);}}}
-function endButtons(){const L=endLayout();btn(L.retry,'もう一度',1);btn(L.title,'タイトルへ',0);
-  ctx.textAlign='center';ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TOUCH?'DNAはタイトルでスキンの解放に使える':'R：もう一度　T：タイトルへ（DNAでスキン解放）',W/2,L.retry.y+L.retry.h+24);}
-function overScreen(){
+function endLayout(W,H){const bw=Math.min(170,(W-50)/2),y=Math.round(H/2+96);return{retry:{x:W/2-bw-8,y,w:bw,h:52},title:{x:W/2+8,y,w:bw,h:52}};}
+function endStats(W,H,y){
+  const l1=TX('end1',fmtT(T),kills,P.lvl);fitFont(l1,NARROW?16:20,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
+  const l2=TX('end2',bestCombo,stageName(P.stage),bossKills);fitFont(l2,NARROW?15:18,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+32);
+  if(runRes){const l3=TX('end_dna',runRes.dna,META.dna);fitFont(l3,NARROW?17:20,900,W-24);ctx.fillStyle='#8fd0ff';ctx.fillText(l3,W/2,y+68);
+    if(runRes.newU.length){const l4=TX('end_new',runRes.newU.join(TX('sep')));fitFont(l4,14,'bold',W-24);ctx.fillStyle='#ffd86a';ctx.fillText(l4,W/2,y+96);}}}
+function endButtons(W,H){const L=endLayout(W,H);btn(L.retry,TX('retry'),1);btn(L.title,TX('to_title'),0);
+  ctx.textAlign='center';fitFont(TX(TOUCH?'end_touch':'end_mouse'),12,'normal',W-24);ctx.fillStyle='#7f9db8';ctx.fillText(TX(TOUCH?'end_touch':'end_mouse'),W/2,L.retry.y+L.retry.h+24);}
+function overScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.7)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.font=`900 ${Math.min(48,W/8)|0}px ${FONT}`;ctx.fillStyle='#ff6070';ctx.fillText('GAME OVER',W/2,H/2-120);
-  endStats(H/2-56);endButtons();
+  endStats(W,H,H/2-56);endButtons(W,H);
 }
-function clearScreen(){
+function clearScreen(W,H){
   ctx.fillStyle='rgba(2,10,20,0.72)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font=`900 ${Math.min(52,W/7)|0}px ${FONT}`;ctx.fillStyle='#eaffb0';ctx.fillText('クリア！',W/2,H/2-138);
-  fitFont(BOSS_T[2].name+'を倒した',16,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(BOSS_T[2].name+'を倒した',W/2,H/2-96);
-  endStats(H/2-56);endButtons();
+  ctx.font=`900 ${Math.min(52,W/7)|0}px ${FONT}`;ctx.fillStyle='#eaffb0';ctx.fillText(TX('clear'),W/2,H/2-138);
+  const sub=TX('clear_s',BOSS_T[2].name);fitFont(sub,16,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(sub,W/2,H/2-96);
+  endStats(W,H,H/2-56);endButtons(W,H);
 }
 
 // ---------- loop ----------
@@ -982,6 +1110,6 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   tail:Math.round(P.tailLen),S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,spawnToxin,dropChest,waveEvent,puff};
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];}};
 })();
 </script></body></html>
