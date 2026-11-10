@@ -2,7 +2,7 @@
 
 らせんで囲って、ダッシュで締める — Vampire Survivors 風 × slither.io のオフライン単機プロトタイプ。
 
-**遊ぶ:** https://ryuto1991.github.io/coil-snake/
+**遊ぶ:** https://ryuto794.github.io/coil-bacteria/
 
 **言語 / Language:** タイトル画面の右上で 日本語 / English を切り替え。Switch between 日本語 and English at the top right of the title screen.
 

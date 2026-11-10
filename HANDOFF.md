@@ -2,8 +2,8 @@
 
 Claude Code / 後任開発者向けの完全引き継ぎ資料。コードの関数名・変数名は現行 `index.html` に準拠。
 
-- **公開プレイ:** https://ryuto1991.github.io/coil-snake/
-- **リポジトリ:** https://github.com/Ryuto1991/coil-snake （public / GitHub Pages / `main`）
+- **公開プレイ:** https://ryuto794.github.io/coil-bacteria/
+- **リポジトリ:** https://github.com/ryuto794/coil-bacteria （public / GitHub Pages / `main`）
 - **本体:** `index.html` 単一ファイル（約 88KB、バニラ JS + Canvas、外部依存なし）
 - **仮タイトル:** コイル・バクテリア（正式名は未定）
 

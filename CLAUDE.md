@@ -71,8 +71,8 @@ git commit -m "..."
 git push origin main
 ```
 
-- リポジトリ: https://github.com/Ryuto1991/coil-snake
-- Pages: https://ryuto1991.github.io/coil-snake/
+- リポジトリ: https://github.com/ryuto794/coil-bacteria
+- Pages: https://ryuto794.github.io/coil-bacteria/
 - `main` への push で Pages が更新される。キャッシュで古い版が出ることがあるので、確認時はハードリロードする。
 
 ## 触ってはいけない／注意点
