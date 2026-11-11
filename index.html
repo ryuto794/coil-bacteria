@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v15）</title>
+<title>コイル・バクテリア（試作 v16）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -248,7 +248,7 @@ const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave')&&!Q.has('t')
 function loadMeta(){try{const m=JSON.parse(localStorage.getItem(META_KEY)||'null');if(m&&typeof m==='object')return m;}catch(e){}return null;}
 const META=Object.assign({dna:0,skins:['green'],skin:'green',unlocked:['spike'],best:{t:0,stage:0,clears:0},runs:0},loadMeta()||{});
 if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'].concat(Array.isArray(META.skins)?META.skins:[]);
-if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
+if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn','ember','frost'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
 META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick'},META.opts&&typeof META.opts==='object'?META.opts:{});
@@ -263,7 +263,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v15';
+const LANGS=['ja','en'],VER='v16';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -362,6 +362,11 @@ const STR={
  cat_atk:['攻撃','Attack'],
  cat_spk:['トゲ系','Spike line'],
  cat_elc:['電流系','Electric line'],
+ cat_fir:['炎系','Fire line'],
+ cat_ice:['氷系','Ice line'],
+ lv_line:['系統をえらぶ','Choose your line'],
+ blocked:['防いだ！','Blocked!'],
+ it_shd:['バリアを張った','Barrier up'],
  evo_base:['進化：{0}（MAXで）','Evolves: {0} (at MAX)'],
  evo_need:['進化：{0}の素材','Evolves: {0} (ingredient)'],
  rare:['レア','RARE'],
@@ -680,10 +685,11 @@ function reset(start){
      boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0,
      regen:0,captT:CAPT_TIME,xpMul:1,anti:0,ram:0,revive:0,revived:false,shatter:false,reroll:2,dropIn:35,freezeT:0,gasEver:false,killer:null,
      endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
-     horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null};
+     horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null,
+     armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -800,7 +806,7 @@ function gasTick(dt){
   for(const g of gas){g.life-=dt;g.r+=(g.R-g.r)*Math.min(1,dt*1.6);}compact(gas,g=>g.life>0);
   let inG=false;for(const g of gas){const dx=P.x-g.x,dy=P.y-g.y,rr=g.r*0.85;if(g.life>0.25&&dx*dx+dy*dy<rr*rr){inG=true;break;}}
   P.gasT=inG?P.gasT+dt:0;
-  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*(1-0.4*P.anti)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'-'+Math.max(1,Math.round(GAS_DPS[P.stage]*(1-0.4*P.anti)*0.5))+' '+TX('poison'),16,'#d8f070',0.5);}
+  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*(1-0.4*P.anti)*(1-0.1*P.armor)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'-'+Math.max(1,Math.round(GAS_DPS[P.stage]*(1-0.4*P.anti)*(1-0.1*P.armor)*0.5))+' '+TX('poison'),16,'#d8f070',0.5);}
     if(P.hp<=0)die('gas');}
 }
 // ---------- capsules (VS-style chests): bosses carry evolutions ----------
@@ -817,17 +823,18 @@ function openChest(c){c.done=true;const items=[];
 function closeChest(){if(state==='chest'&&performance.now()-chestT0>350){state='play';chestRes=null;}}
 // ---------- pickups dropped by enemies: heal, pull in all XP, freeze ----------
 let items=[];
-const ITEM_COL={heal:'#ff8fa3',mag:'#7fc9ff',ice:'#d6f4ff'},ITEMGLOW={heal:glowSprite(26,'rgba(255,120,150,0.7)'),mag:glowSprite(26,'rgba(90,170,255,0.7)'),ice:glowSprite(26,'rgba(200,240,255,0.7)')};
+const ITEM_COL={heal:'#ff8fa3',mag:'#7fc9ff',ice:'#d6f4ff',shd:'#9fe8ff'},ITEMGLOW={shd:glowSprite(26,'rgba(120,225,255,0.7)'),heal:glowSprite(26,'rgba(255,120,150,0.7)'),mag:glowSprite(26,'rgba(90,170,255,0.7)'),ice:glowSprite(26,'rgba(200,240,255,0.7)')};
 function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never from a boss, at most 3 lying around; heals are likelier when HP is low
   if(e.boss)return;
   if(P.magDue&&!items.some(it=>it.k==='mag')){P.magDue=false;items.push({x:e.x,y:e.y,k:'mag',life:22,ph:Math.random()*TAU});return;} // the timed magnet (see update)
   if(e.pr||--P.dropIn>0||items.length>=3)return;P.dropIn=Math.round((55+Math.random()*40)*(1+0.5*P.stage));
-  const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.7:0.45)?'heal':r<(low?0.88:0.8)?'mag':'ice';
+  const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.62:0.4)?'heal':r<(low?0.78:0.56)?'shd':r<(low?0.9:0.82)?'mag':'ice'; // shd (v16): one more barrier layer
   items.push({x:e.x,y:e.y,k,life:22,ph:Math.random()*TAU});}
 function itemTick(dt){for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
 function useItem(it){const S=P.S,col=ITEM_COL[it.k];burst(it.x,it.y,24,col,260,0.6,3);rings.push({x:it.x,y:it.y,r:8*S,R:90*S,life:0.4,max:0.4,col,w:4*S});sfx('item');
   if(it.k==='heal'){P.hp=Math.min(P.maxHp,P.hp+25);text(P.x,P.y-40*S,'+25 HP',22,'#ffb3c0',1);}
   else if(it.k==='mag'){for(const o of orbs)o.pull=1;text(P.x,P.y-40*S,TX('it_mag'),20,'#9fd4ff',1);}
+  else if(it.k==='shd'){P.guard=Math.min(3,P.guard+1);text(P.x,P.y-40*S,TX('it_shd'),20,col,1);}
   else{P.freezeT=4;rings.push({x:P.x,y:P.y,r:20*S,R:700*S,life:0.6,max:0.6,col,w:6*S});text(P.x,P.y-40*S,TX('it_ice'),22,col,1.2);}}
 function drawItems(){const S=P.S;
   for(const it of items){if(it.life<4&&Math.floor(it.life*6)%2)continue;const x=it.x,y=it.y+Math.sin(T*4+it.ph)*3*S,u=S;
@@ -835,6 +842,7 @@ function drawItems(){const S=P.S;
     ctx.fillStyle='rgba(3,14,34,0.9)';circ(ctx,x,y,11*u);ctx.fill();ctx.strokeStyle=ITEM_COL[it.k];ctx.lineWidth=2*u;ctx.stroke();ctx.lineWidth=2.4*u;ctx.beginPath();
     if(it.k==='heal'){ctx.moveTo(x-5*u,y);ctx.lineTo(x+5*u,y);ctx.moveTo(x,y-5*u);ctx.lineTo(x,y+5*u);}
     else if(it.k==='mag'){ctx.arc(x,y+1*u,4.5*u,0,Math.PI);ctx.moveTo(x-4.5*u,y+1*u);ctx.lineTo(x-4.5*u,y-5*u);ctx.moveTo(x+4.5*u,y+1*u);ctx.lineTo(x+4.5*u,y-5*u);}
+    else if(it.k==='shd'){ctx.moveTo(x-5*u,y-5*u);ctx.lineTo(x+5*u,y-5*u);ctx.lineTo(x+5*u,y);ctx.lineTo(x,y+6*u);ctx.lineTo(x-5*u,y);ctx.closePath();}
     else for(let i=0;i<3;i++){const a=i*Math.PI/3;ctx.moveTo(x-Math.cos(a)*6*u,y-Math.sin(a)*6*u);ctx.lineTo(x+Math.cos(a)*6*u,y+Math.sin(a)*6*u);}
     ctx.stroke();}}
 // Shells = coils needed. Big types always have them (sh in ETYPES), so they cannot be squeezed with a single lap.
@@ -874,7 +882,9 @@ function stageUp(){
   if(s>=1)mission('cell');if(s>=2&&!P.gasEver)mission('nogas');
 }
 // the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
-function hitHead(raw,by){if(P.inv>0||DEMO)return false;const S=P.S,dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)));
+function hitHead(raw,by){if(P.inv>0||DEMO)return false;const S=P.S;
+  if(P.guard>0){P.guard--;P.guardT=0;P.inv=0.75;sfx('crack');vib(20);rings.push({x:P.x,y:P.y,r:14*S,R:70*S,life:0.35,max:0.35,col:'#9fe8ff',w:5*S});text(P.x,P.y-40*S,TX('blocked'),22,'#9fe8ff',0.9);return false;} // a barrier takes the hit
+  const dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)*(1-0.1*P.armor)));
   P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);hpHitAt=performance.now();
   text(P.x,P.y-40*S,'-'+dm,30,'#ff4a5c',1.1);const who=by&&(by.name||by.n);if(who)text(P.x,P.y-16*S,who,14,'#ffc0c8',1.1); // how much, and what did it
   if(P.hp<=0)die(by);return true;}
@@ -914,6 +924,8 @@ const MISSIONS=[
  {id:'boss1',card:'ram',   n:['巨大菌を倒す','Defeat the Giant Germ']},
  {id:'spikemax',card:'needle',n:['トゲ膜を MAX にする','Take Spiked Membrane to MAX']},
  {id:'voltmax',card:'arc',  n:['帯電を MAX にする','Take Charged Tail to MAX']},
+ {id:'embermax',card:'spread',n:['発火を MAX にする','Take Ignite to MAX']},
+ {id:'frostmax',card:'rime', n:['冷気を MAX にする','Take Frost Aura to MAX']},
  {id:'c20',  dna:20, n:['1回の締めで20体倒す','Defeat 20 in one squeeze']},
  {id:'c50',  dna:40, n:['1回の締めで50体倒す','Defeat 50 in one squeeze']},
  {id:'dash', dna:30, n:['ダッシュ締めで合計300体倒す','Defeat 300 with dash squeezes in total'],prog:()=>[META.stats.dashKills,300]},
@@ -955,7 +967,7 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
   if(dx>m||dx<-m||dy>m||dy<-m)continue;const d2=dx*dx+dy*dy;if(d2<m*m){const d=Math.sqrt(d2)||0.01;o.x=b.x+dx/d*m;o.y=b.y+dy/d*m;return b;}}return null;}
 
 // ---------- combat ----------
-function hurt(e,d,xpMul,grp){if(e.sh>0){e.flash=0.06;return false;}e.hp-=d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
+function hurt(e,d,xpMul,grp){if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
 function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
   e.dead=true;burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);kills++;sfx('pop');dropTick(e);
   const v=e.pr?PREY_XP*xpMul:e.t.xp*xpMul*(e.xpB||1);
@@ -967,6 +979,9 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
   if(e.elite&&!e.boss&&(e.shMax>=2||Math.random()<0.35))dropChest(e.x,e.y,false);
   if(e.t.k==='toxin'){META.stats.toxins++;if(META.stats.toxins>=10)mission('toxin');puff(e.x,e.y,e.r*4.5,6);for(let k=0;k<3;k++){const a=Math.random()*TAU;puff(e.x+Math.cos(a)*e.r*2,e.y+Math.sin(a)*e.r*2,e.r*2.5,5);}}
   if(e.t.boom)boom(e,xpMul,grp);
+  if(e.burn>0){const S=P.S; // v16: a burning enemy that dies passes the fire on (Wildfire), and blows up (Inferno; not the small crushable ones)
+    if(P.spread){const R=(50+40*P.spread)*S;let n=0;for(const o of enemies){if(o===e||o.dead||o.burn>0||o.sh>0)continue;const dx=o.x-e.x,dy=o.y-e.y,rr=R+o.r;if(dx*dx+dy*dy<rr*rr){ignite(o,2.5);if(++n>=6)break;}}}
+    if(P.inferno&&!e.pr&&!e.t.boom)boom(e,xpMul,grp,Math.max(80,e.r*3));}
   if(e.t.split&&!e.pr)spawnQ.push([e.t.split[0],e.t.split[1],e.x,e.y,e.r]);
   if(e.boss)bossDown(e);
   if(e.hunter)hunterDown(e);
@@ -977,7 +992,7 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
 // and any Blast Germ it kills blows up in turn. It never hurts the player.
 // grp ties one chain together: {n: kills by blasts, base: kills by the squeeze that started it, live: blasts still to go off}
 let booms=[];
-function boom(e,xpMul,grp){grp=grp||{n:0,base:0,live:0};grp.live++;booms.push({x:e.x,y:e.y,r:80*e.sc,t:0.13,xpMul,grp});}
+function boom(e,xpMul,grp,R){grp=grp||{n:0,base:0,live:0};grp.live++;booms.push({x:e.x,y:e.y,r:R||80*e.sc,t:0.13,xpMul,grp});}
 function boomTick(dt){
   for(const b of booms){b.t-=dt;if(b.t>0)continue;const S=P.S,g=b.grp;b.done=true;g.live--;
     rings.push({x:b.x,y:b.y,r:b.r*0.2,R:b.r,life:0.35,max:0.35,col:'#ffd27a',w:7*S});burst(b.x,b.y,26,'#ffb020',420,0.6,4);burst(b.x,b.y,10,'#ffffff',260,0.4,3);
@@ -1034,6 +1049,7 @@ function explode(cap){
   // Needle Burst: needles fly out of the coil and go through whatever is in the way
   if(P.needle){const k=4+4*P.needle,a0=Math.random()*TAU;for(let i=0;i<k;i++){const a=a0+i/k*TAU;needles.push({x:c.x,y:c.y,dx:Math.cos(a),dy:Math.sin(a),v:900*S,life:0.45,dmg:(2+ch)*(1+P.stage),hit:new Set()});}sfx('needle');}
   grp.base=n;
+  if(P.absz){const D=Math.hypot(W,H)*0.6*S;for(const e of enemies)if(!e.dead&&Math.abs(e.x-P.x)<D&&Math.abs(e.y-P.y)<D)freeze(e,2);rings.push({x:c.x,y:c.y,r:R*0.5,R:D,life:0.6,max:0.6,col:'#d6f4ff',w:5*S});} // Absolute Zero
   rings.push({x:c.x,y:c.y,r:cap.rad*0.2,R,life:0.5,max:0.5,col:dsh?'#eafff2':'#7dffb0',w:(dsh?10:6)*S});
   if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.35,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
   burst(c.x,c.y,30+n*2,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,20+ch*10,'#4fb8ff',300,0.9,3);
@@ -1078,6 +1094,8 @@ const UPG=[
  {id:'mag',  cat:'body',max:4,n:['DNA吸引','DNA Magnet'],d:['XP吸引範囲 +45','XP pickup range +45'],f:()=>P.magnet+=45},
  {id:'memb', cat:'body',max:5,n:['細胞膜','Cell Membrane'],d:['最大HP +20\nHP全回復','Max HP +20\nFull heal'],f:()=>{P.memb++;P.maxHp+=20;P.hp=P.maxHp;}},
  {id:'regen',cat:'body',max:3,n:['自己修復','Self-Repair'],d:['HPが毎秒 +0.5\n回復する','Regenerate\n+0.5 HP per second'],f:()=>P.regen+=0.5},
+ {id:'armor',cat:'body',max:5,n:['硬い膜','Tough Membrane'],d:['受けるダメージ -10%\n（重ねて強化）','Damage taken -10%\n(stacks)'],f:()=>P.armor++},
+ {id:'guard',cat:'body',max:3,n:['バリア','Barrier'],d:['攻撃を1回防ぐ。22秒で\n張り直す（重ねて -5秒）','Blocks one hit. Comes back\nin 22s (-5s per level)'],f:()=>{P.guardLv++;P.guard=Math.max(P.guard,1);P.guardT=0;}},
  {id:'grip', cat:'atk', max:3,n:['粘液','Slime'],d:['包囲が締まるまで\n+0.5秒（巻き足しやすい）','Coils hold +0.5s\nlonger before squeezing'],f:()=>P.captT+=0.5},
  {id:'grow', cat:'body',max:5,n:['栄養吸収','Nutrient Uptake'],d:['もらえるXP +10%','XP gained +10%'],f:()=>P.xpMul+=0.1},
 ];
@@ -1093,14 +1111,23 @@ const RARE=[
  {id:'needle',r:1,cat:'spk', max:3,n:['針とばし','Needle Burst'],d:['締めたとき、囲いから\n針が8本飛ぶ（重ねて +4本）','Squeezes fire 8 needles\nout of the coil (+4 per level)'],f:()=>P.needle++},
  {id:'volt',  r:1,cat:'elc', max:3,n:['帯電','Charged Tail'],d:['尾から近くの敵へ\n電流が飛ぶ（重ねて +1本）','The tail zaps nearby\nenemies (+1 arc per level)'],f:()=>P.volt++},
  {id:'arc',   r:1,cat:'elc', max:2,n:['連鎖電流','Chain Lightning'],d:['電流が次の敵へ\n2体まで連鎖する（重ねて +2）','Electric hits jump on to\n2 more enemies (+2 per level)'],f:()=>P.arc++},
+ // Fire line (fir): what the tail touches burns, and the fire spreads. Ice line (ice): what comes near slows down, what touches the tail freezes.
+ {id:'ember', r:1,cat:'fir', max:3,n:['発火','Ignite'],d:['尾に触れた敵が燃える\n（3秒。重ねて強化）','Enemies touching the tail\ncatch fire (3s, stacks)'],f:()=>P.ember++},
+ {id:'spread',r:1,cat:'fir', max:2,n:['延焼','Wildfire'],d:['燃えている敵が倒れると\n近くへ燃え移る（重ねて広く）','When a burning enemy dies the\nfire jumps to those nearby (stacks)'],f:()=>P.spread++},
+ {id:'frost', r:1,cat:'ice', max:3,n:['冷気','Frost Aura'],d:['頭のまわりの敵が遅くなる\n（重ねて広く・強く）','Enemies near your head\nslow down (stacks)'],f:()=>P.frost++},
+ {id:'rime',  r:1,cat:'ice', max:2,n:['霜の尾','Rime Tail'],d:['尾に触れた敵が凍る\n（重ねて長く）','Enemies touching the tail\nfreeze (longer per level)'],f:()=>P.rime++},
 ];
 // Evolutions come from boss capsules. First step: base card at MAX + one other card (need).
 // Second step of a line: the first evolution (pre) + one other card. The first one in this list that is ready is the one you get.
 const EVO=[
  {id:'oni',   r:2,n:['鬼トゲ','Demon Spines'],d:['ダッシュ中、尾に触れた敵を\n倒す（殻は1枚割る）','While you dash, the tail kills\nwhat it touches (shells lose 1)'],pre:'spine',need:'needle',f:()=>P.oni=true,has:()=>P.oni},
  {id:'storm', r:2,n:['雷帝','Storm Lord'],d:['締めると、倒した数だけ\n外の敵へ雷が飛ぶ。巻くと殻 -1','Squeezes throw a bolt at one\noutside enemy per kill. Laps crack +1 shell'],pre:'zap',need:'arc',f:()=>P.storm=true,has:()=>P.storm},
+ {id:'inferno',r:2,n:['業火','Inferno'],d:['燃えている敵は\n倒れると爆発する','Burning enemies\nexplode when they die'],pre:'blaze',need:'spread',f:()=>P.inferno=true,has:()=>P.inferno},
+ {id:'absz',  r:2,n:['絶対零度','Absolute Zero'],d:['締めると画面の敵が2秒凍る。\n凍った敵へのダメージ2倍','A squeeze freezes the screen\nfor 2s. Frozen enemies take double'],pre:'glacier',need:'rime',f:()=>P.absz=true,has:()=>P.absz},
  {id:'spine', r:2,n:['剣山','Spine Coat'],d:['尾のトゲが長く鋭くなり\nダメージ2倍','Tail spikes grow long and\nsharp and deal double damage'],base:'spike',need:'horn',f:()=>P.spine=true,has:()=>P.spine},
  {id:'zap',   r:2,n:['放電','Discharge'],d:['パルスが尾の4か所\nからも出る','Pulse also fires from\n4 points on the tail'],base:'pulse',need:'volt',f:()=>P.zap=true,has:()=>P.zap},
+ {id:'blaze', r:2,n:['火走り','Fire Dash'],d:['ダッシュで通った跡が\n3秒燃える','Your dash leaves a trail\nof fire for 3s'],base:'dcd',need:'ember',f:()=>P.blaze=true,has:()=>P.blaze},
+ {id:'glacier',r:2,n:['氷結パルス','Freezing Pulse'],d:['パルスが当たった敵を\n1.5秒凍らせる','Your pulse freezes what\nit hits for 1.5s'],base:'grip',need:'frost',f:()=>P.glacier=true,has:()=>P.glacier},
  {id:'devour',r:2,n:['捕食','Devour'],d:['ダッシュ締めで倒すと\nHPが回復する','Kills by dash squeeze\nrestore HP'],base:'dlen', need:'blast',f:()=>P.devour=true,has:()=>P.devour},
  {id:'coil',  r:2,n:['大らせん','Great Helix'],d:['包囲が3重から始まり\n締めの衝撃波 +50%','Coils start at 3x,\nsqueeze shockwave +50%'],base:'tail',need:'helix',f:()=>{P.bigcoil=true;P.blast+=0.5;},has:()=>P.bigcoil},
  {id:'revive', r:2,n:['再構築','Rebuild'],d:['HPが0になったとき\n一度だけ半分で復活','Once per run, revive\nat half HP'],base:'memb',need:'regen',f:()=>P.revive=1,has:()=>P.revive>0||P.revived},
@@ -1111,22 +1138,28 @@ loc(UPG,'n','d');loc(RARE,'n','d');loc(EVO,'n','d');loc([FALLBACK],'n','d');
 function oneLine(d){return d.replace(/([ぁ-んァ-ヶ一-龠ー])\n([ぁ-んァ-ヶ一-龠ー])/g,'$1$2').replace('\n',' ');}
 const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id);
 function avail(u){return (P.lv[u.id]||0)<u.max;}
-function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');}
+function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');if(u.id==='ember'&&P.lv.ember>=u.max)mission('embermax');if(u.id==='frost'&&P.lv.frost>=u.max)mission('frostmax');}
 function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>0;}
 function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(e.base&&u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
+const LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
 function rollChoices(){
   choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
+  // v16: once, early on, the level-up is a choice of line: three of the four first cards (Spike, Electric, Fire, Ice). A reroll draws again from the four.
+  if(P.lineAsk<2&&P.lvl>=3){const st=LINE0.map(CARD).filter(c=>rare.includes(c));if(st.length>=3){P.lineAsk=1;while(choices.length<3)choices.push(st.splice(Math.random()*st.length|0,1)[0]);return;}P.lineAsk=2;}
+  // cards of a line the player already has come up three times as often, so a build keeps to its line
+  const own={};for(const c of RARE)if(LINES[c.cat]&&P.lv[c.id]>0)own[c.cat]=1;
+  const pickR=a=>{let tot=0,i=0;const w=a.map(c=>{const v=own[c.cat]?3:1;tot+=v;return v;});let r=Math.random()*tot;for(;i<a.length-1;i++){r-=w[i];if(r<=0)break;}return i;};
   while(choices.length<3&&(com.length||rare.length)){
     const pr=Math.min(0.6,0.12+0.07*P.rareMiss),src=(rare.length&&(Math.random()<pr||!com.length))?rare:com;
-    const c=src.splice(Math.random()*src.length|0,1)[0];if(c.r===1)got=true;choices.push(c);}
+    const c=src.splice(src===rare?pickR(src):Math.random()*src.length|0,1)[0];if(c.r===1)got=true;choices.push(c);}
   if(choices.length<3)choices.push(FALLBACK);
   P.rareMiss=got?0:P.rareMiss+1;
 }
 function openLevel(){rollChoices();state='level';sfx('level');if(DEMO)pick(Math.random()*choices.length|0);}
 function reroll(){if(state!=='level'||P.reroll<=0)return;P.reroll--;rollChoices();} // two per run
 // skip: take no card. There are no card slots to protect, so a plain skip would never be worth it; it heals a little instead.
-function skipCard(){if(state!=='level')return;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(1.06);text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
-function pick(i){if(!choices||!choices[i])return;sfx('ui');applyCard(choices[i]);pendingLv--;choices=null;state='play';
+function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(1.06);text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
+function pick(i){if(!choices||!choices[i])return;sfx('ui');if(P.lineAsk===1)P.lineAsk=2;applyCard(choices[i]);pendingLv--;choices=null;state='play';
   growTail(1.06); // tail grows a little every level
   text(P.x,P.y-40*P.S,'LEVEL UP!',24,'#ffe680',1);burst(P.x,P.y,30,'#ffe680',260,0.7,3);}
 function cardRects(W,H){
@@ -1160,6 +1193,8 @@ function update(dt){
   if(P.dashCdT>0)P.dashCdT-=dt;
   if(P.inv>0)P.inv-=dt;
   if(P.regen&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+P.regen*dt);
+  if(P.guardLv&&P.guard<1){P.guardT+=dt;if(P.guardT>=27-5*P.guardLv){P.guard=1;P.guardT=0;sfx('item');}} // the Barrier card puts one layer back
+  if(P.blaze&&P.dashT>0){P.fireT-=dt;if(P.fireT<=0){P.fireT=0.06;if(fires.length<60)fires.push({x:P.x,y:P.y,r:34*P.S,life:3});}} // Fire Dash: burning ground behind the dash
   if(P.freezeT>0)P.freezeT-=dt;
   if(T>150&&(P.magT-=dt)<=0){P.magT=Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s
   if(DEMO&&captures.some(c=>c.cinchT<0&&c.charge>=2))dash();
@@ -1177,7 +1212,7 @@ function update(dt){
   if(P.pulseT<=0){P.pulseT=P.pulseInt;const R=P.pulseR*S,pts=[P];rings.push({x:P.x,y:P.y,r:10*S,R,life:0.25,max:0.25,col:'#5dffa0',w:3*S,follow:1});
     if(P.zap&&P.trail.length>8){const tr=P.trail,n=tr.length;for(let k=1;k<=4;k++){const q=tr[Math.floor(n*k/5)];pts.push(q);rings.push({x:q.x,y:q.y,r:8*S,R,life:0.25,max:0.25,col:'#8fd0ff',w:3*S});}}
     for(const q of pts)for(const e of enemies){if(e.dead)continue;const dx=e.x-q.x,dy=e.y-q.y,rr=R+e.r;
-      if(dx*dx+dy*dy<rr*rr){if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
+      if(dx*dx+dy*dy<rr*rr){if(P.glacier)freeze(e,1.5);if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
   // enemies
   buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);
   const far=Math.hypot(W,H)*1.1*S,headR=10*S,crushR=(P.dashT>0?22:15)*S; // prey is crushed by the whole head, wider while dashing
@@ -1186,7 +1221,9 @@ function update(dt){
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
     if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
     if(e.slowT>0)e.slowT-=dt;
-    const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1);let ax=dx/d*s,ay=dy/d*s;
+    const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.frz>0?0:e.chill>0?(e.boss||e.hunter?0.8:0.75-0.1*P.frost):1);let ax=dx/d*s,ay=dy/d*s;
+    if(e.chill>0)e.chill-=dt;if(e.frz>0)e.frz-=dt;if(P.frost&&!e.titan&&d<(90+30*P.frost)*S+e.r)e.chill=0.4; // Frost Aura
+    if(e.burn>0){e.burn-=dt;e.bT-=dt;if(e.bT<=0){e.bT=0.5;if(QL>=1)burst(e.x,e.y,1,'#ffa040',60,0.35,2.5);if(hurt(e,(1+P.ember)*(1+P.stage)*0.6,1))continue;}}
     if(e.lead&&e.lead.dead)e.lead=null; // the bead in front is gone: this one leads now
     if(e.titan){titanMove(e,s,dt);ax=MV[0];ay=MV[1];}
     else if(e.hunter){hunterMove(e,dx,dy,d,dt,S);if(e.dead)continue;ax=MV[0];ay=MV[1];}
@@ -1200,6 +1237,7 @@ function update(dt){
     if(!e.pr&&!e.hunter&&!e.titan)for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
       for(const o of a){if(o===e||o.pr)continue;const qx=e.x-o.x,qy=e.y-o.y,m=e.r+o.r;const q2=qx*qx+qy*qy;
         if(q2<m*m&&q2>0.01){const q=Math.sqrt(q2),w=o.r/(e.r+o.r);sx+=qx/q*(m-q)*w*2;sy+=qy/q*(m-q)*w*2;}}}
+    if(e.frz>0&&!e.cap){ax=0;ay=0;} // frozen solid, whatever its way of moving
     if(e.cap){const cx=e.cap.c.x-e.x,cy=e.cap.c.y-e.y;ax+=cx*0.8;ay+=cy*0.8;}
     e.x+=(ax+e.vx)*dt+sx*0.35;e.y+=(ay+e.vy)*dt+sy*0.35;
     if(!e.hunter&&!e.lead&&!e.titan){const bb=pushOut(e,e.r*0.9);if(bb){let tx=-(e.y-bb.y),ty=e.x-bb.x;const tl=Math.hypot(tx,ty)+0.01;tx/=tl;ty/=tl;if(tx*dx+ty*dy<0){tx=-tx;ty=-ty;}e.x+=tx*s*dt*0.9;e.y+=ty*s*dt*0.9;}}
@@ -1222,7 +1260,7 @@ function update(dt){
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
   boomTick(dt);
   compact(captures,c=>!c.done);
-  shotTick(dt,S);splitTick();
+  shotTick(dt,S);splitTick();fireTick(dt);
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
   for(const o of orbs){const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
@@ -1236,16 +1274,25 @@ function update(dt){
 }
 // what the tail does to enemies it touches: Spiked Membrane hurts, Cilia slows, Spine Coat reaches further and hits harder,
 // and with Demon Spines a dashing tail kills outright (a shell loses one layer instead)
-function tailTouch(dt,S){if(!(P.spike||P.cilia))return;P.tailTick-=dt;if(P.tailTick>0)return;P.tailTick=0.1;
+function tailTouch(dt,S){if(!(P.spike||P.cilia||P.ember||P.rime))return;P.tailTick-=dt;if(P.tailTick>0)return;P.tailTick=0.1;
   const tr=P.trail,n=tr.length-6,rad=(P.spine?16:9)*S,dmg=P.spike*(1+P.stage)*0.6*(P.spine?2:1),lethal=P.oni&&P.dashT>0;
   for(let i=0;i<n;i+=4){const q=tr[i],gx=(q.x/CELL)|0,gy=(q.y/CELL)|0;
     for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
       for(const e of a){if(e.dead)continue;const dx=e.x-q.x,dy=e.y-q.y,rr=e.r+rad;if(dx*dx+dy*dy>rr*rr)continue;
         if(P.cilia)e.slowT=0.9;
+        if(P.ember)ignite(e,3);
+        if(P.rime&&!(e.frzCd>T)){freeze(e,0.8+0.6*P.rime);e.frzCd=T+4;} // Rime Tail: the same enemy cannot be frozen again for 4 s
         if(!P.spike)continue;
         if(lethal&&e.oniD!==P.dashN){ // Demon Spines: each dash takes one shell layer off, or kills what has none
           if(e.sh>0){e.oniD=P.dashN;crackShell(e,1);}else if(e.boss){if(e.spk<=T){e.spk=T+0.35;hurt(e,10*(1+P.stage),1);}}else{kill(e,1);burst(e.x,e.y,3,'#ff8a70',140,0.3,2.5);}continue;}
         if(e.spk<=T){e.spk=T+(P.spine?0.35:0.5);if(e.sh>0)continue;hurt(e,dmg,1);if(Math.random()<0.5)burst(e.x,e.y,2,'#eaffb0',90,0.25,2);}}}}}
+// ---------- v16: fire and ice ----------
+// Burning (e.burn s left): a tick of damage every 0.5 s. A shell does not burn. Frozen (e.frz): it cannot move. Chilled (e.chill): slowed.
+// Bosses, the hunter and titans do not freeze: they are chilled instead.
+function ignite(e,t){if(e.dead||e.sh>0)return;if(!(e.burn>0))e.bT=0.5;e.burn=Math.max(e.burn||0,t||3);}
+function freeze(e,t){if(e.dead)return;if(e.boss||e.hunter||e.titan){e.chill=Math.max(e.chill||0,t);return;}e.frz=Math.max(e.frz||0,t);}
+function fireTick(dt){if(!fires.length)return;for(const f of fires)f.life-=dt;compact(fires,f=>f.life>0);P.fireTk=(P.fireTk||0)-dt;if(P.fireTk>0)return;P.fireTk=0.25;
+  for(const f of fires)for(const e of enemies){if(e.dead||e.sh>0)continue;const dx=e.x-f.x,dy=e.y-f.y,rr=f.r+e.r;if(dx*dx+dy*dy<rr*rr)ignite(e,3);}}
 // ---------- stronger enemies: chargers, shooters, splitters ----------
 // special() writes the move of a charger or shooter into MV and returns true; false = move like everyone else.
 // Charger (e.cs): 0 approaches, 1 stops and aims for 0.6 s (a red line shows where), 2 dashes in that line, 3 catches its breath.
@@ -1351,7 +1398,7 @@ function hunterMove(e,dx,dy,d,dt,S){
   const sp=P.spd*S*(d>380*S?1.3:0.85)*(e.cap?0.45:1)*(P.freezeT>0?0.08:1),k=Math.min(1,dt*2.4);e.hx+=(dx/d*sp-e.hx)*k;e.hy+=(dy/d*sp-e.hy)*k;MV[0]=e.hx;MV[1]=e.hy;}
 function hunterDown(e){P.hunter=null;hitstop=Math.max(hitstop,0.15);shake=Math.max(shake,20);flashT=0.3;text(e.x,e.y,TX('boss_down',e.t.name),34,'#ffe680',1.5);sfx('bossdown');vib([60,40,90]);dropChest(e.x,e.y,false);mission('wbc');}
 // ---------- needles and lightning ----------
-let needles=[],bolts=[];
+let needles=[],bolts=[],fires=[]; // fires: patches of burning ground left by Fire Dash {x,y,r,life}
 function needleTick(dt,S){
   for(const nd of needles){nd.life-=dt;nd.x+=nd.dx*nd.v*dt;nd.y+=nd.dy*nd.v*dt;const gx=(nd.x/CELL)|0,gy=(nd.y/CELL)|0;
     for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
@@ -1431,6 +1478,10 @@ function drawTailParts(tr,hu,S){const n=tr.length;
       const x=q.x-ty/tl*o,y=q.y+tx/tl*o;i>2?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
   if((P.zap||P.storm)&&n>4&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=P.storm?'rgba(150,225,255,0.7)':'rgba(140,215,255,0.42)';ctx.lineWidth=(P.storm?3:1.8)*S; // Discharge on: a live wire down the tail
     ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=2;i<n;i+=2)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';}
+  if((P.ember||P.rime||P.frost)&&n>12){const fire=P.ember>0,ice=P.rime>0||P.frost>0,st=QL<2?14:8; // Fire line: flames lick off one side of the tail. Ice line: crystals stud the other
+    for(let i=6;i<n-4;i+=st){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,ux=tx/tl,uy=ty/tl,nx=-uy,ny=ux,w=(2.5+i/n*5)*S,g=(i/st|0)%2?1:-1;
+      if(fire){const L=(7+3*P.ember+3*Math.sin(T*16+i))*S*(P.blaze?1.4:1);ctx.fillStyle=(i/st|0)%3?'rgba(255,150,40,0.9)':'rgba(255,225,120,0.9)';ctx.beginPath();ctx.moveTo(q.x+nx*g*w*0.4-ux*3*S,q.y+ny*g*w*0.4-uy*3*S);ctx.lineTo(q.x+nx*g*(w+L)-ux*L*0.5,q.y+ny*g*(w+L)-uy*L*0.5);ctx.lineTo(q.x+nx*g*w*0.4+ux*3*S,q.y+ny*g*w*0.4+uy*3*S);ctx.fill();}
+      if(ice){const L=(4+P.rime+(P.glacier?2:0))*S,x=q.x-nx*g*(w+L*0.5),y=q.y-ny*g*(w+L*0.5);ctx.fillStyle='rgba(215,244,255,0.92)';ctx.beginPath();ctx.moveTo(x+ux*L,y+uy*L);ctx.lineTo(x+nx*L*0.55,y+ny*L*0.55);ctx.lineTo(x-ux*L,y-uy*L);ctx.lineTo(x-nx*L*0.55,y-ny*L*0.55);ctx.fill();}}}
   if(P.volt&&n>12){ctx.fillStyle='rgba(215,244,255,0.97)';for(let i=5,st=16-3*P.volt;i<n-4;i+=st){const q=tr[i];ctx.beginPath();ctx.arc(q.x,q.y,3*S,0,TAU);ctx.fill();}} // Charged Tail: bright nodes
   const zc=(P.storm?6:P.zap?3:P.volt&&Math.random()<0.5?1:0)>>(QL<2?1:0); // arcs crawling along the tail: more of them the further the Electric line has gone
   if(zc&&n>12){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(150,215,255,0.8)';ctx.lineWidth=1.6*S;
@@ -1505,6 +1556,7 @@ function render(){
     const a=T*4+o.ph,c=Math.cos(a)*5*s,si=Math.sin(a)*5*s;
     ctx.strokeStyle='#8fd0ff';ctx.lineWidth=1.5*s;ctx.beginPath();ctx.moveTo(o.x-c,o.y-si);ctx.lineTo(o.x+c,o.y+si);ctx.stroke();
     ctx.fillStyle='#d8f0ff';ctx.fillRect(o.x-c-1.5*s,o.y-si-1.5*s,3*s,3*s);ctx.fillStyle='#4aa8ff';ctx.fillRect(o.x+c-1.5*s,o.y+si-1.5*s,3*s,3*s);}
+  for(const f of fires){ctx.fillStyle=`rgba(255,${110+50*Math.sin(T*17+f.x)|0},30,${Math.min(1,f.life)*0.4})`;circ(ctx,f.x,f.y,f.r*(0.8+0.2*Math.sin(T*13+f.y)));ctx.fill();} // burning ground (drawn additively)
   ctx.globalCompositeOperation='source-over';
   for(const e of enemies){if(!e.titan)continue;const t=e.t,m=t.L*2.1;if(e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue; // titans go under everything else that lives
     const s=t.spr,w=s.width/t.res,sh=s.height/t.res,wb=Math.sin(T*2+e.ph)*0.02,h=t.L-t.w;
@@ -1531,6 +1583,9 @@ function render(){
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
     if(e.cs===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*300*S,e.y+e.cdy*300*S);ctx.stroke();ctx.setLineDash([]);} // aiming: where the dash will go
     else if(e.cs===2){ctx.strokeStyle='rgba(255,200,205,0.45)';ctx.lineWidth=e.r*1.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-e.cdx*e.r*3,e.y-e.cdy*e.r*3);ctx.stroke();} // dashing: a streak behind it
+    if(e.frz>0){ctx.fillStyle='rgba(170,225,255,0.5)';circ(ctx,e.x,e.y,e.r*1.05);ctx.fill();ctx.strokeStyle='rgba(235,250,255,0.9)';ctx.lineWidth=1.5*S;ctx.stroke();} // frozen: cased in ice
+    else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
+    if(e.burn>0){ctx.fillStyle=`rgba(255,${120+60*Math.sin(T*25+e.ph)|0},30,0.45)`;circ(ctx,e.x,e.y,e.r*(0.9+0.2*Math.sin(T*18+e.ph)));ctx.fill();} // burning
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,-Math.PI/2,-Math.PI/2+TAU*Math.max(0.04,e.inj/LATCH_T));ctx.stroke();} // clamped on: the ring closes as the next injection nears
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
@@ -1571,6 +1626,8 @@ function render(){
   if(state!=='over'&&state!=='title'){
     ctx.globalCompositeOperation='lighter';const hg=(P.dashT>0?1.7:1)*S;ctx.drawImage(HG,P.x-60*hg,P.y-60*hg,120*hg,120*hg);ctx.globalCompositeOperation='source-over';
     if(!(P.inv>0&&Math.floor(T*20)%2))drawHead(P.x,P.y,P.a,S*(P.dashT>0?1.15:1),1,hu,true);
+    if(P.frost){ctx.strokeStyle=`rgba(160,225,255,${0.2+0.08*Math.sin(T*3)})`;ctx.lineWidth=2*S;ctx.setLineDash([10*S,8*S]);ctx.lineDashOffset=-T*14*S;circ(ctx,P.x,P.y,(90+30*P.frost)*S);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // Frost Aura: how far the cold reaches
+    for(let i=0;i<P.guard;i++){ctx.strokeStyle=`rgba(159,232,255,${0.85-i*0.2})`;ctx.lineWidth=2.5*S;circ(ctx,P.x,P.y,(19+i*5)*S);ctx.stroke();} // one ring per barrier layer
   }
   // particles
   ctx.globalCompositeOperation='lighter';
@@ -1629,6 +1686,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
   if(since<220){ctx.fillStyle=`rgba(255,60,80,${0.5*(1-since/220)})`;ctx.fillRect(qx,qy,qw,hb);} // just hit: the whole bar flashes
   ctx.restore();ctx.strokeStyle=low?'rgba(255,150,160,0.8)':'rgba(140,215,255,0.55)';ctx.lineWidth=1.5;bar();ctx.stroke();
   const hs='HP  '+Math.max(0,Math.ceil(P.hp))+' / '+P.maxHp;ctx.font=`900 ${NARROW?13:12}px ${FONT}`;ctx.textAlign='left';ctx.lineJoin='round';ctx.lineWidth=3.5;ctx.strokeStyle='#03101c';ctx.strokeText(hs,qx+12,qy+hb/2+0.5);ctx.fillStyle='#ffffff';ctx.fillText(hs,qx+12,qy+hb/2+0.5);
+  for(let i=0;i<P.guard;i++){const x=qx+qw-16-i*17,y=qy+hb/2,u=hb*0.3;ctx.fillStyle='#bff0ff';ctx.strokeStyle='#03101c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-u,y-u);ctx.lineTo(x+u,y-u);ctx.lineTo(x+u,y);ctx.lineTo(x,y+u*1.2);ctx.lineTo(x-u,y);ctx.closePath();ctx.stroke();ctx.fill();} // barrier layers: small shields at the right end
   const lw=NARROW?Math.min(170,W*0.44):230;
   panel(10,12+HY,lw,58);
   ctx.fillStyle='#e8f6ff';ctx.font=`900 15px ${FONT}`;ctx.textAlign='left';ctx.fillText('Lv '+P.lvl,18,30+HY);
@@ -1814,11 +1872,11 @@ function recsBody(W,top,bot){
 }
 // ----- level up -----
 const RC=['#7dffb0','#6fb8ff','#ffd23f'],RF=['rgba(3,14,34,','rgba(6,22,60,','rgba(44,32,4,'];
-const CATC={atk:'#ff9a7a',body:'#7fd8ff',spk:'#ffd166',elc:'#c4a6ff'}; // card category colours
+const CATC={atk:'#ff9a7a',body:'#7fd8ff',spk:'#ffd166',elc:'#c4a6ff',fir:'#ff8a4a',ice:'#9fe8ff'}; // card category colours
 function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?TX('rare')+' ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
 function levelScreen(W,H,mx,my){
   ctx.fillStyle='rgba(2,8,22,0.6)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
-  const r=cardRects(W,H),hov=TOUCH?-1:cardAt(W,H,mx,my),head=TX('lvup');
+  const r=cardRects(W,H),hov=TOUCH?-1:cardAt(W,H,mx,my),head=TX(P.lineAsk===1?'lv_line':'lvup');
   ctx.fillStyle='#ffe680';fitFont(head,NARROW?26:34,900,W-24);ctx.fillText(head,W/2,r[0].y-(NARROW?34:56));
   r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),cat=u.cat?TX('cat_'+u.cat):'',catc=CATC[u.cat]||'#7fd8ff',sp=LI?'   ':'　';
     ctx.fillStyle=RF[q]+(hov===i?0.97:0.9)+')';ctx.strokeStyle=RC[q];ctx.lineWidth=q?2.5:1;rrect(c.x,c.y,c.w,c.h,10);ctx.fill();ctx.stroke();
@@ -1917,7 +1975,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
-  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_T,spawnTitan,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_T,spawnTitan,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
