@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v9）</title>
+<title>コイル・バクテリア（試作 v10）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -39,7 +39,7 @@ const TAU=Math.PI*2,rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b
 const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d;};
 
 // ---------- enemy types (world units) ----------
-const STAGE_N=[['細菌','Bacteria'],['細胞','Cell'],['細胞核','Nucleus']],STAGE_TAIL=[0,1000,1700],STAGE_S=[1,1.25,1.63],MAX_TAIL=3600,FINAL_TAIL=2500;
+const STAGE_N=[['細菌','Bacteria'],['細胞','Cell'],['細胞核','Nucleus']],STAGE_TAIL=[0,1000,1700],STAGE_S=[1,1.4,2.6],MAX_TAIL=3600,FINAL_TAIL=2500,GROW=1.4; // STAGE_S: the zoom each scale's creatures (and bubbles) are made for
 const ETYPES=[
  // stage 0: bacteria
  {k:'germ',  n:['球菌','Coccus'],st:0,r:9, hp:1, spd:80, dmg:5, xp:1, col:'#ff3b4e',core:'#ffb3bb',glow:'rgba(255,50,70,0.6)'},
@@ -52,8 +52,8 @@ const ETYPES=[
  {k:'bigcell',n:['大型細胞','Large Cell'],st:1,sh:3,r:44,hp:22,spd:70,dmg:16,xp:18,col:'#c25bff',core:'#4a137a',glow:'rgba(180,80,255,0.5)'},
  // stage 2: nuclei / giants
  {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:150,dmg:12,xp:16,col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
- {k:'amoeba',n:['アメーバ','Amoeba'],st:2,r:64,hp:32,spd:122,dmg:16,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)'},
- {k:'giant', n:['食細胞','Phagocyte'],st:2,r:88,hp:70,spd:96, dmg:22,xp:60,col:'#ff6a3d',core:'#5a1a08',glow:'rgba(255,110,60,0.45)'},
+ {k:'amoeba',n:['アメーバ','Amoeba'],st:2,sh:2,r:64,hp:32,spd:122,dmg:16,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)'},
+ {k:'giant', n:['食細胞','Phagocyte'],st:2,sh:3,r:88,hp:70,spd:96, dmg:22,xp:60,col:'#ff6a3d',core:'#5a1a08',glow:'rgba(255,110,60,0.45)'},
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
 const TOXIN_T=[
@@ -140,7 +140,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v9';
+const LANGS=['ja','en'],VER='v10';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -209,6 +209,8 @@ const STR={
  tip_charge_s:['最大6重。ダッシュは長押しで伸びる','Up to 6x. Hold to dash longer'],
  tip_shell:['殻のある敵','Shelled enemy'],
  tip_shell_s:['殻の数だけ巻いて割る','Coil once per shell to crack it'],
+ tip_prey:['小さくなった敵は潰せる','You have outgrown them'],
+ tip_prey_s:['頭で触れるだけで倒せる。群れに突っ込め','They die when your head touches them. Plough through'],
  tip_bomb:['爆発菌が来た','Blast Germs incoming'],
  tip_bomb_s:['倒すと周りを巻き込んで爆発する。1体囲めば連鎖する','They explode when they die. Catch one in a coil to start a chain'],
  chain:['連鎖 +{0}','Chain +{0}'],
@@ -315,7 +317,7 @@ const STR={
  h4:['頭が弱点','Your head is the weak point'],
  h4_b:['ダメージを受けるのは頭だけ。尾は無敵で、敵をすり抜ける。','Only your head takes damage. The tail is invincible and passes through enemies.'],
  h5:['殻・爆発・ボス','Shells, blasts and bosses'],
- h5_b:['大きい敵は殻を持ち、殻の数だけ巻かないと倒せない。爆発菌は倒すと周りを巻き込む。尾が伸びるとボスが出て、3体倒すとクリア。','Big enemies carry shells: coil once per shell. Blast Germs explode when they die and take their neighbours along. A long tail calls a boss; beat three to clear the game.'],
+ h5_b:['大きい敵は殻を持ち、殻の数だけ巻かないと倒せない。爆発菌は倒すと周りを巻き込む。尾が伸びるとボスが出る。倒すと自分が大きくなり、それまでの敵は小さくなって頭で潰せる。3体倒すとクリア。','Big enemies carry shells: coil once per shell. Blast Germs explode when they die and take their neighbours along. A long tail calls a boss. Beat it and you grow: the old enemies turn small and your head simply crushes them. Beat three bosses to clear the game.'],
  h6:['カードと進化','Cards and evolution'],
  h6_b:['レベルアップで強化を1枚選ぶ。土台のカードを MAX にして素材のカードも持つと、ボスのカプセルで進化する。トゲ系と電流系は2段階まで進化し、姿も変わる。','Pick one upgrade per level. Max out a base card and hold its ingredient card, then a boss capsule evolves it. The Spike and Electric lines evolve twice and change how you look.'],
  h7:['霧とアイテム','Fog and pickups'],
@@ -500,11 +502,16 @@ let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestC
 let calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0;}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
+// The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
+// P.tailLen stays in "base" units (gates, caps, HUD); the tail in the world is P.tailLen*P.grow long, so on screen it does not shrink when the world does.
+function zoomT(){return targetS(P.tailLen)*P.grow;}
+// Outgrown: a creature of a scale the player has left behind. It only drifts toward the player, has 1 HP and no shell, and dies when the head runs it over.
+function isPrey(e){return !e.boss&&e.t.st<P.stage&&e.t.k!=='toxin';}
 function reset(start){
   const tl=+Q.get('tail')||640;
   P={x:0,y:0,a:0,spd:195,turn:4.0,hp:100,maxHp:100,inv:0,tailLen:tl,dashCd:2.2,dashT:0,dashCdT:0,dashAge:0,ghostT:0,
      dashBase:0.55,dashHoldMax:0.85,dashStacks:0,
-     trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,S:targetS(tl),stage:stageOf(tl),
+     trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,S:targetS(tl)*Math.pow(GROW,stageOf(tl)),stage:stageOf(tl),grow:Math.pow(GROW,stageOf(tl)),stageT:0,
      pulseR:72,pulseDmg:1,pulseInt:1.1,pulseT:0.5,magnet:95,blast:1,lvl:1,xp:0,xpNeed:55,
      spike:0,cilia:false,enzyme:0,helix:false,devour:false,zap:false,pulseLv:0,blastLv:0,flag:0,memb:0,rareMiss:0,
      boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0,
@@ -542,29 +549,32 @@ function compact(a,keep){let j=0;for(let i=0;i<a.length;i++){const x=a[i];if(kee
 function text(x,y,s,size,col,life){if(texts.length>40)texts.shift();texts.push({x,y,s,size,col,life:life||1,max:life||1});}
 
 // ---------- spawning ----------
-// One stage. The small fry never leave; tougher and stranger types join as the run goes on, they do not replace anyone.
-// [type, from second, top weight, seconds to reach that weight]
-const ROSTER=[['germ',0,10,0],['virus',20,5,60],['blob',55,2.4,90],['bomb',95,1.3,90],['mito',150,2.2,90],['cell',210,1.3,120],['bigcell',330,0.7,150]];
-function pickType(){let tot=0;const w=ROSTER.map(([k,t0,top,ramp])=>{const v=T<t0?0:top*(ramp?Math.min(1,(T-t0)/ramp):1);tot+=v;return v;});
-  let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[ROSTER[i][0]];}return ET.germ;}
+// One stage, three scales. Each scale has its own creatures: [type, from second of that scale, top weight, seconds to reach it].
+// Those of the scale the player is at are the real enemies. Everything from scales already outgrown keeps coming too, as prey (isPrey).
+const TIERS=[
+ [['germ',0,10,0],['virus',20,5,60],['blob',55,2.4,90],['bomb',95,1.3,90]],
+ [['mito',0,6,0],['cell',12,2.4,50],['bigcell',50,0.9,80]],
+ [['nucleus',0,6,0],['amoeba',12,2.4,50],['giant',50,0.9,80]]];
+function pickFrom(list,t){let tot=0;const w=list.map(([k,t0,top,ramp])=>{const v=t<t0?0:top*(ramp?Math.min(1,(t-t0)/ramp):1);tot+=v;return v;});
+  let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[list[i][0]];}return ET[list[0][0]];}
+function pickType(){return pickFrom(TIERS[P.stage],T-P.stageT);}
+function pickPrey(){return pickFrom(TIERS[Math.random()*P.stage|0],1e9);} // from any outgrown scale, in full variety
 const CAP=260;
 function hpScale(){return 1+T/300+P.stage*0.3;}
-// Enemies are sized for the screen, not the world: sc = the zoom now / the zoom the type was drawn for.
-// So the swarm looks the same size however far the camera has pulled back, and a longer tail simply holds more of it.
-function mkEnemy(t,x,y){const sc=Math.max(P.S,targetS(P.tailLen))/STAGE_S[t.st],sh=t.sh||0;
-  return{x,y,vx:0,vy:0,t,sc,hp:Math.ceil(t.hp*hpScale()),r:t.r*sc,ang:0,spd:t.spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600)),
+// Creatures keep their size in the world, so they look smaller and smaller as the player grows.
+function mkEnemy(t,x,y){const pr=t.st<P.stage&&t.k!=='toxin',sh=pr?0:t.sh||0;
+  return{x,y,vx:0,vy:0,t,sc:1,pr,hp:pr?1:Math.ceil(t.hp*hpScale()),r:t.r,ang:0,spd:t.spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600)),
   flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh,shMax:sh,xpB:1+0.5*sh,slowT:0,spk:0};}
-function spawnCluster(n,at){
-  const Sx=Math.max(P.S,targetS(P.tailLen));let cx,cy,spread;
+function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, anywhere around (also dead ahead: it is there to be run over)
+  const Sx=Math.max(P.S,zoomT());let cx,cy,spread;
   if(at){cx=at.x;cy=at.y;spread=(20+Math.sqrt(n)*10)*Sx;}
   else{let a=Math.random()*TAU;
-    // keep fresh groups out of the head's path
-    if(Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
-    const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx;}
-  const cap=CAP;
-  for(let i=0;i<n&&enemies.length<cap;i++){
-    const t=pickType(),aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
-    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at)maybeShell(e);if(t.boom)tip('bomb');enemies.push(e);
+    // keep fresh groups of real enemies out of the head's path
+    if(!prey&&Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
+    const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx*(prey?1.7:1);}
+  for(let i=0;i<n&&enemies.length<CAP;i++){
+    const t=prey?pickPrey():pickType(),aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
+    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at&&!prey)maybeShell(e);if(t.boom&&!e.pr)tip('bomb');enemies.push(e);
   }
 }
 // ---------- waves (one stage, by time since the run began): [start s, minimum alive, interval s, event] ----------
@@ -574,16 +584,18 @@ const WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,30,1.1],[110,55,0.7
 function waveNow(){const L=WAVES,last=L[L.length-1][0];
   if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
   const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
+const REAL_K=[1,0.42,0.34]; // the wave table counts germ-sized enemies; bigger scales need fewer real enemies for the same pressure
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
   const{w,key,mul}=waveNow();
   if(key!==P.waveKey){P.waveKey=key;if(w[3])waveEvent(w[3]);}
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
-  let alive=0;for(const e of enemies)if(!e.boss&&!e.dead)alive++;
-  const min=Math.round(w[1]*mul*(P.boss?0.6:1));if(alive>=CAP)return;
-  const def=min-alive;
+  let real=0,prey=0;for(const e of enemies){if(e.boss||e.dead)continue;if(e.pr)prey++;else real++;}
+  if(real+prey>=CAP)return;
+  const def=Math.round(w[1]*mul*(P.boss?0.6:1)*REAL_K[P.stage])-real;
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));}
   else if(Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle
+  if(P.stage){const pd=Math.min(120,Math.round(w[1]*mul*0.9))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
 // first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
@@ -598,13 +610,13 @@ function waveEvent(k){
   else if(k==='ring'){ringEvent();evt(TX('ev_ring'),TX('ev_ring_s'));}
   else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt(TX('ev_toxin'),TX('ev_toxin_s'));}
 }
-function streamEvent(){const Sx=Math.max(P.S,targetS(P.tailLen)),n=Math.min(40,18+(T/20|0));
+function streamEvent(){const Sx=Math.max(P.S,zoomT()),n=Math.min(40,18+(T/20|0)); // germs: a threat at first, a feast once they are outgrown
   const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=Math.min(W,H)*0.5*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
   for(let i=0;i<n;i++){const lat=off+(i/(n-1)-0.5)*wid,dep=rand(0,90)*Sx;
     const e=mkEnemy(ET.germ,P.x-dx*(D+dep)+nx*lat,P.y-dy*(D+dep)+ny*lat);e.sdx=dx;e.sdy=dy;e.sT=7;e.spd*=1.25;enemies.push(e);}}
-function ringEvent(){const Sx=Math.max(P.S,targetS(P.tailLen)),n=Math.min(48,28+(T/25|0)),R=Math.hypot(W,H)/2*Sx*0.92;
-  for(let i=0;i<n;i++){const a=i/n*TAU,e=mkEnemy(i%2?ET.virus:ET.germ,P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);e.spd*=0.75;enemies.push(e);}}
-function spawnToxin(){const t=TOXIN_T[P.stage],Sx=Math.max(P.S,targetS(P.tailLen)),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,Math.PI),d=Math.hypot(W,H)/2*Sx+40*Sx;
+function ringEvent(){const st=P.stage,Sx=Math.max(P.S,zoomT()),n=st?[0,20,14][st]:Math.min(48,28+(T/25|0)),R=Math.hypot(W,H)/2*Sx*0.92,L=TIERS[st]; // always real enemies of the current scale
+  for(let i=0;i<n;i++){const a=i/n*TAU,e=mkEnemy(ET[L[st?0:i%2][0]],P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);e.spd*=0.75;enemies.push(e);}}
+function spawnToxin(){const t=TOXIN_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,Math.PI),d=Math.hypot(W,H)/2*Sx+40*Sx;
   const e=mkEnemy(t,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d);e.puffT=0.4;enemies.push(e);}
 // ---------- poison gas ----------
 function puff(x,y,R,life){if(gas.length<90)gas.push({x,y,r:R*0.45,R,life,max:life});}
@@ -655,7 +667,7 @@ function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
   if(e.sh)tip('shell');}
 function spawnBoss(){
-  const t=BOSS_T[P.stage],Sx=Math.max(P.S,targetS(P.tailLen)),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
+  const t=BOSS_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
   const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=Math.min(8,t.sh+P.bossN); // endless: each return has one more shell and more HP
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
@@ -674,13 +686,15 @@ function bossDown(e){
   else if(P.endless){P.bossN++;P.nextBoss=T+75;dropChest(e.x,e.y,true);}
   else{P.clearAt=T+1.4;calmUntil=1e9;}
 }
-// A boss is down: the player moves up a scale. The swarm is not replaced and the waves do not restart; there is only a short breather.
+// A boss is down: the player moves up a scale. The camera pulls back by GROW and the tail grows with it, so the snake looks the same
+// and the world looks smaller. Nothing is removed: the creatures of the scale just left turn into prey, and bigger ones start to arrive.
 function stageUp(){
-  const s=++P.stage;calmUntil=T+4;P.st0=P.tailLen;P.waveT=0.5;
+  const s=++P.stage;P.grow*=GROW;P.stageT=T;calmUntil=T+4;P.st0=P.tailLen;P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('scale_up'),sub:TX('scale_up_s',stageName(s))};flashT=0.35;shake=Math.max(shake,12);P.inv=Math.max(P.inv,1.6);sfx('stage');
-  for(const e of enemies){if(e.boss)continue;const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*700*P.S;e.vy+=dy/d*700*P.S;}
+  for(const e of enemies){if(e.boss)continue;if(isPrey(e)){e.pr=true;e.hp=1;e.sh=0;e.elite=false;}
+    const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*700*P.S;e.vy+=dy/d*700*P.S;}
   rings.push({x:P.x,y:P.y,r:20*P.S,R:520*P.S,life:0.8,max:0.8,col:'#eaffb0',w:8*P.S});
-  growTail(1.04);bubbleStage();
+  growTail(1.04);bubbleStage();tip('prey');
   if(s>=1)mission('cell');if(s>=2&&!P.gasEver)mission('nogas');
 }
 // by: the enemy type that landed the last hit, or 'gas'
@@ -858,7 +872,7 @@ function advanceTrail(dt){
         if(Math.abs(polyArea(poly))>1600*S*S){onLoop(poly);P.minSerial=D.s;P.loopCd=0.1;}break;}}
   }
   tr.push(B);
-  let len=0;for(let i=tr.length-1;i>0;i--){len+=Math.hypot(tr[i].x-tr[i-1].x,tr[i].y-tr[i-1].y);if(len>P.tailLen){tr.splice(0,i-1);break;}}
+  let len=0;for(let i=tr.length-1;i>0;i--){len+=Math.hypot(tr[i].x-tr[i-1].x,tr[i].y-tr[i-1].y);if(len>P.tailLen*P.grow){tr.splice(0,i-1);break;}}
 }
 
 // ---------- level up ----------
@@ -932,13 +946,13 @@ function cardAt(W,H,x,y){const r=cardRects(W,H);for(let i=0;i<3;i++){const c=r[i
 
 // ---------- spatial hash ----------
 let CELL=32;const grid=new Map();
-function buildGrid(){grid.clear();let m=16;for(const e of enemies)if(!e.boss&&e.r>m)m=e.r;CELL=Math.max(32,m*2);
+function buildGrid(){grid.clear();let m=16;for(const e of enemies){e.pr=isPrey(e);if(!e.boss&&e.r>m)m=e.r;}CELL=Math.max(32,m*2);
   for(const e of enemies){const k=((e.x/CELL)|0)*73856093^((e.y/CELL)|0)*19349663;let a=grid.get(k);if(!a)grid.set(k,a=[]);a.push(e);}}
 
 // ---------- update ----------
 function update(dt){
   T+=dt;
-  P.S+=(targetS(P.tailLen)-P.S)*Math.min(1,dt*1.5);
+  P.S+=(zoomT()-P.S)*Math.min(1,dt*1.5);
   const S=P.S;
   let desired=P.a,kx=0,ky=0;
   if(keys.has('a')||keys.has('arrowleft'))kx--;if(keys.has('d')||keys.has('arrowright'))kx++;
@@ -976,18 +990,19 @@ function update(dt){
       if(dx*dx+dy*dy<rr*rr){if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
   // enemies
   buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);
-  const far=Math.hypot(W,H)*1.1*S,headR=10*S,foodR=7*S;
+  const far=Math.hypot(W,H)*1.1*S,headR=10*S,foodR=7*S,crushR=(P.dashT>0?22:15)*S; // prey is crushed by the whole head, wider while dashing
   for(const e of enemies){
     if(e.dead)continue;
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
     if(d>far&&!e.cap){if(e.boss){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1);let ax=dx/d*s,ay=dy/d*s;
+    if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
     if(e.sT>0&&!e.cap){e.sT-=dt;ax=e.sdx*s*1.3;ay=e.sdy*s*1.3;} // stream events cross the screen first
     if(e.t.k==='toxin'){e.puffT-=dt;if(e.puffT<=0){e.puffT=0.6;puff(e.x,e.y,e.r*1.8,3.5);}}
     const gx=(e.x/CELL)|0,gy=(e.y/CELL)|0;let sx=0,sy=0;
-    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
-      for(const o of a){if(o===e)continue;const qx=e.x-o.x,qy=e.y-o.y,m=e.r+o.r;const q2=qx*qx+qy*qy;
+    if(!e.pr)for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
+      for(const o of a){if(o===e||o.pr)continue;const qx=e.x-o.x,qy=e.y-o.y,m=e.r+o.r;const q2=qx*qx+qy*qy;
         if(q2<m*m&&q2>0.01){const q=Math.sqrt(q2),w=o.r/(e.r+o.r);sx+=qx/q*(m-q)*w*2;sy+=qy/q*(m-q)*w*2;}}}
     if(e.cap){const cx=e.cap.c.x-e.x,cy=e.cap.c.y-e.y;ax+=cx*0.8;ay+=cy*0.8;}
     e.x+=(ax+e.vx)*dt+sx*0.35;e.y+=(ay+e.vy)*dt+sy*0.35;
@@ -996,8 +1011,8 @@ function update(dt){
     if(e.t.rot)e.ang+=angDiff(e.ang,Math.atan2(ay,ax))*Math.min(1,dt*5);
     if(e.flash>0)e.flash-=dt;
     if(e.boss)bossTick(e,dt);
-    if(d<e.r+headR){
-      if(e.r<foodR&&!e.sh){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // tiny = food
+    if(d<e.r+(e.pr?crushR:headR)){
+      if(e.pr||(e.r<foodR&&!e.sh)){kill(e,e.pr?0.5:1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown or tiny: run over, no harm done
       if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
       else{
         if(P.horn&&!(e.hornT>T)){e.hornT=T+0.4;if(hurt(e,3*P.horn*(1+P.stage),1))continue;e.vx-=dx/d*340*S;e.vy-=dy/d*340*S;} // Horns: whatever touches the head gets gored
@@ -1191,12 +1206,12 @@ function render(){
   const foodR=7*S;
   const eGlow=QL>=3||(QL===2&&enemies.length<90);
   for(const e of enemies){if(e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
-    if(eGlow||e.boss){ctx.globalAlpha=e.r<foodR?0.35:1;const gr=t.gR*e.sc;ctx.drawImage(t.gspr,e.x-gr,e.y-gr,gr*2,gr*2);}
+    if((eGlow&&!e.pr)||e.boss){ctx.globalAlpha=e.r<foodR?0.35:1;const gr=t.gR*e.sc;ctx.drawImage(t.gspr,e.x-gr,e.y-gr,gr*2,gr*2);}
     if(e.cap)ctx.drawImage(CAPGLOW,e.x-e.r*2.4,e.y-e.r*2.4,e.r*4.8,e.r*4.8);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const e of enemies){if(e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
     const s=e.flash>0?t.fspr:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),w=s.width*e.sc*(1+wb),h=s.height*e.sc*(1-wb);
-    ctx.globalAlpha=e.r<foodR?0.55:1;
+    ctx.globalAlpha=e.pr?0.72:e.r<foodR?0.55:1;
     if(t.rot){ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();}
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
@@ -1559,7 +1574,7 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
-  tail:Math.round(P.tailLen),S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
+  tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,calm:Math.max(0,calmUntil-T)};},
   get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];},
@@ -1567,7 +1582,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
-  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return ROSTER;},waveNow,
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
