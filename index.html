@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v8）</title>
+<title>コイル・バクテリア（試作 v9）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -121,11 +121,11 @@ const GLOWC=new Map();
 function headGlow(h){h=(Math.round(h/15)*15)%360;let g=GLOWC.get(h);if(!g){g=glowSprite(60,`hsla(${h},100%,62%,0.55)`);GLOWC.set(h,g);}return g;}
 
 // ---------- saved progress (DNA, skins, unlocked cards) ----------
-const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave')&&!Q.has('t');
+const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave')&&!Q.has('t')&&!Q.has('give');
 function loadMeta(){try{const m=JSON.parse(localStorage.getItem(META_KEY)||'null');if(m&&typeof m==='object')return m;}catch(e){}return null;}
 const META=Object.assign({dna:0,skins:['green'],skin:'green',unlocked:['spike'],best:{t:0,stage:0,clears:0},runs:0},loadMeta()||{});
 if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'].concat(Array.isArray(META.skins)?META.skins:[]);
-if(!Array.isArray(META.unlocked))META.unlocked=[];if(!META.unlocked.includes('spike'))META.unlocked.push('spike');
+if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
 META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1},META.opts&&typeof META.opts==='object'?META.opts:{});
@@ -140,7 +140,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v8';
+const LANGS=['ja','en'],VER='v9';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -215,6 +215,8 @@ const STR={
  // cards
  cat_body:['体質','Body'],
  cat_atk:['攻撃','Attack'],
+ cat_spk:['トゲ系','Spike line'],
+ cat_elc:['電流系','Electric line'],
  evo_base:['進化：{0}（MAXで）','Evolves: {0} (at MAX)'],
  evo_need:['進化：{0}の素材','Evolves: {0} (ingredient)'],
  rare:['レア','RARE'],
@@ -315,7 +317,7 @@ const STR={
  h5:['殻・爆発・ボス','Shells, blasts and bosses'],
  h5_b:['大きい敵は殻を持ち、殻の数だけ巻かないと倒せない。爆発菌は倒すと周りを巻き込む。尾が伸びるとボスが出て、3体倒すとクリア。','Big enemies carry shells: coil once per shell. Blast Germs explode when they die and take their neighbours along. A long tail calls a boss; beat three to clear the game.'],
  h6:['カードと進化','Cards and evolution'],
- h6_b:['レベルアップで強化を1枚選ぶ。土台のカードを MAX にして素材のカードも持つと、ボスのカプセルで進化する。','Pick one upgrade per level. Max out a base card and hold its ingredient card, then a boss capsule evolves it.'],
+ h6_b:['レベルアップで強化を1枚選ぶ。土台のカードを MAX にして素材のカードも持つと、ボスのカプセルで進化する。トゲ系と電流系は2段階まで進化し、姿も変わる。','Pick one upgrade per level. Max out a base card and hold its ingredient card, then a boss capsule evolves it. The Spike and Electric lines evolve twice and change how you look.'],
  h7:['霧とアイテム','Fog and pickups'],
  h7_b:['毒素菌の霧に頭を入れるとダメージ。敵がときどき落とすアイテムは、回復・XP の吸い寄せ・敵を止める、の3種類。','Poison fog hurts your head. Enemies sometimes drop pickups: heal, pull in all XP, or freeze enemies.'],
  h8:['DNA とミッション','DNA and missions'],
@@ -344,7 +346,7 @@ const GASSPR=(()=>{const R=64,c=mk(R*2,R*2),g=c.getContext('2d'),gr=g.createRadi
 
 // ---------- sound: small synthesized effects, no audio files ----------
 // A browser only lets audio start after a click, a key press or the end of a touch (audioUnlock). Until then sfx() does nothing.
-let AC=null,master=null,noiseBuf=null;const sfxAt={},SFX_GAP={pop:45,xp:55,loop:60,crack:60,ui:40,boom:70};
+let AC=null,master=null,noiseBuf=null;const sfxAt={},SFX_GAP={pop:45,xp:55,loop:60,crack:60,ui:40,boom:70,zap:110,needle:80};
 function audioUnlock(){
   if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
     try{AC=new C();master=AC.createGain();master.gain.value=META.opts.vol*0.6;master.connect(AC.destination);
@@ -378,6 +380,8 @@ const SFX={
  over:()=>[392,330,262,196].forEach((f,i)=>tone(f,f*0.97,0.22,0.25,'triangle',i*0.16)),
  clear:()=>arp([523,659,784,1047,1319],0.2,0.25,0.11),
  ui:()=>tone(660,880,0.05,0.12,'triangle'),
+ zap:()=>{noise(0.09,0.22,3000,6500,3);tone(1500,320,0.08,0.1,'sawtooth');},
+ needle:()=>{tone(2300,900,0.07,0.1,'square');noise(0.06,0.12,6000,3000,2);},
 };
 function sfx(name,a){if(!AC||AC.state!=='running'||META.opts.vol<=0)return;const now=performance.now(),gap=SFX_GAP[name];if(gap&&now-(sfxAt[name]||0)<gap)return;sfxAt[name]=now;SFX[name](a);}
 function setVol(v){META.opts.vol=v;if(master)master.gain.value=v*0.6;saveMeta();}
@@ -505,10 +509,11 @@ function reset(start){
      spike:0,cilia:false,enzyme:0,helix:false,devour:false,zap:false,pulseLv:0,blastLv:0,flag:0,memb:0,rareMiss:0,
      boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0,
      regen:0,captT:CAPT_TIME,xpMul:1,anti:0,ram:0,revive:0,revived:false,shatter:false,reroll:2,dropIn:35,freezeT:0,gasEver:false,killer:null,
-     endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0};
+     endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
+     horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -516,6 +521,8 @@ function reset(start){
   if(start&&Q.has('toxin'))for(let i=0;i<2;i++)spawnToxin();
   if(start&&Q.has('boss'))spawnBoss();
   if(start&&Q.has('shell'))for(let i=0;i<5;i++){spawnCluster(1);const e=enemies[enemies.length-1];if(e){e.sh=e.shMax=2;e.xpB=4;}}
+  // ?give=spike,spike,horn,spine : start with these cards / evolutions (for looking at a build; never saves)
+  if(start&&Q.has('give'))for(const id of Q.get('give').split(',')){const c=CARD(id),ev=EVO.find(e=>e.id===id);if(c){if(avail(c))applyCard(c);}else if(ev&&!ev.has())ev.f();}
 }
 
 // ---------- helpers ----------
@@ -624,7 +631,9 @@ function closeChest(){if(state==='chest'&&performance.now()-chestT0>350){state='
 let items=[];
 const ITEM_COL={heal:'#ff8fa3',mag:'#7fc9ff',ice:'#d6f4ff'},ITEMGLOW={heal:glowSprite(26,'rgba(255,120,150,0.7)'),mag:glowSprite(26,'rgba(90,170,255,0.7)'),ice:glowSprite(26,'rgba(200,240,255,0.7)')};
 function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never from a boss, at most 3 lying around; heals are likelier when HP is low
-  if(e.boss||--P.dropIn>0||items.length>=3)return;P.dropIn=55+(Math.random()*40|0);
+  if(e.boss)return;
+  if(P.magDue&&!items.some(it=>it.k==='mag')){P.magDue=false;items.push({x:e.x,y:e.y,k:'mag',life:22,ph:Math.random()*TAU});return;} // the timed magnet (see update)
+  if(--P.dropIn>0||items.length>=3)return;P.dropIn=55+(Math.random()*40|0);
   const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.7:0.45)?'heal':r<(low?0.88:0.8)?'mag':'ice';
   items.push({x:e.x,y:e.y,k,life:22,ph:Math.random()*TAU});}
 function itemTick(dt){for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
@@ -705,6 +714,8 @@ const MISSIONS=[
  {id:'cell', card:'cilia', n:['細胞のスケールに着く','Reach Cell scale']},
  {id:'toxin',card:'anti',  n:['毒素菌を合計10体倒す','Defeat 10 toxin germs in total'],prog:()=>[META.stats.toxins,10]},
  {id:'boss1',card:'ram',   n:['巨大菌を倒す','Defeat the Giant Germ']},
+ {id:'spikemax',card:'needle',n:['トゲ膜を MAX にする','Take Spiked Membrane to MAX']},
+ {id:'voltmax',card:'arc',  n:['帯電を MAX にする','Take Charged Tail to MAX']},
  {id:'c20',  dna:20, n:['1回の締めで20体倒す','Defeat 20 in one squeeze']},
  {id:'c50',  dna:40, n:['1回の締めで50体倒す','Defeat 50 in one squeeze']},
  {id:'dash', dna:30, n:['ダッシュ締めで合計300体倒す','Defeat 300 with dash squeezes in total'],prog:()=>[META.stats.dashKills,300]},
@@ -782,7 +793,7 @@ function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastC
 function addXP(v){P.xp+=v*P.xpMul;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
 function dash(){
   if(state!=='play'||P.dashCdT>0)return;
-  P.dashT=P.dashBase;P.dashAge=0;P.dashCdT=P.dashCd;P.ghostT=0;sfx('dash');
+  P.dashT=P.dashBase;P.dashAge=0;P.dashCdT=P.dashCd;P.ghostT=0;P.dashN++;sfx('dash');
   burst(P.x,P.y,22,'#9dffc4',240,0.4,3);
   rings.push({x:P.x,y:P.y,r:6*P.S,R:60*P.S,life:0.3,max:0.3,col:'#d8ffe6',w:4*P.S});
   let any=false;for(const c of captures)if(c.cinchT<0){c.cinchT=0;c.dash=true;any=true;}
@@ -797,7 +808,7 @@ function onLoop(poly){
   else{const c0=P.bigcoil?3:P.helix?2:1;cap={poly,c,rad,charge:c0,timer:P.captT,cinchT:-1,dash:false,pop:1};captures.push(cap);crack=c0;
     text(c.x,c.y-rad,c0>1?TX('enclose_n',c0):TX('enclose'),22,'#b6ffd2',0.7);tip('dash');}
   P.loops++;sfx('loop',cap.charge);if(cap.charge>=6)mission('coil6');
-  crack+=P.enzyme;
+  crack+=P.enzyme+(P.storm?1:0);if(P.storm)bolt(P.x,P.y,c.x,c.y);
   const b=bbox(poly);
   for(const e of enemies){if(e.dead||e.x<b.x0||e.x>b.x1||e.y<b.y0||e.y>b.y1)continue;if(inPoly(e.x,e.y,poly)){e.cap=cap;if(e.sh>0)crackShell(e,crack);}}
   for(let i=0;i<poly.length;i+=3)burst(poly[i].x,poly[i].y,1,'#7dffb0',40,0.5,2.5);
@@ -813,6 +824,11 @@ function explode(cap){
   const R=(55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6,dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage);
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
     if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul,grp))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
+  // Storm Lord: one bolt per enemy killed inside (20 at most), to the nearest enemies outside
+  if(P.storm&&n>0){const cand=[],lim=(R+260*S)*(R+260*S);for(const e of enemies){if(e.dead||e.sh>0)continue;const dx=e.x-c.x,dy=e.y-c.y,d2=dx*dx+dy*dy;if(d2<lim)cand.push([d2,e]);}
+    cand.sort((a,b)=>a[0]-b[0]);for(let i=0,z=Math.min(n,20,cand.length);i<z;i++){const e=cand[i][1];if(!e.dead)n+=shock(e,5*(1+P.stage)*ch,c.x,c.y,grp,xpMul);}}
+  // Needle Burst: needles fly out of the coil and go through whatever is in the way
+  if(P.needle){const k=4+4*P.needle,a0=Math.random()*TAU;for(let i=0;i<k;i++){const a=a0+i/k*TAU;needles.push({x:c.x,y:c.y,dx:Math.cos(a),dy:Math.sin(a),v:900*S,life:0.45,dmg:(2+ch)*(1+P.stage),hit:new Set()});}sfx('needle');}
   grp.base=n;
   rings.push({x:c.x,y:c.y,r:cap.rad*0.2,R,life:0.5,max:0.5,col:dsh?'#eafff2':'#7dffb0',w:(dsh?10:6)*S});
   if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.35,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
@@ -862,17 +878,26 @@ const UPG=[
  {id:'grow', cat:'body',max:5,n:['栄養吸収','Nutrient Uptake'],d:['もらえるXP +10%','XP gained +10%'],f:()=>P.xpMul+=0.1},
 ];
 const RARE=[
- {id:'spike', r:1,cat:'atk', max:3,n:['トゲ膜','Spiked Membrane'],d:['尾に触れた敵に\nダメージ（重ねて強化）','Enemies touching the\ntail take damage (stacks)'],f:()=>P.spike++},
+ {id:'spike', r:1,cat:'spk', max:3,n:['トゲ膜','Spiked Membrane'],d:['尾に触れた敵に\nダメージ（重ねて強化）','Enemies touching the\ntail take damage (stacks)'],f:()=>P.spike++},
  {id:'cilia', r:1,cat:'body',max:1,n:['繊毛','Cilia'],d:['尾に触れた敵の\n動きが半分になる','Enemies touching the\ntail move at half speed'],f:()=>P.cilia=true},
  {id:'enzyme',r:1,cat:'atk', max:2,n:['酵素','Enzyme'],d:['1回巻くごとに\n割れる殻 +1','Each coil cracks\n+1 shell'],f:()=>P.enzyme++},
  {id:'helix', r:1,cat:'atk', max:1,n:['二重らせん','Double Helix'],d:['包囲が2重から\n始まる','Coils start\nat 2x'],f:()=>P.helix=true},
  {id:'anti',  r:1,cat:'body',max:2,n:['抗毒素','Antitoxin'],d:['毒の霧のダメージ\n-40%（重ねて強化）','Poison fog damage\n-40% (stacks)'],f:()=>P.anti++},
  {id:'ram',   r:1,cat:'atk', max:3,n:['突進','Ram'],d:['ダッシュで触れた敵への\nダメージ +100%（重ねて強化）','Dash contact damage\n+100% (stacks)'],f:()=>P.ram++},
+ // Spike line (spk) and Electric line (elc): each has cards, a first evolution and a second one that builds on the first
+ {id:'horn',  r:1,cat:'spk', max:2,n:['ツノ','Horns'],d:['頭に触れた敵にダメージ。\n受けるダメージ -15%（重ねて強化）','Enemies that touch your head\nget hurt. Damage taken -15% (stacks)'],f:()=>P.horn++},
+ {id:'needle',r:1,cat:'spk', max:3,n:['針とばし','Needle Burst'],d:['締めたとき、囲いから\n針が8本飛ぶ（重ねて +4本）','Squeezes fire 8 needles\nout of the coil (+4 per level)'],f:()=>P.needle++},
+ {id:'volt',  r:1,cat:'elc', max:3,n:['帯電','Charged Tail'],d:['尾から近くの敵へ\n電流が飛ぶ（重ねて +1本）','The tail zaps nearby\nenemies (+1 arc per level)'],f:()=>P.volt++},
+ {id:'arc',   r:1,cat:'elc', max:2,n:['連鎖電流','Chain Lightning'],d:['電流が次の敵へ\n2体まで連鎖する（重ねて +2）','Electric hits jump on to\n2 more enemies (+2 per level)'],f:()=>P.arc++},
 ];
-// evolutions: base card at MAX + one other card, then open a boss capsule
+// Evolutions come from boss capsules. First step: base card at MAX + one other card (need).
+// Second step of a line: the first evolution (pre) + one other card. The first one in this list that is ready is the one you get.
 const EVO=[
+ {id:'oni',   r:2,n:['鬼トゲ','Demon Spines'],d:['ダッシュ中、尾に触れた敵を\n倒す（殻は1枚割る）','While you dash, the tail kills\nwhat it touches (shells lose 1)'],pre:'spine',need:'needle',f:()=>P.oni=true,has:()=>P.oni},
+ {id:'storm', r:2,n:['雷帝','Storm Lord'],d:['締めると、倒した数だけ\n外の敵へ雷が飛ぶ。巻くと殻 -1','Squeezes throw a bolt at one\noutside enemy per kill. Laps crack +1 shell'],pre:'zap',need:'arc',f:()=>P.storm=true,has:()=>P.storm},
+ {id:'spine', r:2,n:['剣山','Spine Coat'],d:['尾のトゲが長く鋭くなり\nダメージ2倍','Tail spikes grow long and\nsharp and deal double damage'],base:'spike',need:'horn',f:()=>P.spine=true,has:()=>P.spine},
+ {id:'zap',   r:2,n:['放電','Discharge'],d:['パルスが尾の4か所\nからも出る','Pulse also fires from\n4 points on the tail'],base:'pulse',need:'volt',f:()=>P.zap=true,has:()=>P.zap},
  {id:'devour',r:2,n:['捕食','Devour'],d:['ダッシュ締めで倒すと\nHPが回復する','Kills by dash squeeze\nrestore HP'],base:'dlen', need:'blast',f:()=>P.devour=true,has:()=>P.devour},
- {id:'zap',   r:2,n:['放電','Discharge'],d:['パルスが尾の4か所\nからも出る','Pulse also fires from\n4 points on the tail'],base:'pulse',need:'spike',f:()=>P.zap=true,has:()=>P.zap},
  {id:'coil',  r:2,n:['大らせん','Great Helix'],d:['包囲が3重から始まり\n締めの衝撃波 +50%','Coils start at 3x,\nsqueeze shockwave +50%'],base:'tail',need:'helix',f:()=>{P.bigcoil=true;P.blast+=0.5;},has:()=>P.bigcoil},
  {id:'revive', r:2,n:['再構築','Rebuild'],d:['HPが0になったとき\n一度だけ半分で復活','Once per run, revive\nat half HP'],base:'memb',need:'regen',f:()=>P.revive=1,has:()=>P.revive>0||P.revived},
  {id:'shatter',r:2,n:['破砕','Shatter'],d:['締めの衝撃波が\n殻を1枚割る','Squeeze shockwaves\ncrack 1 shell'],base:'blast',need:'enzyme',f:()=>P.shatter=true,has:()=>P.shatter},
@@ -882,9 +907,9 @@ loc(UPG,'n','d');loc(RARE,'n','d');loc(EVO,'n','d');loc([FALLBACK],'n','d');
 function oneLine(d){return d.replace(/([ぁ-んァ-ヶ一-龠ー])\n([ぁ-んァ-ヶ一-龠ー])/g,'$1$2').replace('\n',' ');}
 const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id);
 function avail(u){return (P.lv[u.id]||0)<u.max;}
-function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;}
-function evoCan(e){return (P.lv[e.base]||0)>=CARD(e.base).max&&(P.lv[e.need]||0)>0;}
-function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
+function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');}
+function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>0;}
+function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(e.base&&u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
 function rollChoices(){
   choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
   while(choices.length<3&&(com.length||rare.length)){
@@ -932,6 +957,7 @@ function update(dt){
   if(P.inv>0)P.inv-=dt;
   if(P.regen&&P.hp<P.maxHp)P.hp=Math.min(P.maxHp,P.hp+P.regen*dt);
   if(P.freezeT>0)P.freezeT-=dt;
+  if(T>150&&(P.magT-=dt)<=0){P.magT=Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s
   if(DEMO&&captures.some(c=>c.cinchT<0&&c.charge>=2))dash();
   advanceTrail(dt);
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
@@ -949,7 +975,7 @@ function update(dt){
     for(const q of pts)for(const e of enemies){if(e.dead)continue;const dx=e.x-q.x,dy=e.y-q.y,rr=R+e.r;
       if(dx*dx+dy*dy<rr*rr){if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
   // enemies
-  buildGrid();tailTouch(dt,S);
+  buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);
   const far=Math.hypot(W,H)*1.1*S,headR=10*S,foodR=7*S;
   for(const e of enemies){
     if(e.dead)continue;
@@ -973,9 +999,11 @@ function update(dt){
     if(d<e.r+headR){
       if(e.r<foodR&&!e.sh){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // tiny = food
       if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
-      else if(P.inv<=0&&!DEMO){P.hp-=e.t.dmg;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);
-        text(P.x,P.y-30*S,'-'+e.t.dmg,18,'#ff7080',0.6);e.vx-=dx/d*260*S;e.vy-=dy/d*260*S;
-        if(P.hp<=0)die(e.t);}
+      else{
+        if(P.horn&&!(e.hornT>T)){e.hornT=T+0.4;if(hurt(e,3*P.horn*(1+P.stage),1))continue;e.vx-=dx/d*340*S;e.vy-=dy/d*340*S;} // Horns: whatever touches the head gets gored
+        if(P.inv<=0&&!DEMO){const dm=Math.max(1,Math.round(e.t.dmg*(1-0.15*P.horn)));P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);
+          text(P.x,P.y-30*S,'-'+dm,18,'#ff7080',0.6);e.vx-=dx/d*260*S;e.vy-=dy/d*260*S;
+          if(P.hp<=0)die(e.t);}}
     }
   }
   for(const c of captures){c.pop=Math.max(0,c.pop-dt*3);
@@ -994,19 +1022,44 @@ function update(dt){
   if(pendingLv>0&&state==='play'&&!P.clearAt)openLevel();
   if(DEMO&&P.hp<P.maxHp)P.hp+=dt*5;
 }
+// what the tail does to enemies it touches: Spiked Membrane hurts, Cilia slows, Spine Coat reaches further and hits harder,
+// and with Demon Spines a dashing tail kills outright (a shell loses one layer instead)
 function tailTouch(dt,S){if(!(P.spike||P.cilia))return;P.tailTick-=dt;if(P.tailTick>0)return;P.tailTick=0.1;
-  const tr=P.trail,n=tr.length-6,rad=9*S,dmg=P.spike*(1+P.stage)*0.6;
+  const tr=P.trail,n=tr.length-6,rad=(P.spine?16:9)*S,dmg=P.spike*(1+P.stage)*0.6*(P.spine?2:1),lethal=P.oni&&P.dashT>0;
   for(let i=0;i<n;i+=4){const q=tr[i],gx=(q.x/CELL)|0,gy=(q.y/CELL)|0;
     for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
       for(const e of a){if(e.dead)continue;const dx=e.x-q.x,dy=e.y-q.y,rr=e.r+rad;if(dx*dx+dy*dy>rr*rr)continue;
         if(P.cilia)e.slowT=0.9;
-        if(P.spike&&e.spk<=T){e.spk=T+0.5;if(e.sh>0)continue;hurt(e,dmg,1);if(Math.random()<0.5)burst(e.x,e.y,2,'#eaffb0',90,0.25,2);}}}}}
+        if(!P.spike)continue;
+        if(lethal&&e.oniD!==P.dashN){ // Demon Spines: each dash takes one shell layer off, or kills what has none
+          if(e.sh>0){e.oniD=P.dashN;crackShell(e,1);}else if(e.boss){if(e.spk<=T){e.spk=T+0.35;hurt(e,10*(1+P.stage),1);}}else{kill(e,1);burst(e.x,e.y,3,'#ff8a70',140,0.3,2.5);}continue;}
+        if(e.spk<=T){e.spk=T+(P.spine?0.35:0.5);if(e.sh>0)continue;hurt(e,dmg,1);if(Math.random()<0.5)burst(e.x,e.y,2,'#eaffb0',90,0.25,2);}}}}}
+// ---------- needles and lightning ----------
+let needles=[],bolts=[];
+function needleTick(dt,S){
+  for(const nd of needles){nd.life-=dt;nd.x+=nd.dx*nd.v*dt;nd.y+=nd.dy*nd.v*dt;const gx=(nd.x/CELL)|0,gy=(nd.y/CELL)|0;
+    for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
+      for(const e of a){if(e.dead||nd.hit.has(e))continue;const dx=e.x-nd.x,dy=e.y-nd.y,rr=e.r+5*S;if(dx*dx+dy*dy>rr*rr)continue;nd.hit.add(e);if(!e.sh)hurt(e,nd.dmg,1);}}}
+  compact(needles,nd=>nd.life>0);}
+// a jagged line that lives for a moment (drawing only)
+function bolt(x0,y0,x1,y1){if(bolts.length>=40)return;const S=P.S,pts=[{x:x0,y:y0}];for(let j=1;j<4;j++){const f=j/4;pts.push({x:x0+(x1-x0)*f+rand(-9,9)*S,y:y0+(y1-y0)*f+rand(-9,9)*S});}pts.push({x:x1,y:y1});bolts.push({pts,life:0.14});}
+// one electric hit; with Chain Lightning it jumps on to the nearest enemies, weaker each time. Shells stop it. Returns how many it killed.
+function shock(e,dmg,sx,sy,grp,xpMul){let x=sx,y=sy,t=e,k=0,killed=0;const hit=[],R2=(120*P.S)*(120*P.S);
+  while(t){bolt(x,y,t.x,t.y);hit.push(t);x=t.x;y=t.y;if(hurt(t,dmg,xpMul||1,grp))killed++;dmg*=0.7;if(++k>2*P.arc)break;
+    let best=null,bd=R2;for(const o of enemies){if(o.dead||o.sh>0||hit.includes(o))continue;const dx=o.x-x,dy=o.y-y,d2=dx*dx+dy*dy;if(d2<bd){bd=d2;best=o;}}t=best;}
+  sfx('zap');return killed;}
+// Charged Tail: every 0.8 s each arc picks a point on the tail and hits the nearest enemy within reach of it
+function voltTick(dt){if(!P.volt)return;P.voltT-=dt;if(P.voltT>0)return;P.voltT=0.8;const tr=P.trail,n=tr.length,S=P.S,R2=(150*S)*(150*S);if(n<8)return;
+  for(let a=0;a<P.volt;a++)for(let tries=0;tries<3;tries++){const q=tr[Math.random()*n|0];let best=null,bd=R2;
+    for(const e of enemies){if(e.dead||e.sh>0)continue;const dx=e.x-q.x,dy=e.y-q.y,d2=dx*dx+dy*dy;if(d2<bd){bd=d2;best=e;}}
+    if(best){shock(best,2*(1+P.stage)*(P.zap?1.5:1),q.x,q.y);break;}}}
 function updateFx(dt){
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(0.08,dt);p.vy*=Math.pow(0.08,dt);p.life-=dt;}
   compact(parts,p=>p.life>0);
   for(const t of texts){t.life-=dt;t.y-=24*P.S*dt;}compact(texts,t=>t.life>0);
   for(const r of rings){r.life-=dt;if(r.follow){r.x=P.x;r.y=P.y;}}compact(rings,r=>r.life>0);
   for(const g of ghosts)g.life-=dt;compact(ghosts,g=>g.life>0);
+  for(const b of bolts)b.life-=dt;compact(bolts,b=>b.life>0);
   if(banner){banner.t-=dt;if(banner.t<=0)banner=null;}
   for(let i=0;i<toasts.length&&i<2;i++)toasts[i].life-=dt;toasts=toasts.filter(t=>t.life>0); // two on screen at a time, the rest wait
   if(evtMsg){evtMsg.t-=dt;if(evtMsg.t<=0)evtMsg=null;}
@@ -1015,33 +1068,57 @@ function updateFx(dt){
 
 // ---------- render ----------
 const motes=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),z:rand(0.2,0.7),r:rand(1,3)}));
+// The head shows what has been taken. Spike line: rim spikes, Horns, armour and longer spikes with Spine Coat, red eyes with Demon Spines.
+// Electric line: jagged sparking feelers, glowing eyes with Storm Lord. An evolution in either line adds the scowl.
 function drawHead(x,y,a,s,alpha,hue,full){
   if(hue===undefined)hue=142;
+  const f=full,dashing=f&&P.dashT>0,elc=f&&(P.volt||P.zap||P.storm),fierce=f&&(P.spine||P.oni||P.zap||P.storm);
   ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.scale(s,s);ctx.globalAlpha=alpha;
-  if(full&&P.memb){const m=Math.min(P.memb,5);ctx.strokeStyle=`hsla(${hue},100%,78%,0.35)`;ctx.lineWidth=1.2+m*0.8;ctx.beginPath();ctx.ellipse(0,0,15+2.5*m,11+2.5*m,0,0,TAU);ctx.stroke();}
-  if(full&&P.spike){const n=8+P.spike*3,L=1.25+0.18*P.spike;ctx.fillStyle=`hsl(${hue},55%,80%)`;
-    for(let k=0;k<n;k++){const t=k/n*TAU,w=0.2;ctx.beginPath();ctx.moveTo(Math.cos(t-w)*14,Math.sin(t-w)*10);ctx.lineTo(Math.cos(t)*15*L,Math.sin(t)*11*L);ctx.lineTo(Math.cos(t+w)*14,Math.sin(t+w)*10);ctx.fill();}}
+  if(f&&P.memb){const m=Math.min(P.memb,5);ctx.strokeStyle=`hsla(${hue},100%,78%,0.35)`;ctx.lineWidth=1.2+m*0.8;ctx.beginPath();ctx.ellipse(0,0,15+2.5*m,11+2.5*m,0,0,TAU);ctx.stroke();}
+  if(f&&P.spike){const n=8+P.spike*3+(P.spine?4:0),L=1.25+0.18*P.spike+(P.spine?0.4:0)+(P.oni?0.2:0),w=P.spine?0.14:0.2;
+    ctx.fillStyle=P.oni&&dashing?'#ff6a55':P.spine?`hsl(${hue},30%,92%)`:`hsl(${hue},55%,80%)`;
+    for(let k=0;k<n;k++){const t=k/n*TAU;ctx.beginPath();ctx.moveTo(Math.cos(t-w)*14,Math.sin(t-w)*10);ctx.lineTo(Math.cos(t)*15*L,Math.sin(t)*11*L);ctx.lineTo(Math.cos(t+w)*14,Math.sin(t+w)*10);ctx.fill();}}
+  if(f&&(P.zap||P.storm)){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(110,205,255,${0.3+0.3*Math.random()})`;ctx.lineWidth=P.storm?3.2:2;ctx.beginPath();ctx.ellipse(0,0,20,16,0,0,TAU);ctx.stroke(); // a flickering halo
+    if(P.storm){ctx.strokeStyle='rgba(200,240,255,0.9)';ctx.lineWidth=1.3;for(let z=0;z<3;z++){const t=Math.random()*TAU;ctx.beginPath();ctx.moveTo(Math.cos(t)*17,Math.sin(t)*13);ctx.lineTo(Math.cos(t+0.25)*23,Math.sin(t+0.25)*18);ctx.lineTo(Math.cos(t-0.1)*30,Math.sin(t-0.1)*24);ctx.stroke();}}
+    ctx.globalCompositeOperation='source-over';}
   ctx.fillStyle=`hsl(${hue},68%,50%)`;ctx.beginPath();ctx.ellipse(0,0,15,11,0,0,TAU);ctx.fill();
   ctx.fillStyle=`hsl(${hue},100%,81%)`;ctx.beginPath();ctx.ellipse(-3,-3,8,5,0,0,TAU);ctx.fill();
-  if(full&&P.devour){ctx.fillStyle='#f2fff7';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(11,k*4);ctx.quadraticCurveTo(23,k*(10+2*Math.sin(T*12)),27,k*1.5);ctx.quadraticCurveTo(19,k*5.5,11,k*4);ctx.fill();}}
-  if(alpha>=1){ctx.strokeStyle=`hsla(${hue},100%,80%,0.7)`;ctx.lineWidth=1.5;for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(10,k*6);
-    ctx.quadraticCurveTo(18,k*(10+3*Math.sin(T*25)),24,k*(6+4*Math.sin(T*25+1)));ctx.stroke();}
+  if(f&&P.spine){ctx.strokeStyle='rgba(6,20,26,0.4)';ctx.lineWidth=2.2;for(const px of[-7,-1]){ctx.beginPath();ctx.moveTo(px,-9.5);ctx.quadraticCurveTo(px+4,0,px,9.5);ctx.stroke();}} // armour plates
+  if(f&&P.devour){ctx.fillStyle='#f2fff7';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(11,k*4);ctx.quadraticCurveTo(23,k*(10+2*Math.sin(T*12)),27,k*1.5);ctx.quadraticCurveTo(19,k*5.5,11,k*4);ctx.fill();}}
+  if(f&&P.horn){const hl=9+4*P.horn+(P.oni?7:0);ctx.fillStyle=P.oni?'#ffd9cf':'#f3eedd';ctx.strokeStyle='rgba(50,18,8,0.7)';ctx.lineWidth=0.9;
+    for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(5,k*8.5);ctx.quadraticCurveTo(10+hl*0.45,k*(15+hl*0.4),15+hl,k*(8.5+hl*0.12));ctx.quadraticCurveTo(11+hl*0.4,k*(9.5+hl*0.12),11,k*5.5);ctx.closePath();ctx.fill();ctx.stroke();
+      if(elc){ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(15+hl,k*(8.5+hl*0.12),1+Math.random()*1.2,0,TAU);ctx.fill();ctx.fillStyle=P.oni?'#ffd9cf':'#f3eedd';}}}
+  if(alpha>=1){
+    if(!(f&&P.horn)){const zz=f&&(P.zap||P.storm),L=zz?(P.storm?1.4:1.2):1; // feelers: jagged and sparking with Charged Tail, thick bolts from Discharge on
+      ctx.strokeStyle=elc?'rgba(185,236,255,0.98)':`hsla(${hue},100%,80%,0.7)`;ctx.lineWidth=zz?2.8:1.5;ctx.lineJoin='round';
+      for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(10,k*6);
+        if(elc){ctx.lineTo(15*L,k*(11+rand(-1.2,1.2))*L);ctx.lineTo(18*L,k*(6+rand(-1.2,1.2))*L);ctx.lineTo(26*L,k*10*L);}
+        else ctx.quadraticCurveTo(18,k*(10+3*Math.sin(T*25)),24,k*(6+4*Math.sin(T*25+1)));
+        ctx.stroke();if(elc){ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(26*L,k*10*L,(zz?1.8:1)+Math.random()*1.4,0,TAU);ctx.fill();}}}
+    if(f&&P.storm){ctx.fillStyle='rgba(60,200,255,0.5)';for(const k of[-1,1]){ctx.beginPath();ctx.arc(7,k*5,5.4,0,TAU);ctx.fill();}} // glowing eyes
     ctx.fillStyle='#fff';for(const k of[-1,1]){ctx.beginPath();ctx.arc(7,k*5,3.6,0,TAU);ctx.fill();}
-    ctx.fillStyle='#032';for(const k of[-1,1]){ctx.beginPath();ctx.arc(8.4,k*5,1.8,0,TAU);ctx.fill();}}
+    ctx.fillStyle=f&&P.oni?'#ff2d20':f&&P.storm?'#22c4ff':'#032';for(const k of[-1,1]){ctx.beginPath();ctx.arc(8.4,k*5,fierce?2.1:1.8,0,TAU);ctx.fill();}
+    if(fierce){ctx.strokeStyle='#03141c';ctx.lineWidth=1.9;ctx.lineCap='round';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(3.2,k*8.8);ctx.lineTo(10.9,k*3.3);ctx.stroke();}} // the scowl
+  }
   ctx.restore();ctx.globalAlpha=1;
 }
 function drawTailParts(tr,hu,S){const n=tr.length;
   if(P.spike||P.cilia){
     for(let i=3;i<n-4;i+=3){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,ux=tx/tl,uy=ty/tl,nx=-uy,ny=ux,w=(2.5+i/n*5)*S;
-      if(P.spike&&i%6===0){const L=(5+2*P.spike)*S;ctx.fillStyle=`hsla(${hu},60%,84%,0.9)`;
-        for(const g of[-1,1]){ctx.beginPath();ctx.moveTo(q.x+nx*g*w*0.6+ux*2.5*S,q.y+ny*g*w*0.6+uy*2.5*S);ctx.lineTo(q.x+nx*g*(w+L),q.y+ny*g*(w+L));ctx.lineTo(q.x+nx*g*w*0.6-ux*2.5*S,q.y+ny*g*w*0.6-uy*2.5*S);ctx.fill();}}
+      if(P.spike&&i%(QL<2?12:6)===0){const L=(5+2*P.spike)*S*(P.spine?1.8:1),bk=P.spine?L*0.55:0; // Spine Coat: long barbs swept back; Demon Spines: red while dashing
+        ctx.fillStyle=P.oni&&P.dashT>0?'rgba(255,96,80,0.95)':P.spine?`hsla(${hu},30%,92%,0.95)`:`hsla(${hu},60%,84%,0.9)`;
+        for(const g of[-1,1]){ctx.beginPath();ctx.moveTo(q.x+nx*g*w*0.6+ux*2.5*S,q.y+ny*g*w*0.6+uy*2.5*S);ctx.lineTo(q.x+nx*g*(w+L)-ux*bk,q.y+ny*g*(w+L)-uy*bk);ctx.lineTo(q.x+nx*g*w*0.6-ux*2.5*S,q.y+ny*g*w*0.6-uy*2.5*S);ctx.fill();}}
       if(P.cilia){const L=(4+2*Math.sin(T*18+i))*S;ctx.strokeStyle=`hsla(${hu},90%,86%,0.55)`;ctx.lineWidth=S;ctx.beginPath();
         for(const g of[-1,1]){ctx.moveTo(q.x+nx*g*w,q.y+ny*g*w);ctx.lineTo(q.x+nx*g*(w+L)-ux*2*S,q.y+ny*g*(w+L)-uy*2*S);}ctx.stroke();}}}
   if(P.bigcoil&&n>8){ctx.strokeStyle=`hsla(${(hu+50)%360},100%,80%,0.75)`;ctx.lineWidth=1.6*S;ctx.beginPath();
     for(let i=2;i<n-2;i+=2){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,w=(2.5+i/n*5)*S*1.6,o=Math.sin(i*0.55+T*6)*w;
       const x=q.x-ty/tl*o,y=q.y+tx/tl*o;i>2?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
-  if(P.zap&&n>12){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(150,215,255,0.8)';ctx.lineWidth=1.6*S;
-    for(let z=0;z<2;z++){const i=4+(Math.random()*(n-10)|0),a=tr[i],b=tr[i+5];ctx.beginPath();ctx.moveTo(a.x,a.y);
+  if((P.zap||P.storm)&&n>4&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=P.storm?'rgba(150,225,255,0.7)':'rgba(140,215,255,0.42)';ctx.lineWidth=(P.storm?3:1.8)*S; // Discharge on: a live wire down the tail
+    ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=2;i<n;i+=2)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';}
+  if(P.volt&&n>12){ctx.fillStyle='rgba(215,244,255,0.97)';for(let i=5,st=16-3*P.volt;i<n-4;i+=st){const q=tr[i];ctx.beginPath();ctx.arc(q.x,q.y,3*S,0,TAU);ctx.fill();}} // Charged Tail: bright nodes
+  const zc=(P.storm?6:P.zap?3:P.volt&&Math.random()<0.5?1:0)>>(QL<2?1:0); // arcs crawling along the tail: more of them the further the Electric line has gone
+  if(zc&&n>12){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(150,215,255,0.8)';ctx.lineWidth=1.6*S;
+    for(let z=0;z<zc;z++){const i=4+(Math.random()*(n-10)|0),a=tr[i],b=tr[i+5];ctx.beginPath();ctx.moveTo(a.x,a.y);
       for(let j=1;j<4;j++){const f=j/4;ctx.lineTo(a.x+(b.x-a.x)*f+rand(-7,7)*S,a.y+(b.y-a.y)*f+rand(-7,7)*S);}ctx.lineTo(b.x,b.y);ctx.stroke();}
     ctx.globalCompositeOperation='source-over';}
   if(P.flag&&n>3){const q=tr[0],p=tr[2],dx=q.x-p.x,dy=q.y-p.y,dl=Math.hypot(dx,dy)+0.01,ux=dx/dl,uy=dy/dl,m=Math.min(4,P.flag);
@@ -1144,6 +1221,12 @@ function render(){
   for(const r of rings){const f=1-r.life/r.max,rad=r.r+(r.R-r.r)*(1-Math.pow(1-f,3));
     ctx.globalAlpha=Math.max(0,r.life/r.max);ctx.strokeStyle=r.col;ctx.lineWidth=r.w*(1-f*0.6);ctx.beginPath();ctx.arc(r.x,r.y,rad,0,TAU);ctx.stroke();}
   ctx.globalAlpha=1;
+  // needles and lightning
+  if(needles.length){ctx.strokeStyle='#fff3d6';ctx.lineWidth=2.2*S;ctx.lineCap='round';ctx.beginPath();for(const nd of needles){ctx.moveTo(nd.x,nd.y);ctx.lineTo(nd.x-nd.dx*18*S,nd.y-nd.dy*18*S);}ctx.stroke();}
+  if(bolts.length){ctx.globalCompositeOperation='lighter';ctx.lineJoin='round';
+    for(const b of bolts){ctx.globalAlpha=Math.min(1,b.life/0.08);ctx.beginPath();b.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      ctx.strokeStyle='rgba(120,200,255,0.9)';ctx.lineWidth=3.4*S;ctx.stroke();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.2*S;ctx.stroke();}
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
   // dash afterimages
   ctx.globalCompositeOperation='lighter';
   const HG=headGlow(hu);
@@ -1381,12 +1464,13 @@ function recsBody(W,top,bot){
 }
 // ----- level up -----
 const RC=['#7dffb0','#6fb8ff','#ffd23f'],RF=['rgba(3,14,34,','rgba(6,22,60,','rgba(44,32,4,'];
+const CATC={atk:'#ff9a7a',body:'#7fd8ff',spk:'#ffd166',elc:'#c4a6ff'}; // card category colours
 function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?TX('rare')+' ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
 function levelScreen(W,H,mx,my){
   ctx.fillStyle='rgba(2,8,22,0.6)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   const r=cardRects(W,H),hov=TOUCH?-1:cardAt(W,H,mx,my),head=TX('lvup');
   ctx.fillStyle='#ffe680';fitFont(head,NARROW?26:34,900,W-24);ctx.fillText(head,W/2,r[0].y-(NARROW?34:56));
-  r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),cat=u.cat?TX('cat_'+u.cat):'',catc=u.cat==='atk'?'#ff9a7a':'#7fd8ff',sp=LI?'   ':'　';
+  r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),cat=u.cat?TX('cat_'+u.cat):'',catc=CATC[u.cat]||'#7fd8ff',sp=LI?'   ':'　';
     ctx.fillStyle=RF[q]+(hov===i?0.97:0.9)+')';ctx.strokeStyle=RC[q];ctx.lineWidth=q?2.5:1;rrect(c.x,c.y,c.w,c.h,10);ctx.fill();ctx.stroke();
     if(hov===i){ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.strokeRect(c.x+3,c.y+3,c.w-6,c.h-6);}
     let chipW=0;if(chip){ctx.font=`900 12px ${FONT}`;const tw=ctx.measureText(chip).width+14;chipW=tw+8;ctx.fillStyle=RC[q];ctx.fillRect(c.x+c.w-tw-8,c.y+8,tw,20);ctx.fillStyle='#04102a';ctx.textAlign='center';ctx.fillText(chip,c.x+c.w-tw/2-8,c.y+18);}
@@ -1483,6 +1567,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
-  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return ROSTER;},waveNow};
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return ROSTER;},waveNow,
+  shock,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
