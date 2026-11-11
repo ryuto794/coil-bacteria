@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v10）</title>
+<title>コイル・バクテリア（試作 v11）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -46,14 +46,18 @@ const ETYPES=[
  {k:'virus', n:['ウイルス','Virus'],st:0,r:11,hp:3, spd:64, dmg:6, xp:2, col:'#a944ff',core:'#e6c2ff',glow:'rgba(160,60,255,0.6)'},
  {k:'blob',  n:['ブドウ球菌','Staph Cluster'],st:0,r:18,hp:10,spd:44, dmg:14,xp:6, col:'#ff2f95',core:'#ffc4e2',glow:'rgba(255,50,150,0.55)'},
  {k:'bomb',  n:['爆発菌','Blast Germ'],st:0,r:13,hp:5, spd:56, dmg:6, xp:5, col:'#ffb020',core:'#fff3c0',glow:'rgba(255,170,40,0.65)',boom:1}, // explodes when it dies (see boom())
- // stage 1: cells / organelles
- {k:'mito',  n:['ミトコンドリア','Mitochondrion'],st:1,r:23,hp:4, spd:104,dmg:9, xp:5, col:'#ff8a3d',core:'#ffd8b0',glow:'rgba(255,130,50,0.55)',rot:1},
- {k:'cell',  n:['細胞','Cell'],st:1,sh:2,r:29,hp:8, spd:90, dmg:11,xp:8, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
- {k:'bigcell',n:['大型細胞','Large Cell'],st:1,sh:3,r:44,hp:22,spd:70,dmg:16,xp:18,col:'#c25bff',core:'#4a137a',glow:'rgba(180,80,255,0.5)'},
+ // stage 1: cells / organelles. charge: winds up and dashes at the head. shoot: keeps its distance and fires. split: [type, how many] it breaks into when killed
+ {k:'mito',  n:['ミトコンドリア','Mitochondrion'],st:1,r:23,hp:4, spd:124,dmg:10,xp:5, col:'#ff8a3d',core:'#ffd8b0',glow:'rgba(255,130,50,0.55)',rot:1},
+ {k:'cell',  n:['細胞','Cell'],st:1,sh:2,r:29,hp:8, spd:98, dmg:13,xp:8, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
+ {k:'neutro',n:['好中球','Neutrophil'],st:1,sh:1,r:26,hp:12,spd:112,dmg:14,xp:14,col:'#dfe9ff',core:'#6b4bb8',glow:'rgba(200,215,255,0.5)',charge:1},
+ {k:'divider',n:['分裂細胞','Dividing Cell'],st:1,sh:1,r:32,hp:16,spd:84,dmg:13,xp:12,col:'#5fe0c0',core:'#0c5a4a',glow:'rgba(80,220,190,0.5)',split:['mito',3]},
+ {k:'bcell', n:['B細胞','B Cell'],st:1,sh:1,r:30,hp:14,spd:70, dmg:10,xp:16,col:'#ffcf5a',core:'#7a5200',glow:'rgba(255,200,80,0.5)',shoot:1},
+ {k:'bigcell',n:['大型細胞','Large Cell'],st:1,sh:3,r:44,hp:22,spd:78,dmg:18,xp:18,col:'#c25bff',core:'#4a137a',glow:'rgba(180,80,255,0.5)'},
  // stage 2: nuclei / giants
- {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:150,dmg:12,xp:16,col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
- {k:'amoeba',n:['アメーバ','Amoeba'],st:2,sh:2,r:64,hp:32,spd:122,dmg:16,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)'},
- {k:'giant', n:['食細胞','Phagocyte'],st:2,sh:3,r:88,hp:70,spd:96, dmg:22,xp:60,col:'#ff6a3d',core:'#5a1a08',glow:'rgba(255,110,60,0.45)'},
+ {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:176,dmg:15,xp:16,col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
+ {k:'tcell', look:'neutro',n:['キラーT細胞','Killer T Cell'],st:2,sh:2,r:56,hp:30,spd:170,dmg:22,xp:40,col:'#ffd0d6',core:'#a01838',glow:'rgba(255,170,180,0.5)',charge:1},
+ {k:'amoeba',n:['アメーバ','Amoeba'],st:2,sh:2,r:64,hp:32,spd:140,dmg:19,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)',split:['nucleus',2]},
+ {k:'giant', n:['食細胞','Phagocyte'],st:2,sh:3,r:88,hp:70,spd:108,dmg:25,xp:60,col:'#ff6a3d',core:'#5a1a08',glow:'rgba(255,110,60,0.45)',shoot:1},
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
 const TOXIN_T=[
@@ -75,7 +79,7 @@ function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,TAU);}
 function drawBody(g,t,fl){
   const r=t.r,col=fl?'#ffffff':t.col,core=fl?'#ffffff':t.core;
-  switch(t.k){
+  switch(t.look||t.k){
   case 'germ':g.fillStyle=col;circ(g,0,0,r);g.fill();g.fillStyle=core;g.globalAlpha=.8;circ(g,-r*.25,-r*.25,r*.38);g.fill();
     g.globalAlpha=.5;g.fillStyle='#000';circ(g,r*.2,r*.15,r*.18);g.fill();break;
   case 'virus':g.strokeStyle=col;g.lineWidth=2;g.fillStyle=core;
@@ -107,6 +111,14 @@ function drawBody(g,t,fl){
     g.fillStyle=col;circ(g,0,0,r);g.fill();
     g.strokeStyle=fl?'#fff':'#7a2a00';g.lineWidth=Math.max(1.5,r*.14);for(let i=0;i<3;i++){const a=i*2.1+.5;g.beginPath();g.arc(0,0,r*.64,a,a+1.1);g.stroke();}
     g.fillStyle=core;circ(g,0,0,r*.34);g.fill();break;
+  case 'neutro':g.fillStyle=fl?'#fff':'#ff5a6a';for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a-.2)*r*.92,Math.sin(a-.2)*r*.92);g.lineTo(Math.cos(a)*r*1.24,Math.sin(a)*r*1.24);g.lineTo(Math.cos(a+.2)*r*.92,Math.sin(a+.2)*r*.92);g.fill();}
+    g.fillStyle=col;g.globalAlpha=.85;circ(g,0,0,r);g.fill();g.globalAlpha=1;g.strokeStyle=fl?'#fff':col;g.lineWidth=2;circ(g,0,0,r-1);g.stroke();
+    g.fillStyle=core;for(let i=0;i<3;i++){const a=i*2.094+.5;circ(g,Math.cos(a)*r*.32,Math.sin(a)*r*.32,r*.3);g.fill();}break; // a three-lobed nucleus
+  case 'bcell':g.fillStyle=col;g.globalAlpha=.7;circ(g,0,0,r);g.fill();g.globalAlpha=1;g.strokeStyle=col;g.lineWidth=3;circ(g,0,0,r-1.5);g.stroke();
+    g.strokeStyle=fl?'#fff':'#fff1a8';g.lineWidth=2;for(let i=0;i<8;i++){const a=i/8*TAU,x1=Math.cos(a)*(r+5),y1=Math.sin(a)*(r+5);g.beginPath();g.moveTo(Math.cos(a)*r,Math.sin(a)*r);g.lineTo(x1,y1);g.lineTo(x1+Math.cos(a+.7)*4,y1+Math.sin(a+.7)*4);g.moveTo(x1,y1);g.lineTo(x1+Math.cos(a-.7)*4,y1+Math.sin(a-.7)*4);g.stroke();} // antibodies on its surface
+    g.fillStyle=core;circ(g,0,0,r*.5);g.fill();break;
+  case 'divider':g.fillStyle=col;g.globalAlpha=.75;circ(g,-r*.42,0,r*.68);g.fill();circ(g,r*.42,0,r*.68);g.fill();g.globalAlpha=1;g.strokeStyle=col;g.lineWidth=2.5;circ(g,-r*.42,0,r*.68);g.stroke();circ(g,r*.42,0,r*.68);g.stroke();
+    g.fillStyle=core;circ(g,-r*.45,0,r*.26);g.fill();circ(g,r*.45,0,r*.26);g.fill();break; // pinching in two
   case 'toxin':g.fillStyle=col;g.globalAlpha=.85;circ(g,0,0,r);g.fill();g.globalAlpha=1;
     g.strokeStyle=fl?'#fff':'#eaff9a';g.lineWidth=Math.max(1.5,r*.08);g.setLineDash([r*.25,r*.18]);circ(g,0,0,r*.9);g.stroke();g.setLineDash([]);
     g.fillStyle=core;for(let i=0;i<5;i++){const a=i*1.3+.4,d=r*.45;circ(g,Math.cos(a)*d,Math.sin(a)*d,r*.13);g.fill();}
@@ -114,7 +126,7 @@ function drawBody(g,t,fl){
   }
   g.globalAlpha=1;
 }
-function bodySprite(t,fl){const ext=t.k==='mito'?t.r*1.2:t.k==='toxin'||t.k==='bomb'?t.r*1.35:t.r,S=(ext+8)*2,s=mk(S,S),g=s.getContext('2d');g.translate(S/2,S/2);drawBody(g,t,fl);return s;}
+function bodySprite(t,fl){const k=t.look||t.k,ext=k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:t.r,S=(ext+8)*2,s=mk(S,S),g=s.getContext('2d');g.translate(S/2,S/2);drawBody(g,t,fl);return s;}
 for(const t of [...ETYPES,...BOSS_T,...TOXIN_T]){t.spr=bodySprite(t,0);t.fspr=bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;}
 const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
 const GLOWC=new Map();
@@ -140,7 +152,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v10';
+const LANGS=['ja','en'],VER='v11';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -206,13 +218,20 @@ const STR={
  tip_dash_st:['短くタップ、または右下の DASH。囲いの中を一掃','Quick tap or the DASH button. Wipes out everything inside'],
  tip_dash_sm:['クリックかスペース。囲いの中を一掃','Click or Space. Wipes out everything inside'],
  tip_charge:['何周も巻くとチャージUP','More laps, bigger charge'],
- tip_charge_s:['最大6重。ダッシュは長押しで伸びる','Up to 6x. Hold to dash longer'],
+ tip_charge_s:['最大10重。ダッシュは長押しで伸びる','Up to 10x. Hold to dash longer'],
  tip_shell:['殻のある敵','Shelled enemy'],
  tip_shell_s:['殻の数だけ巻いて割る','Coil once per shell to crack it'],
  tip_prey:['小さくなった敵は潰せる','You have outgrown them'],
  tip_prey_s:['頭で触れるだけで倒せる。群れに突っ込め','They die when your head touches them. Plough through'],
  tip_bomb:['爆発菌が来た','Blast Germs incoming'],
  tip_bomb_s:['倒すと周りを巻き込んで爆発する。1体囲めば連鎖する','They explode when they die. Catch one in a coil to start a chain'],
+ tip_rush:['突進してくる敵','Charging enemy'],
+ tip_rush_s:['赤い線が出たら、線の外へ逃げる','When the red line appears, get out of its way'],
+ tip_shot:['撃ってくる敵','Shooting enemy'],
+ tip_shot_s:['弾は尾で防げる。締めても消える','Your tail stops the shots. A squeeze clears them too'],
+ tip_split:['分裂する敵','Splitting enemy'],
+ tip_split_s:['倒すと小さい敵に分かれる。もう一度巻け','It breaks into smaller ones. Coil them again'],
+ split:['分裂！','Split!'],
  chain:['連鎖 +{0}','Chain +{0}'],
  // cards
  cat_body:['体質','Body'],
@@ -313,7 +332,7 @@ const STR={
  h2:['囲んで締める','Coil and squeeze'],
  h2_b:['尾で敵を囲むと「包囲」になる。ダッシュで締めると中の敵を一掃して、XP が2倍。放っておいても少しすると締まる。','Loop your tail around enemies to encircle them. Dash to squeeze: everything inside is wiped out for double XP. Left alone, the coil squeezes by itself after a moment.'],
  h3:['巻きチャージ','Coil charge'],
- h3_b:['同じ場所を何周も巻くとチャージが上がる（最大6重）。衝撃波が大きくなり、XP も増える。','Lap the same spot again to raise the charge (up to 6x). The shockwave grows and so does the XP.'],
+ h3_b:['同じ場所を何周も巻くとチャージが上がる（最大10重）。衝撃波が大きくなり、XP も増える。','Lap the same spot again to raise the charge (up to 10x). The shockwave grows and so does the XP.'],
  h4:['頭が弱点','Your head is the weak point'],
  h4_b:['ダメージを受けるのは頭だけ。尾は無敵で、敵をすり抜ける。','Only your head takes damage. The tail is invincible and passes through enemies.'],
  h5:['殻・爆発・ボス','Shells, blasts and bosses'],
@@ -520,7 +539,7 @@ function reset(start){
      horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -553,8 +572,8 @@ function text(x,y,s,size,col,life){if(texts.length>40)texts.shift();texts.push({
 // Those of the scale the player is at are the real enemies. Everything from scales already outgrown keeps coming too, as prey (isPrey).
 const TIERS=[
  [['germ',0,10,0],['virus',20,5,60],['blob',55,2.4,90],['bomb',95,1.3,90]],
- [['mito',0,6,0],['cell',12,2.4,50],['bigcell',50,0.9,80]],
- [['nucleus',0,6,0],['amoeba',12,2.4,50],['giant',50,0.9,80]]];
+ [['mito',0,6,0],['cell',12,2.4,50],['neutro',20,2.0,50],['divider',35,1.4,50],['bcell',50,1.1,60],['bigcell',60,0.9,80]],
+ [['nucleus',0,6,0],['amoeba',12,2.4,50],['tcell',20,2.0,50],['giant',45,1.0,70]]];
 function pickFrom(list,t){let tot=0;const w=list.map(([k,t0,top,ramp])=>{const v=t<t0?0:top*(ramp?Math.min(1,(t-t0)/ramp):1);tot+=v;return v;});
   let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[list[i][0]];}return ET[list[0][0]];}
 function pickType(){return pickFrom(TIERS[P.stage],T-P.stageT);}
@@ -574,7 +593,7 @@ function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, 
     const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx*(prey?1.7:1);}
   for(let i=0;i<n&&enemies.length<CAP;i++){
     const t=prey?pickPrey():pickType(),aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
-    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at&&!prey)maybeShell(e);if(t.boom&&!e.pr)tip('bomb');enemies.push(e);
+    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at&&!prey)maybeShell(e);if(!e.pr){if(t.boom)tip('bomb');else if(t.charge)tip('rush');else if(t.shoot)tip('shot');else if(t.split)tip('split');}enemies.push(e);
   }
 }
 // ---------- waves (one stage, by time since the run began): [start s, minimum alive, interval s, event] ----------
@@ -584,7 +603,7 @@ const WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,30,1.1],[110,55,0.7
 function waveNow(){const L=WAVES,last=L[L.length-1][0];
   if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
   const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
-const REAL_K=[1,0.42,0.34]; // the wave table counts germ-sized enemies; bigger scales need fewer real enemies for the same pressure
+const REAL_K=[1,0.7,0.55]; // the wave table counts germ-sized enemies; bigger scales need fewer real enemies for the same pressure
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
   const{w,key,mul}=waveNow();
@@ -595,7 +614,7 @@ function waveTick(dt){
   const def=Math.round(w[1]*mul*(P.boss?0.6:1)*REAL_K[P.stage])-real;
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));}
   else if(Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle
-  if(P.stage){const pd=Math.min(120,Math.round(w[1]*mul*0.9))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
+  if(P.stage){const pd=Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
 // first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
@@ -645,7 +664,7 @@ const ITEM_COL={heal:'#ff8fa3',mag:'#7fc9ff',ice:'#d6f4ff'},ITEMGLOW={heal:glowS
 function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never from a boss, at most 3 lying around; heals are likelier when HP is low
   if(e.boss)return;
   if(P.magDue&&!items.some(it=>it.k==='mag')){P.magDue=false;items.push({x:e.x,y:e.y,k:'mag',life:22,ph:Math.random()*TAU});return;} // the timed magnet (see update)
-  if(--P.dropIn>0||items.length>=3)return;P.dropIn=55+(Math.random()*40|0);
+  if(e.pr||--P.dropIn>0||items.length>=3)return;P.dropIn=Math.round((55+Math.random()*40)*(1+0.5*P.stage));
   const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.7:0.45)?'heal':r<(low?0.88:0.8)?'mag':'ice';
   items.push({x:e.x,y:e.y,k,life:22,ph:Math.random()*TAU});}
 function itemTick(dt){for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
@@ -697,6 +716,10 @@ function stageUp(){
   growTail(1.04);bubbleStage();tip('prey');
   if(s>=1)mission('cell');if(s>=2&&!P.gasEver)mission('nogas');
 }
+// the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
+function hitHead(raw,by){if(P.inv>0||DEMO)return false;const S=P.S,dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)));
+  P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);text(P.x,P.y-30*S,'-'+dm,18,'#ff7080',0.6);
+  if(P.hp<=0)die(by);return true;}
 // by: the enemy type that landed the last hit, or 'gas'
 function die(by){
   if(P.revive>0){const S=P.S;P.revive=0;P.revived=true;P.hp=P.maxHp*0.5;P.inv=2.5;flashT=0.3;text(P.x,P.y-44*S,TX('revived'),30,'#ffe680',1.4);
@@ -724,6 +747,7 @@ function unlock(id){if(META.unlocked.includes(id))return;META.unlocked.push(id);
 let runMis=[];
 const MISSIONS=[
  {id:'coil6',card:'helix', n:['6重巻きを決める','Reach a 6x coil']},
+ {id:'coil10',dna:50,       n:['10重巻きを決める','Reach a 10x coil']},
  {id:'shell',card:'enzyme',n:['殻のある敵を倒す','Defeat a shelled enemy']},
  {id:'cell', card:'cilia', n:['細胞のスケールに着く','Reach Cell scale']},
  {id:'toxin',card:'anti',  n:['毒素菌を合計10体倒す','Defeat 10 toxin germs in total'],prog:()=>[META.stats.toxins,10]},
@@ -782,6 +806,7 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
   if(e.elite&&!e.boss&&(e.shMax>=2||Math.random()<0.35))dropChest(e.x,e.y,false);
   if(e.t.k==='toxin'){META.stats.toxins++;if(META.stats.toxins>=10)mission('toxin');puff(e.x,e.y,e.r*4.5,6);for(let k=0;k<3;k++){const a=Math.random()*TAU;puff(e.x+Math.cos(a)*e.r*2,e.y+Math.sin(a)*e.r*2,e.r*2.5,5);}}
   if(e.t.boom)boom(e,xpMul,grp);
+  if(e.t.split&&!e.pr)spawnQ.push([e.t.split[0],e.t.split[1],e.x,e.y,e.r]);
   if(e.boss)bossDown(e);
 }
 // ---------- chain explosions ----------
@@ -813,15 +838,16 @@ function dash(){
   let any=false;for(const c of captures)if(c.cinchT<0){c.cinchT=0;c.dash=true;any=true;}
   shake=Math.max(shake,any?7:3);
 }
+const MAXC=10; // most laps one coil can hold
 const CAPT_TIME=1.6;
 function onLoop(poly){
   const c=centroid(poly);let rad=0;for(const q of poly)rad+=Math.hypot(q.x-c.x,q.y-c.y);rad/=poly.length;
   let cap=captures.find(k=>k.cinchT<0&&Math.hypot(k.c.x-c.x,k.c.y-c.y)<k.rad*1.2+30*P.S),crack=1;
-  if(cap){cap.charge=Math.min(6,cap.charge+1);cap.poly=poly;cap.c=c;cap.rad=rad;cap.timer=P.captT;cap.pop=1;
+  if(cap){cap.charge=Math.min(MAXC,cap.charge+1);cap.poly=poly;cap.c=c;cap.rad=rad;cap.timer=P.captT;cap.pop=1;
     text(c.x,c.y-rad,TX('coil_n',cap.charge),22+cap.charge*3,'#b6ffd2',0.8);}
   else{const c0=P.bigcoil?3:P.helix?2:1;cap={poly,c,rad,charge:c0,timer:P.captT,cinchT:-1,dash:false,pop:1};captures.push(cap);crack=c0;
     text(c.x,c.y-rad,c0>1?TX('enclose_n',c0):TX('enclose'),22,'#b6ffd2',0.7);tip('dash');}
-  P.loops++;sfx('loop',cap.charge);if(cap.charge>=6)mission('coil6');
+  P.loops++;sfx('loop',cap.charge);if(cap.charge>=6)mission('coil6');if(cap.charge>=MAXC)mission('coil10');
   crack+=P.enzyme+(P.storm?1:0);if(P.storm)bolt(P.x,P.y,c.x,c.y);
   const b=bbox(poly);
   for(const e of enemies){if(e.dead||e.x<b.x0||e.x>b.x1||e.y<b.y0||e.y>b.y1)continue;if(inPoly(e.x,e.y,poly)){e.cap=cap;if(e.sh>0)crackShell(e,crack);}}
@@ -836,6 +862,7 @@ function explode(cap){
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
   const R=(55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6,dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage);
+  for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
     if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul,grp))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
   // Storm Lord: one bolt per enemy killed inside (20 at most), to the nearest enemies outside
@@ -998,6 +1025,7 @@ function update(dt){
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1);let ax=dx/d*s,ay=dy/d*s;
     if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
+    else if((e.t.charge||e.t.shoot)&&!e.cap&&special(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
     if(e.sT>0&&!e.cap){e.sT-=dt;ax=e.sdx*s*1.3;ay=e.sdy*s*1.3;} // stream events cross the screen first
     if(e.t.k==='toxin'){e.puffT-=dt;if(e.puffT<=0){e.puffT=0.6;puff(e.x,e.y,e.r*1.8,3.5);}}
     const gx=(e.x/CELL)|0,gy=(e.y/CELL)|0;let sx=0,sy=0;
@@ -1012,13 +1040,11 @@ function update(dt){
     if(e.flash>0)e.flash-=dt;
     if(e.boss)bossTick(e,dt);
     if(d<e.r+(e.pr?crushR:headR)){
-      if(e.pr||(e.r<foodR&&!e.sh)){kill(e,e.pr?0.5:1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown or tiny: run over, no harm done
+      if(e.pr||(e.r<foodR&&!e.sh)){kill(e,e.pr?0.35:1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown or tiny: run over, no harm done
       if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
       else{
         if(P.horn&&!(e.hornT>T)){e.hornT=T+0.4;if(hurt(e,3*P.horn*(1+P.stage),1))continue;e.vx-=dx/d*340*S;e.vy-=dy/d*340*S;} // Horns: whatever touches the head gets gored
-        if(P.inv<=0&&!DEMO){const dm=Math.max(1,Math.round(e.t.dmg*(1-0.15*P.horn)));P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);
-          text(P.x,P.y-30*S,'-'+dm,18,'#ff7080',0.6);e.vx-=dx/d*260*S;e.vy-=dy/d*260*S;
-          if(P.hp<=0)die(e.t);}}
+        if(hitHead(e.t.dmg*(e.cs===2?1.5:1),e.t)){e.vx-=dx/d*260*S;e.vy-=dy/d*260*S;}} // a charging enemy hits half again as hard
     }
   }
   for(const c of captures){c.pop=Math.max(0,c.pop-dt*3);
@@ -1026,6 +1052,7 @@ function update(dt){
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
   boomTick(dt);
   compact(captures,c=>!c.done);
+  shotTick(dt,S);splitTick();
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
   for(const o of orbs){const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
@@ -1049,6 +1076,30 @@ function tailTouch(dt,S){if(!(P.spike||P.cilia))return;P.tailTick-=dt;if(P.tailT
         if(lethal&&e.oniD!==P.dashN){ // Demon Spines: each dash takes one shell layer off, or kills what has none
           if(e.sh>0){e.oniD=P.dashN;crackShell(e,1);}else if(e.boss){if(e.spk<=T){e.spk=T+0.35;hurt(e,10*(1+P.stage),1);}}else{kill(e,1);burst(e.x,e.y,3,'#ff8a70',140,0.3,2.5);}continue;}
         if(e.spk<=T){e.spk=T+(P.spine?0.35:0.5);if(e.sh>0)continue;hurt(e,dmg,1);if(Math.random()<0.5)burst(e.x,e.y,2,'#eaffb0',90,0.25,2);}}}}}
+// ---------- stronger enemies: chargers, shooters, splitters ----------
+// special() writes the move of a charger or shooter into MV and returns true; false = move like everyone else.
+// Charger (e.cs): 0 approaches, 1 stops and aims for 0.6 s (a red line shows where), 2 dashes in that line, 3 catches its breath.
+// Shooter: holds about 300 away, circles, and fires a slow shot every 2.6 s. The tail stops shots; a squeeze clears them.
+const MV=[0,0];let shots=[],spawnQ=[];
+function special(e,dx,dy,d,s,dt,S){
+  if(e.t.charge){e.cT=(e.cT||0)-dt;
+    if(!e.cs){if(d<240*S&&e.cT<=0&&P.freezeT<=0){e.cs=1;e.cT=0.6;}else return false;}
+    if(e.cs===1){e.cdx=dx/d;e.cdy=dy/d;MV[0]=MV[1]=0;if(e.cT<=0){e.cs=2;e.cT=0.55;}return true;}
+    if(e.cs===2){MV[0]=e.cdx*s*5;MV[1]=e.cdy*s*5;if(e.cT<=0){e.cs=3;e.cT=1.2;}return true;}
+    MV[0]=dx/d*s*0.3;MV[1]=dy/d*s*0.3;if(e.cT<=0){e.cs=0;e.cT=rand(0.5,1.5);}return true;}
+  const keep=300*S,side=e.ph<Math.PI?1:-1;e.fT=(e.fT===undefined?rand(1,2.6):e.fT)-dt;
+  if(d>keep*1.15){MV[0]=dx/d*s;MV[1]=dy/d*s;}else if(d<keep*0.75){MV[0]=-dx/d*s*0.7;MV[1]=-dy/d*s*0.7;}else{MV[0]=-dy/d*s*0.5*side;MV[1]=dx/d*s*0.5*side;}
+  if(e.fT<=0&&d<keep*1.6&&P.freezeT<=0){e.fT=2.6;const v=150*S;shots.push({x:e.x+dx/d*e.r,y:e.y+dy/d*e.r,vx:dx/d*v,vy:dy/d*v,life:3.2,dmg:Math.round(e.t.dmg*0.8),by:e.t});}
+  return true;}
+function shotTick(dt,S){const tr=P.trail,n=tr.length,hr=15*S;
+  for(const b of shots){b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;const dx=P.x-b.x,dy=P.y-b.y;
+    if(dx*dx+dy*dy<hr*hr){if(hitHead(b.dmg,b.by)||P.inv>0)b.life=0;continue;}
+    for(let i=0;i<n;i+=3){const q=tr[i],qx=q.x-b.x,qy=q.y-b.y,w=(7+i/n*5)*S;if(qx*qx+qy*qy<w*w){b.life=0;burst(b.x,b.y,5,'#ffe27a',120,0.3,2);break;}}} // the tail stops it
+  compact(shots,b=>b.life>0);}
+// a splitter that was killed breaks up after the loop over the enemies is done (its pieces must not die in the same squeeze)
+function splitTick(){for(const [k,n,x,y,r] of spawnQ){text(x,y-r,TX('split'),16,'#bff5e6',0.8);
+    for(let i=0;i<n&&enemies.length<CAP+20;i++){const a=i/n*TAU+Math.random(),m=mkEnemy(ET[k],x+Math.cos(a)*r*0.5,y+Math.sin(a)*r*0.5);m.vx=Math.cos(a)*260*P.S;m.vy=Math.sin(a)*260*P.S;m.xpB=0.5;enemies.push(m);}}
+  spawnQ.length=0;}
 // ---------- needles and lightning ----------
 let needles=[],bolts=[];
 function needleTick(dt,S){
@@ -1164,7 +1215,8 @@ function drawChests(){const S=P.S;
     ctx.restore();}}
 function drawShell(e,S){const B=e.boss,gap=B?9:5.5;ctx.lineWidth=(B?3.2:2)*S;
   for(let i=0;i<e.sh;i++){const R=e.r+(5+i*gap)*S,rot=T*0.7*(i%2?1:-1)+e.ph+i;ctx.strokeStyle=e.elite?`rgba(255,214,90,${0.95-i*0.1})`:`rgba(214,242,255,${0.95-i*0.1})`;
-    for(let k=0;k<5;k++){const a0=rot+k*TAU/5;ctx.beginPath();ctx.arc(e.x,e.y,R,a0,a0+TAU/5-0.32);ctx.stroke();}}
+    ctx.setLineDash([(TAU/5-0.32)*R,0.32*R]);ctx.lineDashOffset=-rot*R;ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();} // five arcs as one dashed circle
+  ctx.setLineDash([]);ctx.lineDashOffset=0;
   if(B&&e.regenT>0){const R=e.r+(5+e.sh*gap)*S;ctx.strokeStyle=`rgba(160,200,230,${0.6*e.regenT/3.5})`;ctx.setLineDash([6*S,6*S]);ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
 function render(){
   const S=P.S,Z=1/S;
@@ -1215,6 +1267,8 @@ function render(){
     if(t.rot){ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();}
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
+    if(e.cs===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*300*S,e.y+e.cdy*300*S);ctx.stroke();ctx.setLineDash([]);} // aiming: where the dash will go
+    else if(e.cs===2){ctx.strokeStyle='rgba(255,200,205,0.45)';ctx.lineWidth=e.r*1.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-e.cdx*e.r*3,e.y-e.cdy*e.r*3);ctx.stroke();} // dashing: a streak behind it
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
@@ -1237,6 +1291,8 @@ function render(){
     ctx.globalAlpha=Math.max(0,r.life/r.max);ctx.strokeStyle=r.col;ctx.lineWidth=r.w*(1-f*0.6);ctx.beginPath();ctx.arc(r.x,r.y,rad,0,TAU);ctx.stroke();}
   ctx.globalAlpha=1;
   // needles and lightning
+  if(shots.length){ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,200,60,0.55)';for(const b of shots){ctx.beginPath();ctx.arc(b.x,b.y,8*S,0,TAU);ctx.fill();}
+    ctx.globalCompositeOperation='source-over';ctx.fillStyle='#fff6c8';for(const b of shots){ctx.beginPath();ctx.arc(b.x,b.y,3.2*S,0,TAU);ctx.fill();}} // enemy shots
   if(needles.length){ctx.strokeStyle='#fff3d6';ctx.lineWidth=2.2*S;ctx.lineCap='round';ctx.beginPath();for(const nd of needles){ctx.moveTo(nd.x,nd.y);ctx.lineTo(nd.x-nd.dx*18*S,nd.y-nd.dy*18*S);}ctx.stroke();}
   if(bolts.length){ctx.globalCompositeOperation='lighter';ctx.lineJoin='round';
     for(const b of bolts){ctx.globalAlpha=Math.min(1,b.life/0.08);ctx.beginPath();b.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
@@ -1332,7 +1388,7 @@ function hudDraw(W,H){const k=uiK();
   ctx.textAlign='center';ctx.fillStyle=ready?'#eafff2':'#7f9db8';ctx.font=`900 ${TOUCH?16:13}px ${FONT}`;ctx.fillText(ready?'DASH':P.dashCdT.toFixed(1),bx,by);
   if(!TOUCH){ctx.font=`10px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('key_dash'),bx,by+br+11);}
   ctx.textAlign='left';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#b6ffd2';ctx.fillText(TX('charge'),x0,cy2-18);
-  for(let i=0;i<6;i++){ctx.fillStyle=i<best.charge?(best.charge>=4?'#eaffb0':'#5dff9a'):'rgba(90,140,170,0.35)';ctx.fillRect(x0+i*18,cy2-6,14,14);}
+  for(let i=0;i<MAXC;i++){ctx.fillStyle=i<best.charge?(best.charge>=7?'#ffe680':best.charge>=4?'#eaffb0':'#5dff9a'):'rgba(90,140,170,0.35)';ctx.fillRect(x0+i*104/MAXC,cy2-6,104/MAXC-2.4,14);}
   if(best.charge){ctx.fillStyle='rgba(180,255,210,0.8)';ctx.fillRect(x0,cy2+14,104*best.timer/P.captT,4);
     if(ready&&Math.floor(T*6)%2){ctx.fillStyle='#ffffff';ctx.font=`900 15px ${FONT}`;ctx.textAlign='right';ctx.fillText(TX(TOUCH?'now_touch':'now_mouse'),bx-br-(TOUCH?10:16),by);}}
   else{ctx.fillStyle='#7f9db8';ctx.font=`11px ${FONT}`;ctx.fillText(TX('charge_hint'),x0,cy2+24);}
@@ -1583,6 +1639,6 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
   spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
-  shock,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
+  shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
