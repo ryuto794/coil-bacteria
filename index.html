@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v16）</title>
+<title>コイル・バクテリア（試作 v17）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -240,6 +240,18 @@ function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='moon'?t.r*1
 for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
 const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
+// The field guide (v17): what it lists, in order: [scale, type, key of its line of text]. A scale's creatures show once that scale has been reached.
+const BOOK=[[0,'germ','germ'],[0,'virus','virus'],[0,'blob','blob'],[0,'bacil','run'],[0,'vibrio','orbit'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,BOSS_T[0],'boss'],[0,TITAN_T[0],'titan'],
+ [1,'mito','mito'],[1,'rod','run'],[1,'cell','cell'],[1,'spiro','orbit'],[1,'neutro','charge'],[1,'strep','strep'],[1,'divider','divider'],[1,'moon','moon'],[1,'phage','phage'],[1,'bcell','shoot'],[1,'bigcell','big'],[1,HUNT_T[1],'wbc'],[1,BOSS_T[1],'boss'],[1,TITAN_T[1],'titan'],
+ [2,'nucleus','nucleus'],[2,'anti','anti'],[2,'bigrod','run'],[2,'amoeba','amoeba'],[2,'spiroch','orbit'],[2,'tcell','charge'],[2,'chromo','chromo'],[2,'chroma','chroma'],[2,'mimi','mimi'],[2,'virion','virion'],[2,'dna','dna'],[2,'giant','shoot'],[2,BOSS_T[2],'boss'],[2,TITAN_T[2],'helio']]
+ .map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k]);
+// v17 fire: a flame is a soft tongue with a white-hot heart, drawn additively and upright, flickering. Never a flat shape.
+const FLAME=(()=>{const s=mk(40,64),g=s.getContext('2d');
+  for(const [k,c0,c1] of[[1,'rgba(255,70,15,0)','rgba(255,105,25,0.9)'],[0.62,'rgba(255,190,50,0)','rgba(255,220,100,0.95)'],[0.32,'rgba(255,255,230,0)','rgba(255,255,236,0.95)']]){
+    const w=17*k,h=58*k,gr=g.createLinearGradient(0,62-h,0,62);gr.addColorStop(0,c0);gr.addColorStop(0.5,c1);gr.addColorStop(1,c1);g.fillStyle=gr;
+    g.beginPath();g.moveTo(20,62-h);g.bezierCurveTo(20+w*0.35,62-h*0.6,20+w,62-h*0.35,20+w*0.8,62-h*0.12);g.bezierCurveTo(20+w*0.6,62,20-w*0.6,62,20-w*0.8,62-h*0.12);g.bezierCurveTo(20-w,62-h*0.35,20-w*0.35,62-h*0.6,20,62-h);g.fill();}
+  return s;})(),FIREGLOW=glowSprite(40,'rgba(255,110,25,0.6)');
+function flame(x,y,h,ph){const f=0.82+0.24*Math.sin(T*14+ph)+0.1*Math.sin(T*31+ph*2),hh=h*f,w=h*0.62;ctx.drawImage(FLAME,x-w/2+Math.sin(T*9+ph)*h*0.1,y-hh,w,hh);}
 const GLOWC=new Map();
 function headGlow(h){h=(Math.round(h/15)*15)%360;let g=GLOWC.get(h);if(!g){g=glowSprite(60,`hsla(${h},100%,62%,0.55)`);GLOWC.set(h,g);}return g;}
 
@@ -263,7 +275,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v16';
+const LANGS=['ja','en'],VER='v17';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -427,6 +439,38 @@ const STR={
  r_total:['合計撃破','Total kills'],
  // menus, pause, settings
  b_help:['遊び方','How to play'],
+ b_book:['図鑑','Field guide'],
+ bk_scale:['{0}の世界','{0} scale'],
+ bk_locked:['（まだ着いていない）','(not reached yet)'],
+ bk_shell:['殻 {0}','Shell {0}'],
+ bk_germ:['まっすぐ寄ってくる。いちばん弱い','Comes straight at you. The weakest'],
+ bk_virus:['少し硬い','A little tougher'],
+ bk_blob:['遅くて硬い。当たると痛い','Slow and tough. Hurts on contact'],
+ bk_run:['まっすぐ走って通り過ぎ、向きを変えてまた走る','Runs straight past you, turns, and runs again'],
+ bk_orbit:['回りながら寄ってくる','Circles its way in'],
+ bk_bomb:['倒すと爆発して、周りを巻き込む','Explodes when it dies and takes its neighbours'],
+ bk_toxin:['遅い。毒の霧を残していく','Slow. Leaves poison fog behind it'],
+ bk_boss:['このスケールのボス。殻は時間がたつと戻る','The boss of this scale. Its shells grow back'],
+ bk_titan:['巨大。触れると痛い。次のスケールなら巻ける','Huge. Hurts to touch. Can be coiled at the next scale'],
+ bk_helio:['巨大。まわりの棘には当たりがない','Huge. Its rays do not hurt'],
+ bk_mito:['このスケールの基本の敵。速い','The basic enemy of this scale. Fast'],
+ bk_cell:['殻つき。殻の数だけ巻いて割る','Shelled. Coil it once per shell'],
+ bk_charge:['狙いを定めて突進してくる','Takes aim, then charges'],
+ bk_strep:['鎖でうねる。先頭を倒すと次が先頭になる','A chain that snakes. Kill the first and the next leads'],
+ bk_divider:['倒すとミトコンドリア 3 体に分かれる','Breaks into 3 Mitochondria'],
+ bk_moon:['ブーメラン。まっすぐ来て、弧を描いて戻る','A boomerang: straight out, back in a curve'],
+ bk_phage:['尾に取りついて注入する。ダッシュで振り落とす','Clamps onto your tail and injects. Dash to shake it off'],
+ bk_shoot:['距離を取って撃ってくる。弾は尾で防げる','Keeps its distance and shoots. Your tail blocks the shots'],
+ bk_big:['大きくて硬い','Big and tough'],
+ bk_wbc:['20 秒追ってくる。逃げるか、7 重に巻く','Chases you for 20s. Run, or coil it 7 times'],
+ bk_nucleus:['このスケールの基本の敵。速い','The basic enemy of this scale. Fast'],
+ bk_anti:['速いが、大回りでしか曲がれない','Fast, but it turns wide'],
+ bk_amoeba:['倒すと細胞核 2 体に分かれる','Breaks into 2 Nuclei'],
+ bk_chromo:['倒すと 2 本に分かれて走り出す','Breaks into two bars that run'],
+ bk_chroma:['染色体から出る。まっすぐ走って通り過ぎる','Comes out of a Chromosome. Runs straight past you'],
+ bk_mimi:['小さい粒子を放つ。先に倒す','Lets out virions. Kill it first'],
+ bk_virion:['巨大ウイルスから出る。速い','Comes out of a Giant Virus. Fast'],
+ bk_dna:['回りながら来る長い棒。どこに触れても当たる','A long bar that turns as it comes. Any part of it hurts'],
  b_mis:['ミッション','Missions'],
  b_opts:['設定','Settings'],
  back:['もどる','Back'],
@@ -1478,9 +1522,10 @@ function drawTailParts(tr,hu,S){const n=tr.length;
       const x=q.x-ty/tl*o,y=q.y+tx/tl*o;i>2?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
   if((P.zap||P.storm)&&n>4&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=P.storm?'rgba(150,225,255,0.7)':'rgba(140,215,255,0.42)';ctx.lineWidth=(P.storm?3:1.8)*S; // Discharge on: a live wire down the tail
     ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=2;i<n;i+=2)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';}
-  if((P.ember||P.rime||P.frost)&&n>12){const fire=P.ember>0,ice=P.rime>0||P.frost>0,st=QL<2?14:8; // Fire line: flames lick off one side of the tail. Ice line: crystals stud the other
+  if((P.ember||P.rime||P.frost)&&n>12){const fire=P.ember>0,ice=P.rime>0||P.frost>0,st=Math.max(QL<2?14:8,n/36|0);
+    if(fire&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(255,120,30,0.22)';ctx.lineWidth=12*S;ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=3;i<n;i+=3)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';} // the tail runs hot // Fire line: flames lick off one side of the tail. Ice line: crystals stud the other
     for(let i=6;i<n-4;i+=st){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,ux=tx/tl,uy=ty/tl,nx=-uy,ny=ux,w=(2.5+i/n*5)*S,g=(i/st|0)%2?1:-1;
-      if(fire){const L=(7+3*P.ember+3*Math.sin(T*16+i))*S*(P.blaze?1.4:1);ctx.fillStyle=(i/st|0)%3?'rgba(255,150,40,0.9)':'rgba(255,225,120,0.9)';ctx.beginPath();ctx.moveTo(q.x+nx*g*w*0.4-ux*3*S,q.y+ny*g*w*0.4-uy*3*S);ctx.lineTo(q.x+nx*g*(w+L)-ux*L*0.5,q.y+ny*g*(w+L)-uy*L*0.5);ctx.lineTo(q.x+nx*g*w*0.4+ux*3*S,q.y+ny*g*w*0.4+uy*3*S);ctx.fill();}
+      if(fire){ctx.globalCompositeOperation='lighter';flame(q.x+nx*g*w*0.4,q.y+ny*g*w*0.4+3*S,(15+4*P.ember)*S*(P.blaze?1.35:1),i);ctx.globalCompositeOperation='source-over';}
       if(ice){const L=(4+P.rime+(P.glacier?2:0))*S,x=q.x-nx*g*(w+L*0.5),y=q.y-ny*g*(w+L*0.5);ctx.fillStyle='rgba(215,244,255,0.92)';ctx.beginPath();ctx.moveTo(x+ux*L,y+uy*L);ctx.lineTo(x+nx*L*0.55,y+ny*L*0.55);ctx.lineTo(x-ux*L,y-uy*L);ctx.lineTo(x-nx*L*0.55,y-ny*L*0.55);ctx.fill();}}}
   if(P.volt&&n>12){ctx.fillStyle='rgba(215,244,255,0.97)';for(let i=5,st=16-3*P.volt;i<n-4;i+=st){const q=tr[i];ctx.beginPath();ctx.arc(q.x,q.y,3*S,0,TAU);ctx.fill();}} // Charged Tail: bright nodes
   const zc=(P.storm?6:P.zap?3:P.volt&&Math.random()<0.5?1:0)>>(QL<2?1:0); // arcs crawling along the tail: more of them the further the Electric line has gone
@@ -1556,7 +1601,9 @@ function render(){
     const a=T*4+o.ph,c=Math.cos(a)*5*s,si=Math.sin(a)*5*s;
     ctx.strokeStyle='#8fd0ff';ctx.lineWidth=1.5*s;ctx.beginPath();ctx.moveTo(o.x-c,o.y-si);ctx.lineTo(o.x+c,o.y+si);ctx.stroke();
     ctx.fillStyle='#d8f0ff';ctx.fillRect(o.x-c-1.5*s,o.y-si-1.5*s,3*s,3*s);ctx.fillStyle='#4aa8ff';ctx.fillRect(o.x+c-1.5*s,o.y+si-1.5*s,3*s,3*s);}
-  for(const f of fires){ctx.fillStyle=`rgba(255,${110+50*Math.sin(T*17+f.x)|0},30,${Math.min(1,f.life)*0.4})`;circ(ctx,f.x,f.y,f.r*(0.8+0.2*Math.sin(T*13+f.y)));ctx.fill();} // burning ground (drawn additively)
+  for(const f of fires){const k=Math.min(1,f.life),r=f.r;ctx.globalAlpha=k*0.7;ctx.drawImage(FIREGLOW,f.x-r*1.5,f.y-r*1.5,r*3,r*3);ctx.globalAlpha=k; // burning ground (drawn additively): a glow on the floor, tongues of flame standing in it
+    flame(f.x-r*0.3,f.y+r*0.35,r*1.5*k,f.x);if(QL>=2)flame(f.x+r*0.35,f.y+r*0.2,r*1.15*k,f.y);}
+  ctx.globalAlpha=1;
   ctx.globalCompositeOperation='source-over';
   for(const e of enemies){if(!e.titan)continue;const t=e.t,m=t.L*2.1;if(e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue; // titans go under everything else that lives
     const s=t.spr,w=s.width/t.res,sh=s.height/t.res,wb=Math.sin(T*2+e.ph)*0.02,h=t.L-t.w;
@@ -1585,12 +1632,14 @@ function render(){
     else if(e.cs===2){ctx.strokeStyle='rgba(255,200,205,0.45)';ctx.lineWidth=e.r*1.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-e.cdx*e.r*3,e.y-e.cdy*e.r*3);ctx.stroke();} // dashing: a streak behind it
     if(e.frz>0){ctx.fillStyle='rgba(170,225,255,0.5)';circ(ctx,e.x,e.y,e.r*1.05);ctx.fill();ctx.strokeStyle='rgba(235,250,255,0.9)';ctx.lineWidth=1.5*S;ctx.stroke();} // frozen: cased in ice
     else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
-    if(e.burn>0){ctx.fillStyle=`rgba(255,${120+60*Math.sin(T*25+e.ph)|0},30,0.45)`;circ(ctx,e.x,e.y,e.r*(0.9+0.2*Math.sin(T*18+e.ph)));ctx.fill();} // burning
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,-Math.PI/2,-Math.PI/2+TAU*Math.max(0.04,e.inj/LATCH_T));ctx.stroke();} // clamped on: the ring closes as the next injection nears
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
+  if(P.ember||fires.length){ctx.globalCompositeOperation='lighter'; // what is burning: a glow and two tongues of flame on each
+    for(const e of enemies){if(!(e.burn>0)||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const r=Math.max(e.r,9*S);ctx.drawImage(FIREGLOW,e.x-r*1.7,e.y-r*1.7,r*3.4,r*3.4);flame(e.x-r*0.3,e.y+r*0.5,r*2.1,e.ph);if(QL>=1)flame(e.x+r*0.35,e.y+r*0.35,r*1.6,e.ph*2);}
+    ctx.globalCompositeOperation='source-over';}
   // tail
   const tr=P.trail,hu=hueAt(),prism=skin().h<0;
   if(tr.length>1){
@@ -1765,9 +1814,9 @@ function titleLayout(W,H){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,bw=Math
   // keep the title clear of the language switch: on a short, wide screen shrink the title to sit beside it; otherwise start lower
   const side=W-2*(lw+28),beside=tight&&side>=260,tw=beside?Math.min(W-30,side):W-30,clash=!beside&&Math.min(W-30,520)>side;
   // menu buttons: a column left of the skin panel when the screen is short and wide, otherwise a row under the records
-  const col=tight&&px-26>=92,mb=[],mw=col?Math.min(132,px-26):(pw-16)/3;
-  const gap=tight?64:Math.round(92+step*1.5),top=Math.max(clash?54:10,(H-gap-(col?290:348))*0.42),ty=Math.round(top+30),py=ty+gap;
-  for(let i=0;i<3;i++)mb.push(col?{x:px-12-mw,y:py+i*46,w:mw,h:36}:{x:px+i*(mw+8),y:py+ph+144,w:mw,h:38});
+  const col=tight&&px-26>=92,mb=[],mw=col?Math.min(132,px-26):(pw-8)/2;
+  const gap=tight?64:Math.round(92+step*1.5),top=Math.max(clash?54:10,(H-gap-(col?290:392))*0.42),ty=Math.round(top+30),py=ty+gap;
+  for(let i=0;i<4;i++)mb.push(col?{x:px-12-mw,y:py+i*40,w:mw,h:34}:{x:px+(i%2)*(mw+8),y:py+ph+144+(i>>1)*44,w:mw,h:38});
   return{ty,tw,fs,step,tight,panel:{x:px,y:py,w:pw,h:ph},left:{x:px,y:py,w:58,h:ph},right:{x:px+pw-58,y:py,w:58,h:ph},buy:{x:W/2-95,y:py+ph-42,w:190,h:32},
     start:{x:W/2-bw/2,y:py+ph+20,w:bw,h:56},lang:{x:W-10-lw,y:10,w:lw,h:34},menu:mb};}
 function cycleSkin(d){skinIdx=(skinIdx+d+SKINS.length)%SKINS.length;const k=SKINS[skinIdx];if(META.skins.includes(k.id)){META.skin=k.id;saveMeta();}}
@@ -1796,7 +1845,7 @@ function titleScreen(W,H){
   const f1=TX('best',META.dna,fmtT(b.t),stageName(b.stage||0),b.clears||0);
   fitFont(f1,13,'bold',W-20);ctx.fillStyle='#bfe3ff';ctx.fillText(f1,W/2,L.start.y+L.start.h+26);
   ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('mis_n',MISSIONS.filter(misDone).length,MISSIONS.length),W/2,L.start.y+L.start.h+46);
-  [['b_help','help'],['b_mis','recs'],['b_opts','opts']].forEach(([s,m],i)=>hotBtn(L.menu[i],TX(s),0,()=>openMenu(m)));
+  [['b_help','help'],['b_book','book'],['b_mis','recs'],['b_opts','opts']].forEach(([s,m],i)=>hotBtn(L.menu[i],TX(s),0,()=>openMenu(m)));
 }
 // ----- pause -----
 function pauseScreen(W,H){
@@ -1810,9 +1859,9 @@ function pauseScreen(W,H){
 // ----- menus: how to play / settings / records -----
 function menuScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.88)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
-  const sm=H<430,ttl=TX(menu==='help'?'b_help':menu==='opts'?'b_opts':'r_title'),bw=Math.min(200,W-150),bh=sm?34:42,by=H-bh-(sm?6:12),top=sm?46:72,bot=by-(sm?8:22);
+  const sm=H<430,ttl=TX(menu==='help'?'b_help':menu==='opts'?'b_opts':menu==='book'?'b_book':'r_title'),bw=Math.min(200,W-150),bh=sm?34:42,by=H-bh-(sm?6:12),top=sm?46:72,bot=by-(sm?8:22);
   fitFont(ttl,sm?22:28,900,W-24);ctx.fillStyle='#7dffb0';ctx.fillText(ttl,W/2,sm?24:38);
-  const pages=menu==='opts'?optsBody(W,top,bot):menu==='help'?helpBody(W,top,bot):recsBody(W,top,bot);
+  const pages=menu==='opts'?optsBody(W,top,bot):menu==='help'?helpBody(W,top,bot):menu==='book'?bookBody(W,top,bot):recsBody(W,top,bot);
   ctx.textAlign='center';hotBtn({x:W/2-bw/2,y:by,w:bw,h:bh},TX('back'),1,menuBack);
   if(pages>1){hotBtn({x:W/2-bw/2-56,y:by,w:46,h:bh},'‹',0,()=>menuPage=(menuPage+pages-1)%pages);hotBtn({x:W/2+bw/2+10,y:by,w:46,h:bh},'›',0,()=>menuPage=(menuPage+1)%pages);
     ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText((Math.min(menuPage,pages-1)+1)+' / '+pages,W/2,by-(sm?5:11));}
@@ -1849,6 +1898,21 @@ function helpBody(W,top,bot){
     ctx.font=fB;ctx.fillStyle='#d6e8f6';p.s.lines.forEach((l,i)=>ctx.fillText(l,x,p.y+33+i*lh));}
   return pages;
 }
+// the field guide: the creatures of every scale the player has reached (the best so far, or the run in progress). The rest stay hidden.
+function bookBody(W,top,bot){const seen=Math.max(META.best.stage||0,menuFrom==='pause'?P.stage:0),cols=NARROW?1:2,gap=20,tw=Math.min(W-24,860),cw=(tw-(cols-1)*gap)/cols,x0=W/2-tw/2,rh=50,hh=30;
+  const rows=[];for(let s=0;s<3;s++){rows.push({head:s});for(const b of BOOK)if(b[0]===s)rows.push({b});}
+  let page=0,col=0,y=top;const place=[];
+  for(const r of rows){const h=r.b?rh:hh;if((y+h>bot&&y>top)||(!r.b&&y+hh+rh>bot)){col++;y=top;if(col>=cols){col=0;page++;}}place.push({r,page,col,y});y+=h;}
+  const pages=page+1,pg=Math.min(menuPage,pages-1);ctx.textBaseline='middle';
+  for(const p of place){if(p.page!==pg)continue;const x=x0+p.col*(cw+gap),r=p.r;ctx.textAlign='left';
+    if(!r.b){const on=r.head<=seen;ctx.font=`900 15px ${FONT}`;ctx.fillStyle=on?'#ffe680':'#5f7890';ctx.fillText(TX('bk_scale',stageName(r.head))+(on?'':'  '+TX('bk_locked')),x+2,p.y+hh/2+3);continue;}
+    const [st,t,key]=r.b,cx=x+27,cy=p.y+rh/2;panel(x,p.y+2,cw,rh-5,0.8);
+    if(st>seen){ctx.font=`900 20px ${FONT}`;ctx.fillStyle='#4a6070';ctx.textAlign='center';ctx.fillText('?',cx,cy);ctx.textAlign='left';ctx.font=`900 14px ${FONT}`;ctx.fillText('? ? ?',x+54,cy);continue;}
+    const s=t.spr,k=Math.min(40/s.width,40/s.height),nm=t.n||t.name,line=TX('bk_'+key);ctx.drawImage(s,cx-s.width*k/2,cy-s.height*k/2,s.width*k,s.height*k);
+    ctx.font=`900 14px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(nm,x+54,cy-9);
+    if(t.sh){const w=ctx.measureText(nm).width;ctx.font=`bold 11px ${FONT}`;ctx.fillStyle='#9fdcff';ctx.fillText(TX('bk_shell',t.sh),x+54+w+8,cy-9);}
+    fitFont(line,12,'normal',cw-64);ctx.fillStyle='#a9c6de';ctx.fillText(line,x+54,cy+10);}
+  return pages;}
 function fmtLong(t){const h=Math.floor(t/3600);return h?h+':'+String(Math.floor(t%3600/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0'):fmtT(t);}
 // records on the first page, then the mission list; the list runs onto more pages when the screen is short
 function recsBody(W,top,bot){
