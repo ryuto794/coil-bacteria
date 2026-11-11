@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v20）</title>
+<title>コイル・バクテリア（試作 v21）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -275,7 +275,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v20';
+const LANGS=['ja','en'],VER='v21';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -380,12 +380,16 @@ const STR={
  cat_elc:['電流系','Electric line'],
  cat_fir:['炎系','Fire line'],
  cat_ice:['氷系','Ice line'],
+ cat_sr:['スーパーレア','Super rare'],
+ ln_sr:['めったに出ない。1枚で遊び方が変わる','Seldom offered. One card changes how you play'],
+ bk_sr:['レベルアップでまれに出る（1枚だけ）','Comes up now and then at level-ups (one copy)'],
  lv_line:['系統をえらぶ','Choose your line'],
  blocked:['防いだ！','Blocked!'],
  it_shd:['バリアを張った','Barrier up'],
  evo_base:['進化：{0}（MAXで）','Evolves: {0} (at MAX)'],
  evo_need:['進化：{0}の素材','Evolves: {0} (ingredient)'],
  rare:['レア','RARE'],
+ srare:['Sレア','S-RARE'],
  lvup:['LEVEL UP！ 強化をえらぶ','LEVEL UP! Pick an upgrade'],
  pick_touch:['タップでえらぶ','Tap to pick'],
  pick_mouse:['クリック または 1 / 2 / 3 キー（R：引き直す）','Click, or press 1 / 2 / 3 (R: reroll)'],
@@ -744,7 +748,8 @@ function reset(start){
      regen:0,captT:CAPT_TIME,xpMul:1,anti:0,ram:0,revive:0,revived:false,shatter:false,reroll:2,dropIn:35,freezeT:0,gasEver:false,killer:null,
      endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
      horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null,
-     armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0,asura:false,raijin:false,sun:false,iceage:false,asT:2,rjT:4};
+     armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0,asura:false,raijin:false,sun:false,iceage:false,asT:2,rjT:4,
+     vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,overdrive:false,srMiss:0};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
   calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];
@@ -946,7 +951,7 @@ function stageUp(){
   if(s>=1)mission('cell');if(s>=2&&!P.gasEver)mission('nogas');
 }
 // the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
-function hitHead(raw,by){if(P.inv>0||DEMO)return false;const S=P.S;
+function hitHead(raw,by){if(P.inv>0||DEMO||(P.phase&&P.dashT>0))return false;const S=P.S; // Phase Dash: nothing hurts during a dash
   if(P.guard>0){P.guard--;P.guardT=0;P.inv=0.75;sfx('crack');vib(20);rings.push({x:P.x,y:P.y,r:14*S,R:70*S,life:0.35,max:0.35,col:'#9fe8ff',w:5*S});text(P.x,P.y-40*S,TX('blocked'),22,'#9fe8ff',0.9);return false;} // a barrier takes the hit
   const dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)*(1-0.1*P.armor)));
   P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);hpHitAt=performance.now();
@@ -1043,6 +1048,8 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
   if(e.elite&&!e.boss&&(e.shMax>=2||Math.random()<0.35))dropChest(e.x,e.y,false);
   if(e.t.k==='toxin'){META.stats.toxins++;if(META.stats.toxins>=10)mission('toxin');puff(e.x,e.y,e.r*4.5,6);for(let k=0;k<3;k++){const a=Math.random()*TAU;puff(e.x+Math.cos(a)*e.r*2,e.y+Math.sin(a)*e.r*2,e.r*2.5,5);}}
   if(e.t.boom)boom(e,xpMul,grp);
+  if(P.chainR&&!e.pr&&!e.t.boom&&!e.boss&&!e.titan&&Math.random()<0.2)boom(e,xpMul,grp,Math.max(70,e.r*2.6)); // Chain Reaction
+  if(P.leech&&!e.pr&&++P.leechN>=12){P.leechN=0;if(P.hp<P.maxHp){P.hp=Math.min(P.maxHp,P.hp+4);text(P.x,P.y-30*P.S,'+4',14,'#9dffc4',0.6);}} // Leech
   if(e.burn>0){const S=P.S; // v16: a burning enemy that dies passes the fire on (Wildfire), and blows up (Inferno; not the small crushable ones)
     if(P.spread){const R=(50+40*P.spread)*S;let n=0;for(const o of enemies){if(o===e||o.dead||o.burn>0||o.sh>0)continue;const dx=o.x-e.x,dy=o.y-e.y,rr=R+o.r;if(dx*dx+dy*dy<rr*rr){ignite(o,2.5);if(++n>=6)break;}}}
     if(P.inferno&&!e.pr&&!e.t.boom)boom(e,xpMul,grp,Math.max(80,e.r*3));}
@@ -1181,6 +1188,16 @@ const RARE=[
  {id:'frost', r:1,cat:'ice', max:3,n:['冷気','Frost Aura'],d:['頭のまわりの敵が遅くなる\n（重ねて広く・強く）','Enemies near your head\nslow down (stacks)'],f:()=>P.frost++},
  {id:'rime',  r:1,cat:'ice', max:2,n:['霜の尾','Rime Tail'],d:['尾に触れた敵が凍る\n（重ねて長く）','Enemies touching the tail\nfreeze (longer per level)'],f:()=>P.rime++},
 ];
+// Super-rare cards (v21, r:3): one copy each, seldom offered, and each one changes how the run is played (one per way of playing:
+// coiling, dashing, explosions, size, staying alive, speed). They come up at level-ups only (see rollChoices).
+const SUPER=[
+ {id:'vortex',  r:3,cat:'sr',max:1,n:['渦','Vortex'],d:['囲いができると、まわりの敵を\n中へ吸い込む','A coil pulls the enemies\naround it inside'],f:()=>P.vortex=true},
+ {id:'phase',   r:3,cat:'sr',max:1,n:['無敵ダッシュ','Phase Dash'],d:['ダッシュ中はダメージを受けない。\nダッシュの体当たり3倍','No damage while you dash.\nDash contact damage tripled'],f:()=>P.phase=true},
+ {id:'chainr',  r:3,cat:'sr',max:1,n:['連鎖爆発','Chain Reaction'],d:['倒した敵が5体に1体、\n爆発する','One enemy in five\nexplodes when it dies'],f:()=>P.chainR=true},
+ {id:'colossus',r:3,cat:'sr',max:1,n:['巨体','Colossus'],d:['尾 +35%、最大HP +40。\n頭で潰せる範囲が2倍','Tail +35%, max HP +40. Your head\ncrushes small fry twice as far out'],f:()=>{P.colossus=true;growTail(1.35);P.maxHp+=40;P.hp+=40;}},
+ {id:'leech',   r:3,cat:'sr',max:1,n:['吸収','Leech'],d:['敵を12体倒すごとに\nHP +4','Every 12 kills\nrestore 4 HP'],f:()=>P.leech=true},
+ {id:'overdrive',r:3,cat:'sr',max:1,n:['神速','Overdrive'],d:['移動速度 +20%、\nダッシュのクールダウン -35%','Move speed +20%,\ndash cooldown -35%'],f:()=>{P.overdrive=true;P.spd*=1.2;P.turn*=1.12;P.dashCd=Math.max(0.5,P.dashCd*0.65);}},
+];
 // Evolutions come from boss capsules. First step: base card at MAX + one other card (need).
 // Second step of a line: the first evolution (pre) + one other card. The first one in this list that is ready is the one you get.
 const EVO=[
@@ -1203,9 +1220,9 @@ const EVO=[
  {id:'shatter',r:2,n:['破砕','Shatter'],d:['締めの衝撃波が\n殻を1枚割る','Squeeze shockwaves\ncrack 1 shell'],base:'blast',need:'enzyme',f:()=>P.shatter=true,has:()=>P.shatter},
 ];
 const FALLBACK={n:['栄養補給','Nutrients'],cat:'body',d:['HPを40回復','Restore 40 HP'],f:()=>{P.hp=Math.min(P.maxHp,P.hp+40);}};
-loc(UPG,'n','d');loc(RARE,'n','d');loc(EVO,'n','d');loc([FALLBACK],'n','d');
+loc(UPG,'n','d');loc(RARE,'n','d');loc(SUPER,'n','d');loc(EVO,'n','d');loc([FALLBACK],'n','d');
 function oneLine(d){return d.replace(/([ぁ-んァ-ヶ一-龠ー])\n([ぁ-んァ-ヶ一-龠ー])/g,'$1$2').replace('\n',' ');}
-const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id);
+const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id)||SUPER.find(u=>u.id===id);
 function avail(u){return (P.lv[u.id]||0)<u.max;}
 function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');if(u.id==='ember'&&P.lv.ember>=u.max)mission('embermax');if(u.id==='frost'&&P.lv.frost>=u.max)mission('frostmax');}
 function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>=(e.full?CARD(e.need).max:1);}
@@ -1221,11 +1238,12 @@ function rollChoices(){
   while(choices.length<3&&(com.length||rare.length)){
     const pr=Math.min(0.6,0.12+0.07*P.rareMiss),src=(rare.length&&(Math.random()<pr||!com.length))?rare:com;
     const c=src.splice(src===rare?pickR(src):Math.random()*src.length|0,1)[0];if(c.r===1)got=true;choices.push(c);}
+  {const sr=SUPER.filter(avail);if(sr.length&&Math.random()<Math.min(0.4,0.02+0.02*P.srMiss)){choices[0]=sr[Math.random()*sr.length|0];P.srMiss=0;}else P.srMiss++;} // v21: now and then the first of the three is a super-rare card
   if(P.hp/P.maxHp<0.5){const def=DEFC.map(CARD).filter(avail);if(def.length&&!choices.some(c=>def.includes(c)))choices[2]=def[Math.random()*def.length|0];} // v18: under half HP, one of the three is always a defence card
   if(choices.length<3)choices.push(FALLBACK);
   P.rareMiss=got?0:P.rareMiss+1;
 }
-function openLevel(){rollChoices();state='level';sfx('level');if(DEMO)pick(Math.random()*choices.length|0);}
+function openLevel(){rollChoices();state='level';sfx(choices.some(c=>c&&c.r===3)?'chest':'level');if(DEMO)pick(Math.random()*choices.length|0);}
 function reroll(){if(state!=='level'||P.reroll<=0)return;P.reroll--;rollChoices();} // two per run
 // skip: take no card. There are no card slots to protect, so a plain skip would never be worth it; it heals a little instead.
 function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(1.06);text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
@@ -1292,7 +1310,7 @@ function update(dt){
       if(dx*dx+dy*dy<rr*rr){if(P.glacier)freeze(e,1.5);if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
   // enemies
   buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);P.latPrev=P.latN||0;P.latN=0; // latPrev: how many phages were on the tail last frame
-  const far=Math.hypot(W,H)*1.1*S,headR=10*S,crushR=(P.dashT>0?22:15)*S; // prey is crushed by the whole head, wider while dashing
+  const far=Math.hypot(W,H)*1.1*S,headR=10*S,crushR=(P.dashT>0?22:15)*S*(P.colossus?2:1); // prey is crushed by the whole head, wider while dashing
   for(const e of enemies){
     if(e.dead)continue;
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
@@ -1327,12 +1345,14 @@ function update(dt){
       if(e.pr){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown: run over, no harm done
       if(P.iceage&&e.frz>0&&!e.sh&&!e.boss&&!e.hunter){kill(e,1);burst(e.x,e.y,8,'#d6f4ff',200,0.4,3);continue;} // Ice Age: a frozen enemy shatters under the head
       if(e.hunter){if(!(e.bite>0)&&hitHead(e.t.dmg,e.t))e.bite=1.2;continue;} // the hunter bites (dashing does not save you), then stops for a moment
-      if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
+      if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram)*(P.phase?3:1),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
       else{
         if(P.horn&&!(e.hornT>T)){e.hornT=T+0.4;if(hurt(e,3*P.horn*(1+P.stage),1))continue;e.vx-=dx/d*340*S;e.vy-=dy/d*340*S;} // Horns: whatever touches the head gets gored
         if(hitHead(e.t.dmg*(e.dm||1)*(e.cs===2?1.5:1),e.t)){e.vx-=dx/d*260*S;e.vy-=dy/d*260*S;}} // a charging enemy hits half again as hard
     }
   }
+  if(P.vortex)for(const c of captures){if(c.cinchT>=0)continue;const R=c.rad+230*S; // Vortex: a standing coil draws in what is around it (not bosses, the hunter or titans)
+    for(const e of enemies){if(e.dead||e.cap===c||e.boss||e.hunter||e.titan)continue;const dx=c.c.x-e.x,dy=c.c.y-e.y,d2=dx*dx+dy*dy;if(d2<R*R&&d2>4){const d=Math.sqrt(d2);e.x+=dx/d*260*S*dt;e.y+=dy/d*260*S*dt;}}}
   for(const c of captures){c.pop=Math.max(0,c.pop-dt*3);
     if(c.cinchT<0){c.timer-=dt;if(c.timer<=0){c.cinchT=0;c.dash=false;}}
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
@@ -1645,6 +1665,7 @@ function render(){
     if(c.cinchT<0){ctx.strokeStyle='rgba(180,255,210,0.8)';ctx.lineWidth=3*S;ctx.beginPath();ctx.arc(c.c.x,c.c.y,16*S,-Math.PI/2,-Math.PI/2+TAU*(c.timer/P.captT));ctx.stroke();
       ctx.fillStyle='#eafff2';ctx.font=`bold ${(16+c.charge*2+c.pop*10)*S}px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×'+c.charge,c.c.x,c.c.y);}
   }
+  if(P.vortex)for(const c of captures){if(c.cinchT>=0)continue;const R=c.rad+230*S;ctx.strokeStyle='rgba(205,170,255,0.4)';ctx.lineWidth=2*S;ctx.setLineDash([14*S,16*S]);for(let k=0;k<3;k++){ctx.lineDashOffset=T*90*S;circ(ctx,c.c.x,c.c.y,c.rad+(R-c.rad)*(1-((T*0.9+k/3)%1)));ctx.stroke();}ctx.setLineDash([]);ctx.lineDashOffset=0;} // Vortex: rings closing in on the coil
   // orbs
   ctx.globalCompositeOperation='lighter';
   const orbGlow=QL>=2;
@@ -1728,7 +1749,7 @@ function render(){
   for(const g of ghosts)drawHead(g.x,g.y,g.a,S*1.05,g.life/0.32*0.55,hu,false);
   if(state!=='over'&&state!=='title'){
     ctx.globalCompositeOperation='lighter';const hg=(P.dashT>0?1.7:1)*S;ctx.drawImage(HG,P.x-60*hg,P.y-60*hg,120*hg,120*hg);ctx.globalCompositeOperation='source-over';
-    if(!(P.inv>0&&Math.floor(T*20)%2))drawHead(P.x,P.y,P.a,S*(P.dashT>0?1.15:1),1,hu,true);
+    if(!(P.inv>0&&Math.floor(T*20)%2))drawHead(P.x,P.y,P.a,S*(P.dashT>0?1.15:1)*(P.colossus?1.35:1),1,hu,true);
     if(P.frost){ctx.strokeStyle=`rgba(160,225,255,${0.2+0.08*Math.sin(T*3)})`;ctx.lineWidth=2*S;ctx.setLineDash([10*S,8*S]);ctx.lineDashOffset=-T*14*S;circ(ctx,P.x,P.y,(90+30*P.frost)*S);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // Frost Aura: how far the cold reaches
     for(let i=0;i<P.guard;i++){ctx.strokeStyle=`rgba(159,232,255,${0.85-i*0.2})`;ctx.lineWidth=2.5*S;circ(ctx,P.x,P.y,(19+i*5)*S);ctx.stroke();} // one ring per barrier layer
   }
@@ -1996,16 +2017,18 @@ function formDraw(x,y,k,fl){const keep={},kT=T,kD=P.dashT,tr=[];
   for(const f of FORM_KEYS)P[f]=keep[f];T=kT;P.dashT=kD;ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
 function formsBody(W,top,bot){const cols=NARROW?1:2,gap=20,tw=Math.min(W-24,860),cw=(tw-(cols-1)*gap)/cols,x0=W/2-tw/2,rh=82,hh=32,fD=`12px ${FONT}`;
   const rows=[];for(const [cat,list] of FORMS){rows.push({cat});for(const [id,fl] of list)rows.push({id,fl});}
+  rows.push({cat:'sr'});for(const c of SUPER)rows.push({id:c.id}); // the super-rare cards, after the lines
   let page=0,col=0,y=top;const place=[];
   for(const r of rows){const h=r.id?rh:hh;if((y+h>bot&&y>top)||(!r.id&&y+hh+rh>bot)){col++;y=top;if(col>=cols){col=0;page++;}}place.push({r,page,col,y});y+=h;}
   const pages=page+1,pg=Math.min(menuPage,pages-1);
   for(const p of place){if(p.page!==pg)continue;const x=x0+p.col*(cw+gap),r=p.r;ctx.textAlign='left';ctx.textBaseline='middle';
     if(!r.id){ctx.font=`900 15px ${FONT}`;ctx.fillStyle=CATC[r.cat];const nm=TX('cat_'+r.cat);ctx.fillText(nm,x+2,p.y+hh/2+3);const w=ctx.measureText(nm).width;ctx.font=`12px ${FONT}`;ctx.fillStyle='#a9c6de';ctx.fillText(TX('ln_'+r.cat),x+12+w,p.y+hh/2+3);continue;}
     const c=CARD(r.id),e=c?null:EVO.find(v=>v.id===r.id),u=c||e,tx=x+132,lines=wrap(oneLine(u.d),fD,cw-tx+x-10).slice(0,2);panel(x,p.y+2,cw,rh-5,0.8);
-    formDraw(x+(e&&e.full?82:88),p.y+rh/2,e&&e.full?0.6:0.8,r.fl); // the last forms are drawn smaller: they spread much wider
+    if(r.fl)formDraw(x+(e&&e.full?82:88),p.y+rh/2,e&&e.full?0.6:0.8,r.fl); // the last forms are drawn smaller: they spread much wider
+    else{const cx=x+64,cy=p.y+rh/2,t=performance.now()/1000;ctx.fillStyle=`hsl(${(t*50+p.y)%360},100%,72%)`;ctx.beginPath();for(let k=0;k<8;k++){const a=k/8*TAU+t*0.6,R=k%2?9:26;k?ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R):ctx.moveTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);}ctx.closePath();ctx.fill();} // a super-rare card: a turning star
     ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`900 14px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(u.n,tx,p.y+16);
     ctx.font=fD;ctx.fillStyle='#a9c6de';lines.forEach((l,i)=>ctx.fillText(l,tx,p.y+35+i*15));
-    const how=c?TX('bk_card'):TX('bk_evo',(e.pre?EVO.find(v=>v.id===e.pre).n:CARD(e.base).n+' MAX')+' ＋ '+CARD(e.need).n+(e.full?' MAX':''));fitFont(how,11,'bold',cw-tx+x-10);ctx.fillStyle='#ffd166';ctx.fillText(how,tx,p.y+rh-15);}
+    const how=c?TX(c.r===3?'bk_sr':'bk_card'):TX('bk_evo',(e.pre?EVO.find(v=>v.id===e.pre).n:CARD(e.base).n+' MAX')+' ＋ '+CARD(e.need).n+(e.full?' MAX':''));fitFont(how,11,'bold',cw-tx+x-10);ctx.fillStyle='#ffd166';ctx.fillText(how,tx,p.y+rh-15);}
   return pages;}
 function fmtLong(t){const h=Math.floor(t/3600);return h?h+':'+String(Math.floor(t%3600/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0'):fmtT(t);}
 // records on the first page, then the mission list; the list runs onto more pages when the screen is short
@@ -2029,15 +2052,15 @@ function recsBody(W,top,bot){
   return pages;
 }
 // ----- level up -----
-const RC=['#7dffb0','#6fb8ff','#ffd23f'],RF=['rgba(3,14,34,','rgba(6,22,60,','rgba(44,32,4,'];
-const CATC={atk:'#ff9a7a',body:'#7fd8ff',spk:'#ffd166',elc:'#c4a6ff',fir:'#ff8a4a',ice:'#9fe8ff'}; // card category colours
-function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?TX('rare')+' ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
+const RC=['#7dffb0','#6fb8ff','#ffd23f','#ff7ae0'],RF=['rgba(3,14,34,','rgba(6,22,60,','rgba(44,32,4,','rgba(52,8,44,']; // common, rare, evolution, super rare
+const CATC={atk:'#ff9a7a',body:'#7fd8ff',spk:'#ffd166',elc:'#c4a6ff',fir:'#ff8a4a',ice:'#9fe8ff',sr:'#ff7ae0'}; // card category colours
+function chipText(u){if(!u.id)return'';const lv=P.lv[u.id]||0;return (u.r===1?TX('rare')+' ':u.r===3?TX('srare')+' ':'')+(lv===0?'NEW':'Lv'+lv+'→'+(lv+1===u.max?'MAX':lv+1));}
 function levelScreen(W,H,mx,my){
   ctx.fillStyle='rgba(2,8,22,0.6)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   const r=cardRects(W,H),hov=TOUCH?-1:cardAt(W,H,mx,my),head=TX(P.lineAsk===1?'lv_line':'lvup');
   ctx.fillStyle='#ffe680';fitFont(head,NARROW?26:34,900,W-24);ctx.fillText(head,W/2,r[0].y-(NARROW?34:56));
   r.forEach((c,i)=>{const u=choices[i];if(!u)return;const q=u.r||0,chip=chipText(u),hint=cardHint(u),cat=u.cat?TX('cat_'+u.cat):'',catc=CATC[u.cat]||'#7fd8ff',sp=LI?'   ':'　';
-    ctx.fillStyle=RF[q]+(hov===i?0.97:0.9)+')';ctx.strokeStyle=RC[q];ctx.lineWidth=q?2.5:1;rrect(c.x,c.y,c.w,c.h,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=RF[q]+(hov===i?0.97:0.9)+')';ctx.strokeStyle=q===3?`hsl(${(performance.now()/7)%360},100%,72%)`:RC[q];ctx.lineWidth=q===3?4:q?2.5:1;rrect(c.x,c.y,c.w,c.h,10);ctx.fill();ctx.stroke(); // a super-rare card's edge runs through the colours
     if(hov===i){ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.strokeRect(c.x+3,c.y+3,c.w-6,c.h-6);}
     let chipW=0;if(chip){ctx.font=`900 12px ${FONT}`;const tw=ctx.measureText(chip).width+14;chipW=tw+8;ctx.fillStyle=RC[q];ctx.fillRect(c.x+c.w-tw-8,c.y+8,tw,20);ctx.fillStyle='#04102a';ctx.textAlign='center';ctx.fillText(chip,c.x+c.w-tw/2-8,c.y+18);}
     const foot=cat+(hint?sp+hint:'');
@@ -2132,7 +2155,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
-  sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
+  sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO,SUPER};},applyCard,
   spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,spawnTitan,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
