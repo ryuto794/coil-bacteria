@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v14）</title>
+<title>コイル・バクテリア（試作 v15）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -251,7 +251,7 @@ if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'
 if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
-META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1},META.opts&&typeof META.opts==='object'?META.opts:{});
+META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick'},META.opts&&typeof META.opts==='object'?META.opts:{});
 if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;
 META.stats=Object.assign({kills:0,dashKills:0,toxins:0},META.stats&&typeof META.stats==='object'?META.stats:{});
 if(!META.done||typeof META.done!=='object')META.done={};
@@ -263,7 +263,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v14';
+const LANGS=['ja','en'],VER='v15';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -433,6 +433,9 @@ const STR={
  o_vol:['音量','Sound'],
  o_fx:['揺れとフラッシュ','Shake & flash'],
  o_vib:['振動','Vibration'],
+ o_ctl:['操作','Controls'],
+ ctl_0:['スティック','Stick'],
+ ctl_1:['触れた方向','Touch point'],
  o_q:['画質','Quality'],
  o_fs:['全画面','Fullscreen'],
  on:['オン','On'],
@@ -451,7 +454,7 @@ const STR={
  r_title:['記録とミッション','Records & missions'],
  // how to play
  h1:['操作','Controls'],
- h1_t:['指でなぞった方向へ進む。短くタップするか、右下の DASH でダッシュ。長押しでダッシュが伸びる。','Drag to steer. Quick tap or the DASH button to dash; hold to dash longer.'],
+ h1_t:['画面のどこでも、触れた場所から指を動かした向きへ進む。短くタップするか、右下の DASH でダッシュ。長押しでダッシュが伸びる。','Touch anywhere and move your finger: the snake goes the way you moved it. Quick tap or the DASH button to dash; hold to dash longer.'],
  h1_m:['マウスの方向へ進む（WASD・矢印キーでも可）。クリックかスペースでダッシュ。長押しで伸びる。Esc でポーズ。','Steer with the mouse (or WASD / arrow keys). Click or Space to dash; hold to dash longer. Esc pauses.'],
  h2:['囲んで締める','Coil and squeeze'],
  h2_b:['尾で敵を囲むと「包囲」になる。ダッシュで締めると中の敵を一掃して、XP が2倍。放っておいても少しすると締まる。','Loop your tail around enemies to encircle them. Dash to squeeze: everything inside is wiped out for double XP. Left alone, the coil squeezes by itself after a moment.'],
@@ -564,8 +567,20 @@ function dashBtn(){return{x:W-74,y:H-96,r:46};}
 function inDashBtn(x,y){const b=dashBtn();return Math.hypot(x-b.x,y-b.y)<b.r+16;}
 function promoteSteer(tc){
   if(!tc||tc.moved)return;
-  tc.moved=true;mx=tc.x;my=tc.y;mouseUsed=true;
+  tc.moved=true;if(stick)return; // with the stick, holding still changes nothing
+  mx=tc.x;my=tc.y;mouseUsed=true;
 }
+// v15: a floating stick. The spot first touched is its middle, and the snake goes the way the finger has moved from there, so it can be
+// played from the bottom of the screen without covering the action. Past the rim the base is dragged along, so turning back takes a small move.
+// It only sets the aim point (mx, my) around the screen centre: everything downstream is as before. META.opts.ctl = 'point' turns it off.
+let stick=null; // {ox,oy,x,y,on} in canvas px, while the steering finger is down
+const STICK_DEAD=10,STICK_R=56;
+function stickMove(x,y){const s=stick;if(!s)return;s.x=x;s.y=y;let dx=x-s.ox,dy=y-s.oy,d=Math.hypot(dx,dy);
+  if(d>STICK_R){s.ox=x-dx/d*STICK_R;s.oy=y-dy/d*STICK_R;dx=x-s.ox;dy=y-s.oy;d=STICK_R;}
+  if(d>STICK_DEAD){s.on=true;mx=W/2+dx/d*120;my=H/2+dy/d*120;mouseUsed=true;}}
+function stickDraw(){const s=stick;if(!s||state!=='play')return;const a=s.on?0.5:0.28;
+  ctx.lineWidth=2;ctx.strokeStyle=`rgba(190,235,255,${a})`;ctx.fillStyle=`rgba(120,200,255,${a*0.22})`;ctx.beginPath();ctx.arc(s.ox,s.oy,STICK_R,0,TAU);ctx.fill();ctx.stroke();
+  ctx.fillStyle=`rgba(125,255,176,${a+0.2})`;ctx.beginPath();ctx.arc(s.x,s.y,20,0,TAU);ctx.fill();}
 cv.addEventListener('touchstart',e=>{
   TOUCH=true;e.preventDefault();
   for(const t of e.changedTouches){
@@ -579,6 +594,7 @@ cv.addEventListener('touchstart',e=>{
       // defer aim until drag/hold so a quick tap-dash won't yank steering
       steerTouch=t.identifier;
       tapCand={id:t.identifier,sx:(t.clientX-OFF.x),sy:(t.clientY-OFF.y),x:(t.clientX-OFF.x),y:(t.clientY-OFF.y),t:performance.now(),moved:false,savedMx:mx,savedMy:my};
+      stick=META.opts.ctl==='point'?null:{ox:tapCand.sx,oy:tapCand.sy,x:tapCand.sx,y:tapCand.sy,on:false};
     }
     else{steerTouch=t.identifier;mx=(t.clientX-OFF.x);my=(t.clientY-OFF.y);mouseUsed=true;act('tap');}
   }},{passive:false});
@@ -586,6 +602,7 @@ cv.addEventListener('touchmove',e=>{
   e.preventDefault();
   for(const t of e.changedTouches){
     if(t.identifier!==steerTouch)continue;
+    if(stick){stickMove(t.clientX-OFF.x,t.clientY-OFF.y);if(stick.on&&tapCand&&tapCand.id===t.identifier)tapCand.moved=true;continue;}
     if(tapCand&&tapCand.id===t.identifier&&!tapCand.moved){
       tapCand.x=(t.clientX-OFF.x);tapCand.y=(t.clientY-OFF.y);
       const dist=Math.hypot((t.clientX-OFF.x)-tapCand.sx,(t.clientY-OFF.y)-tapCand.sy);
@@ -604,13 +621,13 @@ function tEnd(e){
         // short + little move → dash; restore aim so tap doesn't yank direction
         if(!tapCand.moved&&dt<TAP_MS&&dist<=TAP_MOVE){
           mx=tapCand.savedMx;my=tapCand.savedMy;dash();
-        }else if(!tapCand.moved){
+        }else if(!tapCand.moved&&!stick){
           // held in place: start steering toward that spot
           mx=(t.clientX-OFF.x);my=(t.clientY-OFF.y);mouseUsed=true;
         }
         tapCand=null;
       }
-      steerTouch=null;
+      steerTouch=null;stick=null;
     }
   }
 }
@@ -783,7 +800,7 @@ function gasTick(dt){
   for(const g of gas){g.life-=dt;g.r+=(g.R-g.r)*Math.min(1,dt*1.6);}compact(gas,g=>g.life>0);
   let inG=false;for(const g of gas){const dx=P.x-g.x,dy=P.y-g.y,rr=g.r*0.85;if(g.life>0.25&&dx*dx+dy*dy<rr*rr){inG=true;break;}}
   P.gasT=inG?P.gasT+dt:0;
-  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*(1-0.4*P.anti)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,TX('poison'),16,'#d8f070',0.5);}
+  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*(1-0.4*P.anti)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'-'+Math.max(1,Math.round(GAS_DPS[P.stage]*(1-0.4*P.anti)*0.5))+' '+TX('poison'),16,'#d8f070',0.5);}
     if(P.hp<=0)die('gas');}
 }
 // ---------- capsules (VS-style chests): bosses carry evolutions ----------
@@ -858,7 +875,8 @@ function stageUp(){
 }
 // the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
 function hitHead(raw,by){if(P.inv>0||DEMO)return false;const S=P.S,dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)));
-  P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);text(P.x,P.y-30*S,'-'+dm,18,'#ff7080',0.6);
+  P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);hpHitAt=performance.now();
+  text(P.x,P.y-40*S,'-'+dm,30,'#ff4a5c',1.1);const who=by&&(by.name||by.n);if(who)text(P.x,P.y-16*S,who,14,'#ffc0c8',1.1); // how much, and what did it
   if(P.hp<=0)die(by);return true;}
 // by: the enemy type that landed the last hit, or 'gas'
 function die(by){
@@ -1592,25 +1610,35 @@ function panel(x,y,w,h,a){ctx.fillStyle=`rgba(3,14,34,${a||0.7})`;ctx.strokeStyl
 // Layout helpers (titleLayout, cardRects, endLayout) take the same W,H, and act() divides the pointer the same way for hit tests.
 function uiK(){return NARROW?1:clamp(Math.min(W/1024,H/600),1,1.6);}
 function ui(fn){const k=uiK();ctx.save();ctx.scale(k,k);fn(W/k,H/k,mx/k,my/k);ctx.restore();}
-function hud(){ui(hudDraw);bossArrow();}
-function hudDraw(W,H){const k=uiK();
+function hud(){ui(hudDraw);bossArrow();stickDraw();}
+// The top of the screen: HP as a bar from edge to edge (v15), XP as a thin line under it, then the panels.
+// hpShow trails behind the real HP: what a hit took stays white for a moment and then drains, so the size of each hit can be read.
+let hpShow=1,hpHitAt=0,hpLast=0;
+function hudDraw(W,H){const k=uiK(),hb=NARROW?22:20,HY=NARROW?16:14; // HY: how far the panels and the timer sit below their old places
   ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(10,30,60,0.8)';ctx.fillRect(0,0,W,6);ctx.fillStyle='#4aa8ff';ctx.fillRect(0,0,W*Math.min(1,P.xp/P.xpNeed),6);
-  const lw=NARROW?Math.min(170,W*0.44):230,bw=lw-50;
-  panel(10,12,lw,58);
-  ctx.fillStyle='#bfe3ff';ctx.font=`bold 12px ${FONT}`;ctx.textAlign='left';ctx.fillText('HP',18,29);
-  ctx.fillStyle='#2a0d16';ctx.fillRect(42,22,bw,14);ctx.fillStyle=P.hp/P.maxHp<0.3?'#ff4a5a':'#5dff9a';ctx.fillRect(42,22,bw*P.hp/P.maxHp,14);
-  ctx.fillStyle='#fff';ctx.font=`bold 11px ${FONT}`;ctx.fillText(Math.ceil(P.hp)+' / '+P.maxHp,46,29);
-  ctx.fillStyle='#bfe3ff';ctx.font=`bold 12px ${FONT}`;ctx.fillText('Lv '+P.lvl+'  XP '+Math.floor(P.xp)+'/'+P.xpNeed,18,54);
+  const f=clamp(P.hp/P.maxHp,0,1),now=performance.now(),low=f<0.25,since=now-hpHitAt;
+  if(f>=hpShow)hpShow=f;else if(since>450)hpShow=Math.max(f,hpShow-Math.min(0.1,(now-hpLast)/1000)*0.7);hpLast=now;
+  ctx.fillStyle='#1c0810';ctx.fillRect(0,0,W,hb);
+  if(hpShow>f){ctx.fillStyle='#ffffff';ctx.fillRect(W*f,0,W*(hpShow-f),hb);}
+  ctx.fillStyle=low?'#ff3348':f<0.5?'#ffab1f':'#2fce7a';ctx.fillRect(0,0,W*f,hb);
+  if(low){ctx.fillStyle=`rgba(255,255,255,${0.16+0.16*Math.sin(now/110)})`;ctx.fillRect(0,0,W*f,hb);} // low: it throbs
+  if(since<220){ctx.fillStyle=`rgba(255,60,80,${0.55*(1-since/220)})`;ctx.fillRect(0,0,W,hb);} // just hit: the whole bar flashes
+  ctx.fillStyle='rgba(0,0,0,0.3)';for(let v=20;v<P.maxHp;v+=20)ctx.fillRect(W*v/P.maxHp-0.5,0,1,hb); // a notch every 20 HP
+  const hs='HP  '+Math.max(0,Math.ceil(P.hp))+' / '+P.maxHp;ctx.font=`900 ${NARROW?15:14}px ${FONT}`;ctx.textAlign='left';ctx.lineJoin='round';ctx.lineWidth=4;ctx.strokeStyle='#03101c';ctx.strokeText(hs,10,hb/2+0.5);ctx.fillStyle='#ffffff';ctx.fillText(hs,10,hb/2+0.5);
+  ctx.fillStyle='rgba(10,30,60,0.9)';ctx.fillRect(0,hb,W,4);ctx.fillStyle='#4aa8ff';ctx.fillRect(0,hb,W*Math.min(1,P.xp/P.xpNeed),4);
+  const lw=NARROW?Math.min(170,W*0.44):230;
+  panel(10,12+HY,lw,58);
+  ctx.fillStyle='#e8f6ff';ctx.font=`900 15px ${FONT}`;ctx.textAlign='left';ctx.fillText('Lv '+P.lvl,18,30+HY);
+  ctx.fillStyle='#bfe3ff';ctx.font=`bold 12px ${FONT}`;ctx.fillText('XP '+Math.floor(P.xp)+' / '+P.xpNeed,18,54+HY);
   const rw=NARROW?Math.min(140,W*0.36):200;
-  panel(W-rw-10,12,rw,58);ctx.font=`bold ${NARROW?12:14}px ${FONT}`;ctx.fillStyle='#ffb3bb';
-  ctx.fillText(TX('kills',kills),W-rw,29);ctx.fillStyle='#b6ffd2';ctx.fillText(TX('combo',bestCombo),W-rw,52);
-  if(state==='play'&&!DEMO){const px=NARROW?(lw+W-rw)/2:10+lw+26,py=41,pr=17; // pause: between the two panels on a phone, right of the HP panel on wide screens
+  panel(W-rw-10,12+HY,rw,58);ctx.font=`bold ${NARROW?12:14}px ${FONT}`;ctx.fillStyle='#ffb3bb';
+  ctx.fillText(TX('kills',kills),W-rw,29+HY);ctx.fillStyle='#b6ffd2';ctx.fillText(TX('combo',bestCombo),W-rw,52+HY);
+  if(state==='play'&&!DEMO){const px=NARROW?(lw+W-rw)/2:10+lw+26,py=41+HY,pr=17; // pause: between the two panels on a phone, right of the HP panel on wide screens
     ctx.fillStyle='rgba(3,14,34,0.75)';ctx.strokeStyle='rgba(100,200,255,0.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(px,py,pr,0,TAU);ctx.fill();ctx.stroke();
     ctx.fillStyle='#bfe3ff';ctx.fillRect(px-6,py-7,4,14);ctx.fillRect(px+2,py-7,4,14);
     hot.push({x:px-pr-5,y:py-pr-5,w:2*pr+10,h:2*pr+10,f:pauseGame});}
   // timer + scale
-  const ty=NARROW?90:34;
+  const ty=(NARROW?90:34)+HY;
   ctx.textAlign='center';ctx.font=`900 ${NARROW?22:28}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(fmtT(T),W/2,ty);
   const parts2=[TX('scale'),stageName(0),'→',stageName(1),'→',stageName(2)]; // odd slots are the scale names
   ctx.font=`bold ${NARROW?12:13}px ${FONT}`;let tw=0;const ws=parts2.map(p=>{const w=ctx.measureText(p).width+6;tw+=w;return w;});
@@ -1659,11 +1687,11 @@ function edgeArrow(wx,wy,wr,col,label){const Z=1/P.S,sx=W/2+(wx-P.x)*Z,sy=H/2+(w
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${12*k|0}px ${FONT}`;ctx.fillStyle=col;ctx.fillText(label,ax-dx*26,ay-dy*26);}
 function bossArrow(){const b=P.boss,h=P.hunter;if(b)edgeArrow(b.x,b.y,b.r,'#ffd23f',TX('boss_tag'));if(h)edgeArrow(h.x,h.y,h.r,'#e6efff',TX('hunt_tag'));
   for(const c of chests)edgeArrow(c.x,c.y,20*P.S,c.evo?'#ffd23f':'#9fe0ff',TX('chest_tag'));}
-function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?168:124;
+function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?184:138;
   ctx.save();ctx.scale(k,k);ctx.globalAlpha=a;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,15,10,0.85)';
   fitFont(m.s,NARROW?20:24,900,w-24);ctx.strokeText(m.s,w/2,y);ctx.fillStyle='#ffffff';ctx.fillText(m.s,w/2,y);
   if(m.sub){fitFont(m.sub,14,'bold',w-24);ctx.strokeText(m.sub,w/2,y+25);ctx.fillStyle='#d8f070';ctx.fillText(m.sub,w/2,y+25);}ctx.restore();ctx.globalAlpha=1;}
-function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(NARROW?226:178);ctx.save();ctx.scale(k,k);
+function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(NARROW?242:192);ctx.save();ctx.scale(k,k);
   for(const t of toasts.slice(0,2)){ctx.globalAlpha=Math.max(0,Math.min(1,t.life*2,(t.max-t.life)*5));
     ctx.fillStyle='rgba(40,30,4,0.92)';ctx.strokeStyle='#ffd23f';ctx.lineWidth=1.5;rrect(sw/2-w/2,y-24,w,48,10);ctx.fill();ctx.stroke();
     ctx.textAlign='center';ctx.textBaseline='middle';fitFont(t.s,15,900,w-16);ctx.fillStyle='#ffe680';ctx.fillText(t.s,sw/2,y-8);
@@ -1734,6 +1762,7 @@ function optsBody(W,top,bot){
   const rows=[[TX('o_lang'),LI?'English':'日本語',()=>setLang(1-LI,true)],
     [TX('o_vol'),TX('vol_'+[0,0.35,0.7,1].indexOf(o.vol)),()=>setVol(cyc([0,0.35,0.7,1],o.vol))],
     [TX('o_fx'),TX('fx_'+[1,0.4,0].indexOf(o.fx)),()=>set('fx',cyc([1,0.4,0],o.fx))]];
+  if(TOUCH)rows.push([TX('o_ctl'),TX('ctl_'+(o.ctl==='point'?1:0)),()=>set('ctl',o.ctl==='point'?'stick':'point')]);
   if(navigator.vibrate)rows.push([TX('o_vib'),TX(o.vib?'on':'off'),()=>{set('vib',!o.vib);vib(30);}]);
   rows.push([TX('o_q'),TX('q_'+[-1,3,2,1].indexOf(o.q)),()=>{set('q',cyc([-1,3,2,1],o.q));applyQ();}]);
   if(FS_OK)rows.push([TX('o_fs'),TX(isFS()?'on':'off'),toggleFS,true]);
@@ -1885,7 +1914,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
-  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_T,spawnTitan,get titans(){return enemies.filter(e=>e.titan);},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_T,spawnTitan,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
