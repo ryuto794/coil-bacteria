@@ -1611,21 +1611,24 @@ function panel(x,y,w,h,a){ctx.fillStyle=`rgba(3,14,34,${a||0.7})`;ctx.strokeStyl
 function uiK(){return NARROW?1:clamp(Math.min(W/1024,H/600),1,1.6);}
 function ui(fn){const k=uiK();ctx.save();ctx.scale(k,k);fn(W/k,H/k,mx/k,my/k);ctx.restore();}
 function hud(){ui(hudDraw);bossArrow();stickDraw();}
-// The top of the screen: HP as a bar from edge to edge (v15), XP as a thin line under it, then the panels.
+// The top of the screen: XP as a thin line along the edge, HP as one rounded bar right across under it (v15), then the panels.
 // hpShow trails behind the real HP: what a hit took stays white for a moment and then drains, so the size of each hit can be read.
 let hpShow=1,hpHitAt=0,hpLast=0;
-function hudDraw(W,H){const k=uiK(),hb=NARROW?22:20,HY=NARROW?16:14; // HY: how far the panels and the timer sit below their old places
+function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how far the panels and the timer sit below their old places
   ctx.textBaseline='middle';
   const f=clamp(P.hp/P.maxHp,0,1),now=performance.now(),low=f<0.25,since=now-hpHitAt;
   if(f>=hpShow)hpShow=f;else if(since>450)hpShow=Math.max(f,hpShow-Math.min(0.1,(now-hpLast)/1000)*0.7);hpLast=now;
-  ctx.fillStyle='#1c0810';ctx.fillRect(0,0,W,hb);
-  if(hpShow>f){ctx.fillStyle='#ffffff';ctx.fillRect(W*f,0,W*(hpShow-f),hb);}
-  ctx.fillStyle=low?'#ff3348':f<0.5?'#ffab1f':'#2fce7a';ctx.fillRect(0,0,W*f,hb);
-  if(low){ctx.fillStyle=`rgba(255,255,255,${0.16+0.16*Math.sin(now/110)})`;ctx.fillRect(0,0,W*f,hb);} // low: it throbs
-  if(since<220){ctx.fillStyle=`rgba(255,60,80,${0.55*(1-since/220)})`;ctx.fillRect(0,0,W,hb);} // just hit: the whole bar flashes
-  ctx.fillStyle='rgba(0,0,0,0.3)';for(let v=20;v<P.maxHp;v+=20)ctx.fillRect(W*v/P.maxHp-0.5,0,1,hb); // a notch every 20 HP
-  const hs='HP  '+Math.max(0,Math.ceil(P.hp))+' / '+P.maxHp;ctx.font=`900 ${NARROW?15:14}px ${FONT}`;ctx.textAlign='left';ctx.lineJoin='round';ctx.lineWidth=4;ctx.strokeStyle='#03101c';ctx.strokeText(hs,10,hb/2+0.5);ctx.fillStyle='#ffffff';ctx.fillText(hs,10,hb/2+0.5);
-  ctx.fillStyle='rgba(10,30,60,0.9)';ctx.fillRect(0,hb,W,4);ctx.fillStyle='#4aa8ff';ctx.fillRect(0,hb,W*Math.min(1,P.xp/P.xpNeed),4);
+  ctx.fillStyle='rgba(10,30,60,0.9)';ctx.fillRect(0,0,W,4);ctx.fillStyle='#4aa8ff';ctx.fillRect(0,0,W*Math.min(1,P.xp/P.xpNeed),4); // XP: the thin line along the very top, as before
+  const qx=10,qy=9,qw=W-20,bar=()=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(qx,qy,qw,hb,hb/2):ctx.rect(qx,qy,qw,hb);}; // HP: one rounded bar, nearly edge to edge, no marks on it
+  ctx.fillStyle='rgba(3,12,28,0.9)';bar();ctx.fill();
+  ctx.save();bar();ctx.clip();
+  if(hpShow>f){ctx.fillStyle='#ffe3e6';ctx.fillRect(qx+qw*f,qy,qw*(hpShow-f),hb);} // what the last hit took
+  const g=ctx.createLinearGradient(0,qy,0,qy+hb),c=low?['#ff8d99','#e3203c']:f<0.5?['#ffd772','#f0890f']:['#7dffb8','#1faa62'];g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);
+  ctx.fillStyle=g;ctx.fillRect(qx,qy,qw*f,hb);ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(qx,qy+1,qw*f,hb*0.34); // a soft shine along the top
+  if(low){ctx.fillStyle=`rgba(255,255,255,${0.14+0.14*Math.sin(now/110)})`;ctx.fillRect(qx,qy,qw*f,hb);} // low: it throbs
+  if(since<220){ctx.fillStyle=`rgba(255,60,80,${0.5*(1-since/220)})`;ctx.fillRect(qx,qy,qw,hb);} // just hit: the whole bar flashes
+  ctx.restore();ctx.strokeStyle=low?'rgba(255,150,160,0.8)':'rgba(140,215,255,0.55)';ctx.lineWidth=1.5;bar();ctx.stroke();
+  const hs='HP  '+Math.max(0,Math.ceil(P.hp))+' / '+P.maxHp;ctx.font=`900 ${NARROW?13:12}px ${FONT}`;ctx.textAlign='left';ctx.lineJoin='round';ctx.lineWidth=3.5;ctx.strokeStyle='#03101c';ctx.strokeText(hs,qx+12,qy+hb/2+0.5);ctx.fillStyle='#ffffff';ctx.fillText(hs,qx+12,qy+hb/2+0.5);
   const lw=NARROW?Math.min(170,W*0.44):230;
   panel(10,12+HY,lw,58);
   ctx.fillStyle='#e8f6ff';ctx.font=`900 15px ${FONT}`;ctx.textAlign='left';ctx.fillText('Lv '+P.lvl,18,30+HY);
@@ -1687,11 +1690,11 @@ function edgeArrow(wx,wy,wr,col,label){const Z=1/P.S,sx=W/2+(wx-P.x)*Z,sy=H/2+(w
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${12*k|0}px ${FONT}`;ctx.fillStyle=col;ctx.fillText(label,ax-dx*26,ay-dy*26);}
 function bossArrow(){const b=P.boss,h=P.hunter;if(b)edgeArrow(b.x,b.y,b.r,'#ffd23f',TX('boss_tag'));if(h)edgeArrow(h.x,h.y,h.r,'#e6efff',TX('hunt_tag'));
   for(const c of chests)edgeArrow(c.x,c.y,20*P.S,c.evo?'#ffd23f':'#9fe0ff',TX('chest_tag'));}
-function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?184:138;
+function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?188:140;
   ctx.save();ctx.scale(k,k);ctx.globalAlpha=a;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=5;ctx.strokeStyle='rgba(0,15,10,0.85)';
   fitFont(m.s,NARROW?20:24,900,w-24);ctx.strokeText(m.s,w/2,y);ctx.fillStyle='#ffffff';ctx.fillText(m.s,w/2,y);
   if(m.sub){fitFont(m.sub,14,'bold',w-24);ctx.strokeText(m.sub,w/2,y+25);ctx.fillStyle='#d8f070';ctx.fillText(m.sub,w/2,y+25);}ctx.restore();ctx.globalAlpha=1;}
-function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(NARROW?242:192);ctx.save();ctx.scale(k,k);
+function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(NARROW?246:194);ctx.save();ctx.scale(k,k);
   for(const t of toasts.slice(0,2)){ctx.globalAlpha=Math.max(0,Math.min(1,t.life*2,(t.max-t.life)*5));
     ctx.fillStyle='rgba(40,30,4,0.92)';ctx.strokeStyle='#ffd23f';ctx.lineWidth=1.5;rrect(sw/2-w/2,y-24,w,48,10);ctx.fill();ctx.stroke();
     ctx.textAlign='center';ctx.textBaseline='middle';fitFont(t.s,15,900,w-16);ctx.fillStyle='#ffe680';ctx.fillText(t.s,sw/2,y-8);
