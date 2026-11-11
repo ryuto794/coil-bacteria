@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v17）</title>
+<title>コイル・バクテリア（試作 v18）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -61,7 +61,7 @@ const ETYPES=[
  {k:'rod',   n:['桿菌','Bacillus'],st:1,r:21,hp:6, spd:128,dmg:12,xp:7, col:'#3fb8ff',core:'#0b3f6e',glow:'rgba(60,170,255,0.5)',rot:1,fr:6,mv:'run'},
  {k:'spiro', n:['らせん菌','Spirillum'],st:1,r:18,hp:5, spd:120,dmg:10,xp:7, col:'#ff6fe0',core:'#ffe3f9',glow:'rgba(255,100,220,0.5)',rot:1,fr:8,mv:'orbit'},
  {k:'strep', n:['連鎖球菌','Strep Chain'],st:1,r:15,hp:4, spd:112,dmg:9, xp:3, col:'#8f9bff',core:'#e4e7ff',glow:'rgba(130,150,255,0.5)',mv:'weave',chain:5},
- {k:'phage', n:['ファージ','Phage'],st:1,sh:1,r:24,hp:10,spd:132,dmg:12,xp:16,col:'#ff4a3a',core:'#5a0a05',glow:'rgba(255,70,50,0.55)',fr:4,mv:'latch'},
+ {k:'phage', n:['ファージ','Phage'],st:1,sh:1,r:24,hp:10,spd:132,dmg:6,xp:16,col:'#ff4a3a',core:'#5a0a05',glow:'rgba(255,70,50,0.55)',fr:4,mv:'latch'},
  // v14: arc = a boomerang (straight out through where the player was, back in a curve)
  {k:'moon',  n:['ミカヅキモ','Crescent Alga'],st:1,r:26,hp:8, spd:120,dmg:13,xp:9, col:'#3fe08a',core:'#0c5a34',glow:'rgba(60,225,140,0.5)',spin:7,mv:'arc'},
  // stage 2: nuclei / giants
@@ -275,7 +275,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v17';
+const LANGS=['ja','en'],VER='v18';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -363,6 +363,7 @@ const STR={
  tip_split_s:['倒すと小さい敵に分かれる。もう一度巻け','It breaks into smaller ones. Coil them again'],
  tip_latch:['ファージが尾に取りついた','A phage is on your tail'],
  tip_latch_s:['ダッシュで振り落とせ。放っておくと注入される','Dash to shake it off before it injects'],
+ latch_warn:['尾にファージ！ ダッシュで振り落とせ','Phage on your tail! Dash to shake it off'],
  tip_brood:['巨大ウイルスが粒子を放つ','The Giant Virus lets out virions'],
  tip_brood_s:['殻を割って、先に倒す','Crack its shell and kill it first'],
  shaken:['振り落とした！','Shaken off!'],
@@ -443,6 +444,7 @@ const STR={
  bk_scale:['{0}の世界','{0} scale'],
  bk_locked:['（まだ着いていない）','(not reached yet)'],
  bk_shell:['殻 {0}','Shell {0}'],
+ bk_dmg:['ダメージ {0}','Damage {0}'],
  bk_germ:['まっすぐ寄ってくる。いちばん弱い','Comes straight at you. The weakest'],
  bk_virus:['少し硬い','A little tougher'],
  bk_blob:['遅くて硬い。当たると痛い','Slow and tough. Hurts on contact'],
@@ -459,7 +461,7 @@ const STR={
  bk_strep:['鎖でうねる。先頭を倒すと次が先頭になる','A chain that snakes. Kill the first and the next leads'],
  bk_divider:['倒すとミトコンドリア 3 体に分かれる','Breaks into 3 Mitochondria'],
  bk_moon:['ブーメラン。まっすぐ来て、弧を描いて戻る','A boomerang: straight out, back in a curve'],
- bk_phage:['尾に取りついて注入する。ダッシュで振り落とす','Clamps onto your tail and injects. Dash to shake it off'],
+ bk_phage:['尾に取りつき、3 秒ごとに注入する。ダッシュで振り落とす','Clamps onto your tail and injects every 3s. Dash to shake it off'],
  bk_shoot:['距離を取って撃ってくる。弾は尾で防げる','Keeps its distance and shoots. Your tail blocks the shots'],
  bk_big:['大きくて硬い','Big and tough'],
  bk_wbc:['20 秒追ってくる。逃げるか、7 重に巻く','Chases you for 20s. Run, or coil it 7 times'],
@@ -767,7 +769,7 @@ function text(x,y,s,size,col,life){if(texts.length>40)texts.shift();texts.push({
 // Those of the scale the player is at are the real enemies. Everything from scales already outgrown keeps coming too, as prey (isPrey).
 const TIERS=[
  [['germ',0,10,0],['virus',20,5,60],['blob',55,2.4,90],['bacil',70,1.6,60],['vibrio',85,1.2,60],['bomb',95,1.3,90]],
- [['mito',0,5,0],['rod',6,2.2,40],['cell',12,2.4,50],['spiro',18,1.8,40],['neutro',20,2.0,50],['strep',28,0.5,40],['divider',35,1.4,50],['moon',24,1.6,40],['phage',42,1.2,50],['bcell',50,1.1,60],['bigcell',60,0.9,80]],
+ [['mito',0,5,0],['rod',6,2.2,40],['cell',12,2.4,50],['spiro',18,1.8,40],['neutro',20,2.0,50],['strep',28,0.5,40],['divider',35,1.4,50],['moon',24,1.6,40],['phage',42,0.9,50],['bcell',50,1.1,60],['bigcell',60,0.9,80]],
  [['nucleus',0,3.5,0],['anti',4,2.4,30],['bigrod',8,1.8,40],['amoeba',12,1.6,50],['spiroch',16,2.0,40],['tcell',20,1.5,50],['chromo',24,1.4,40],['mimi',30,0.7,50],['dna',36,0.8,50],['giant',45,0.9,70]]]; // a chain type counts once here but comes as a whole chain
 function pickFrom(list,t,flat){let tot=0;const w=list.map(([k,t0,top,ramp])=>{let v=t<t0?0:top*(ramp?Math.min(1,(t-t0)/ramp):1);if(flat)v=Math.sqrt(v)/(ET[k].chain?3:1);tot+=v;return v;}); // flat: an even mix (a chain counts for less: it comes as many)
   let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[list[i][0]];}return ET[list[0][0]];}
@@ -1136,7 +1138,7 @@ const UPG=[
  {id:'blast',cat:'atk', max:5,n:['締め爆発','Squeeze Blast'],d:['締めた時の\n衝撃波 +25%','Shockwave when\nyou squeeze +25%'],f:()=>{P.blastLv++;P.blast+=0.25;}},
  {id:'flag', cat:'body',max:5,n:['鞭毛ブースト','Flagella Boost'],d:['移動速度 +8%\n旋回 +8%','Move speed +8%\nTurning +8%'],f:()=>{P.flag++;P.spd*=1.08;P.turn*=1.08;}},
  {id:'mag',  cat:'body',max:4,n:['DNA吸引','DNA Magnet'],d:['XP吸引範囲 +45','XP pickup range +45'],f:()=>P.magnet+=45},
- {id:'memb', cat:'body',max:5,n:['細胞膜','Cell Membrane'],d:['最大HP +20\nHP全回復','Max HP +20\nFull heal'],f:()=>{P.memb++;P.maxHp+=20;P.hp=P.maxHp;}},
+ {id:'memb', cat:'body',max:5,n:['最大HPアップ','Max HP Up'],d:['最大HP +20\nHP全回復','Max HP +20\nFull heal'],f:()=>{P.memb++;P.maxHp+=20;P.hp=P.maxHp;}},
  {id:'regen',cat:'body',max:3,n:['自己修復','Self-Repair'],d:['HPが毎秒 +0.5\n回復する','Regenerate\n+0.5 HP per second'],f:()=>P.regen+=0.5},
  {id:'armor',cat:'body',max:5,n:['硬い膜','Tough Membrane'],d:['受けるダメージ -10%\n（重ねて強化）','Damage taken -10%\n(stacks)'],f:()=>P.armor++},
  {id:'guard',cat:'body',max:3,n:['バリア','Barrier'],d:['攻撃を1回防ぐ。22秒で\n張り直す（重ねて -5秒）','Blocks one hit. Comes back\nin 22s (-5s per level)'],f:()=>{P.guardLv++;P.guard=Math.max(P.guard,1);P.guardT=0;}},
@@ -1185,7 +1187,7 @@ function avail(u){return (P.lv[u.id]||0)<u.max;}
 function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');if(u.id==='ember'&&P.lv.ember>=u.max)mission('embermax');if(u.id==='frost'&&P.lv.frost>=u.max)mission('frostmax');}
 function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>0;}
 function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(e.base&&u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
-const LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
+const DEFC=['memb','armor','guard','regen'],LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
 function rollChoices(){
   choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
   // v16: once, early on, the level-up is a choice of line: three of the four first cards (Spike, Electric, Fire, Ice). A reroll draws again from the four.
@@ -1196,6 +1198,7 @@ function rollChoices(){
   while(choices.length<3&&(com.length||rare.length)){
     const pr=Math.min(0.6,0.12+0.07*P.rareMiss),src=(rare.length&&(Math.random()<pr||!com.length))?rare:com;
     const c=src.splice(src===rare?pickR(src):Math.random()*src.length|0,1)[0];if(c.r===1)got=true;choices.push(c);}
+  if(P.hp/P.maxHp<0.5){const def=DEFC.map(CARD).filter(avail);if(def.length&&!choices.some(c=>def.includes(c)))choices[2]=def[Math.random()*def.length|0];} // v18: under half HP, one of the three is always a defence card
   if(choices.length<3)choices.push(FALLBACK);
   P.rareMiss=got?0:P.rareMiss+1;
 }
@@ -1258,7 +1261,7 @@ function update(dt){
     for(const q of pts)for(const e of enemies){if(e.dead)continue;const dx=e.x-q.x,dy=e.y-q.y,rr=R+e.r;
       if(dx*dx+dy*dy<rr*rr){if(P.glacier)freeze(e,1.5);if(!hurt(e,P.pulseDmg*(1+P.stage),1)){const d=Math.hypot(dx,dy)+1;e.vx+=dx/d*140*S;e.vy+=dy/d*140*S;}}}}
   // enemies
-  buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);
+  buildGrid();tailTouch(dt,S);needleTick(dt,S);voltTick(dt);P.latPrev=P.latN||0;P.latN=0; // latPrev: how many phages were on the tail last frame
   const far=Math.hypot(W,H)*1.1*S,headR=10*S,crushR=(P.dashT>0?22:15)*S; // prey is crushed by the whole head, wider while dashing
   for(const e of enemies){
     if(e.dead)continue;
@@ -1358,7 +1361,7 @@ function special(e,dx,dy,d,s,dt,S){
 // latch: goes for the nearest stretch of tail a little way behind the head, clamps on and injects every LATCH_T seconds until a dash throws it off.
 // brood: walks in like anything else (returns false), but lets small ones out now and then, four times at most.
 // arc: a boomerang (v14). dart: fast, wide turns (v14).
-const LATCH_T=2.4;
+const LATCH_T=3.2; // v18: 2.4 -> 3.2 s, 6 damage instead of 12, and two on the tail at most (the owner found it too painful and hard to read)
 function follow(e,s){const L=e.lead,qx=L.x-e.x,qy=L.y-e.y,q=Math.hypot(qx,qy)+0.01,k=Math.min(s*3.2,Math.max(0,q-(e.r+L.r)*1.02)*9);MV[0]=qx/q*k;MV[1]=qy/q*k;}
 function mover(e,dx,dy,d,s,dt,S){
   switch(e.t.mv){
@@ -1375,14 +1378,14 @@ function mover(e,dx,dy,d,s,dt,S){
   case 'latch':{
     if(e.stun>0){e.stun-=dt;MV[0]=MV[1]=0;return true;}
     const tr=P.trail,n=tr.length;if(n<50){e.lat=0;return false;} // not enough tail to grab: it goes for the head like anything else
-    if(e.lat){const q=tr[Math.max(0,n-1-e.tk)],qx=q.x-e.x,qy=q.y-e.y; // clamped on: it rides that spot of the tail
+    if(e.lat){P.latN=(P.latN||0)+1;const q=tr[Math.max(0,n-1-e.tk)],qx=q.x-e.x,qy=q.y-e.y; // clamped on: it rides that spot of the tail
       if(e.dN!==P.dashN||qx*qx+qy*qy>(e.r*2+60*S)*(e.r*2+60*S)){const a=Math.random()*TAU;e.lat=0;e.stun=1.5;e.vx=Math.cos(a)*420*S;e.vy=Math.sin(a)*420*S;e.flash=0.15; // a dash throws it off, and it lies stunned for a moment
         text(e.x,e.y-e.r,TX('shaken'),15,'#bff5e6',0.7);MV[0]=MV[1]=0;return true;}
       e.inj+=dt;if(e.inj>=LATCH_T){e.inj=0;if(hitHead(e.t.dmg*(e.dm||1),e.t)){burst(q.x,q.y,10,'#ff6a5a',200,0.4,3);text(q.x,q.y-e.r,TX('inject'),16,'#ff9a8a',0.8);}}
       MV[0]=qx*14;MV[1]=qy*14;return true;}
     let bi=20,bd=1e18;for(let i=20;i<=100&&i<n;i+=5){const q=tr[n-1-i],qx=q.x-e.x,qy=q.y-e.y,q2=qx*qx+qy*qy;if(q2<bd){bd=q2;bi=i;}} // the nearest stretch of tail, 100 to 500 px (on screen) behind the head
     const q=tr[n-1-bi],qd=Math.sqrt(bd)+0.01;
-    if(qd<e.r*0.5+12*S){e.lat=1;e.tk=bi;e.inj=0;e.dN=P.dashN;tip('latch');sfx('latch');}
+    if(qd<e.r*0.5+12*S&&(P.latPrev||0)<2){P.latPrev=(P.latPrev||0)+1;e.lat=1;e.tk=bi;e.inj=0;e.dN=P.dashN;tip('latch');sfx('latch');}
     MV[0]=(q.x-e.x)/qd*s*1.15;MV[1]=(q.y-e.y)/qd*s*1.15;return true;}
   case 'arc':{ // a boomerang: each throw goes straight through where the player was, on past, and curves back to where it set off
     if(P.freezeT>0){MV[0]=MV[1]=0;return true;}
@@ -1633,7 +1636,7 @@ function render(){
     if(e.frz>0){ctx.fillStyle='rgba(170,225,255,0.5)';circ(ctx,e.x,e.y,e.r*1.05);ctx.fill();ctx.strokeStyle='rgba(235,250,255,0.9)';ctx.lineWidth=1.5*S;ctx.stroke();} // frozen: cased in ice
     else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
     if(e.sh>0||e.boss)drawShell(e,S);
-    if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,-Math.PI/2,-Math.PI/2+TAU*Math.max(0.04,e.inj/LATCH_T));ctx.stroke();} // clamped on: the ring closes as the next injection nears
+    if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,-Math.PI/2,-Math.PI/2+TAU*Math.max(0.04,e.inj/LATCH_T));ctx.stroke();ctx.setLineDash([6*S,7*S]);ctx.lineWidth=2*S;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(P.x,P.y);ctx.stroke();ctx.setLineDash([]);} // clamped on: the ring closes as the next injection nears
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
@@ -1716,7 +1719,10 @@ function panel(x,y,w,h,a){ctx.fillStyle=`rgba(3,14,34,${a||0.7})`;ctx.strokeStyl
 // Layout helpers (titleLayout, cardRects, endLayout) take the same W,H, and act() divides the pointer the same way for hit tests.
 function uiK(){return NARROW?1:clamp(Math.min(W/1024,H/600),1,1.6);}
 function ui(fn){const k=uiK();ctx.save();ctx.scale(k,k);fn(W/k,H/k,mx/k,my/k);ctx.restore();}
-function hud(){ui(hudDraw);bossArrow();stickDraw();}
+function hud(){ui(hudDraw);ui(latchWarn);bossArrow();stickDraw();}
+// while a phage is on the tail: a line across the lower screen that says so and what to do about it (v18)
+function latchWarn(W,H){if(!P.latPrev||state!=='play')return;const s=TX('latch_warn'),y=H*0.7;ctx.globalAlpha=0.86+0.14*Math.sin(performance.now()/90);ctx.textAlign='center';ctx.textBaseline='middle';
+  fitFont(s,NARROW?18:20,900,W-30);ctx.lineJoin='round';ctx.lineWidth=6;ctx.strokeStyle='#5a0010';ctx.strokeText(s,W/2,y);ctx.fillStyle='#ffe1e4';ctx.fillText(s,W/2,y);ctx.globalAlpha=1;}
 // The top of the screen: XP as a thin line along the edge, HP as one rounded bar right across under it (v15), then the panels.
 // hpShow trails behind the real HP: what a hit took stays white for a moment and then drains, so the size of each hit can be read.
 let hpShow=1,hpHitAt=0,hpLast=0;
@@ -1911,6 +1917,7 @@ function bookBody(W,top,bot){const seen=Math.max(META.best.stage||0,menuFrom==='
     const s=t.spr,k=Math.min(40/s.width,40/s.height),nm=t.n||t.name,line=TX('bk_'+key);ctx.drawImage(s,cx-s.width*k/2,cy-s.height*k/2,s.width*k,s.height*k);
     ctx.font=`900 14px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(nm,x+54,cy-9);
     if(t.sh){const w=ctx.measureText(nm).width;ctx.font=`bold 11px ${FONT}`;ctx.fillStyle='#9fdcff';ctx.fillText(TX('bk_shell',t.sh),x+54+w+8,cy-9);}
+    ctx.font=`bold 11px ${FONT}`;ctx.fillStyle='#ff9aa2';ctx.textAlign='right';ctx.fillText(TX('bk_dmg',t.dmg),x+cw-10,cy-9);ctx.textAlign='left'; // what one hit costs (before builds and cards)
     fitFont(line,12,'normal',cw-64);ctx.fillStyle='#a9c6de';ctx.fillText(line,x+54,cy+10);}
   return pages;}
 function fmtLong(t){const h=Math.floor(t/3600);return h?h+':'+String(Math.floor(t%3600/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0'):fmtT(t);}
