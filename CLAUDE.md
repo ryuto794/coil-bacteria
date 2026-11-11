@@ -15,6 +15,7 @@ Claude Code 向けの短いプロジェクトルール。詳細は `HANDOFF.md` 
 index.html   # ゲーム本体（HTML + CSS + JS 一体）
 CLAUDE.md    # このファイル（Claude Code が自動参照）
 HANDOFF.md   # 企画・仕様・コード構造の詳細引き継ぎ
+REQUIREMENTS.md  # 要件定義（案）: エンドレス前提の「もっと大きな世界」。決まるまで実装しない
 README.md    # 公開用の短い説明
 ```
 
