@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v19）</title>
+<title>コイル・バクテリア（試作 v20）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -275,7 +275,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v19';
+const LANGS=['ja','en'],VER='v20';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -320,6 +320,10 @@ const STR={
  ev_ring:['囲まれた！','Surrounded!'],
  ev_ring_s:['ダッシュで外へ抜けろ','Dash out through the ring'],
  ev_toxin:['毒素菌が来た','Toxin germs incoming'],
+ ev_lull:['波が引いた','The swarm thins out'],
+ ev_lull_s:['ひと息つける。回復があれば拾え','Catch your breath. Pick up any healing'],
+ ev_peak:['大群が来る！','A big wave is coming!'],
+ ev_peak_s:['尾を広げて、まとめて巻け','Spread your tail and coil them all at once'],
  ev_titan:['{0}が横切る','A {0} drifts through'],
  ev_titan_s:['ぶつかるな。尾が届くなら巻ける','Keep clear. Coil it if your tail can reach around'],
  ev_toxin_s:['倒すと毒の霧が残る。頭で入るとダメージ','They leave poison fog when killed. Keep your head out of it'],
@@ -545,7 +549,8 @@ const SKINS=[ // h: hue (-1 = rainbow); h2: second hue, the tail is banded with 
 ];
 loc(SKINS,'n');
 function skin(){return SKINS.find(s=>s.id===META.skin)||SKINS[0];}
-function hueAt(){const s=skin();return s.h<0?(performance.now()/20)%360:s.h;}
+function hueAt(){if(P){if(P.sun)return 26;if(P.iceage)return 192;if(P.raijin)return 52;if(P.asura)return 348;} // the last form takes the line's own colour over the skin's
+  const s=skin();return s.h<0?(performance.now()/20)%360:s.h;}
 const ORBGLOW=glowSprite(14,'rgba(70,170,255,0.8)');
 const CAPGLOW=glowSprite(24,'rgba(120,255,170,0.7)');
 const GASSPR=(()=>{const R=64,c=mk(R*2,R*2),g=c.getContext('2d'),gr=g.createRadialGradient(R,R,0,R,R,R);gr.addColorStop(0,'rgba(205,245,90,0.55)');gr.addColorStop(0.65,'rgba(180,228,60,0.4)');gr.addColorStop(0.86,'rgba(160,210,50,0.2)');gr.addColorStop(1,'rgba(150,200,40,0)');g.fillStyle=gr;g.fillRect(0,0,R*2,R*2);return c;})(),CHESTGLOW=glowSprite(40,'rgba(255,210,63,0.7)');
@@ -811,8 +816,8 @@ function spawnChain(t,x,y,len){const n=len||t.chain+(Math.random()*3|0),a=Math.a
   return k;}
 // ---------- waves (one stage, by time since the run began): [start s, minimum alive, interval s, event] ----------
 // Peaks and lulls as before, but the peaks keep climbing: the later it gets, the more there is to coil at once.
-const WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,22,1.1,'titan'],[110,55,0.75,'toxin'],[150,30,1.0],[180,70,0.7,'ring'],[220,34,1.0,'titan'],[250,85,0.65,'stream'],[290,40,0.9,'hunt'],
- [330,100,0.65,'toxin'],[370,48,0.9,'titan'],[410,115,0.6,'stream'],[450,52,0.9,'hunt'],[490,130,0.6,'ring'],[530,60,0.9,'toxin','titan'],[570,145,0.55,'stream'],[610,64,0.9,'hunt']];
+const WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,18,1.1,'titan'],[110,55,0.75,'toxin'],[150,24,1.0],[180,70,0.7,'ring'],[220,26,1.0,'titan'],[250,85,0.65,'stream'],[290,30,0.9,'hunt'],
+ [330,100,0.65,'toxin'],[370,34,0.9,'titan'],[410,115,0.6,'stream'],[450,36,0.9],[490,130,0.6,'ring'],[530,40,0.9,'toxin','titan'],[570,145,0.55,'stream'],[610,44,0.9,'hunt']];
 function waveNow(){const L=WAVES,last=L[L.length-1][0];
   if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
   const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
@@ -820,7 +825,13 @@ const REAL_K=[1,0.7,0.55]; // the wave table counts germ-sized enemies; bigger s
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
   const{w,key,mul}=waveNow();
-  if(key!==P.waveKey){P.waveKey=key;if(w[3])waveEvent(w[3]);if(w[4])waveEvent(w[4]);} // a row may bring two things
+  if(key!==P.waveKey){const prev=P.waveMin;P.waveMin=w[1];P.waveKey=key;
+    // v20: the turn of the tide is felt. Into a lull: nothing new arrives for 7 s, a line says so, and a heal is left ahead if HP is under 70%.
+    // Into a peak with no event of its own: a line warns of it.
+    if(prev!==undefined&&w[1]<prev*0.75){calmUntil=Math.max(calmUntil,T+7);evt(TX('ev_lull'),TX('ev_lull_s'),3);sfx('item');
+      if(P.hp/P.maxHp<0.7&&items.length<3){const S=P.S;items.push({x:P.x+Math.cos(P.a)*170*S,y:P.y+Math.sin(P.a)*170*S,k:'heal',life:22,ph:Math.random()*TAU});}}
+    else if(prev!==undefined&&w[1]>prev*1.3&&!w[3])evt(TX('ev_peak'),TX('ev_peak_s'),3);
+    if(w[3])waveEvent(w[3]);if(w[4])waveEvent(w[4]);} // a row may bring two things
   if(P.titanDue&&!P.boss&&spawnTitan())P.titanDue=false; // a titan that was held back by a boss comes once the boss is gone
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
   let real=0,prey=0;for(const e of enemies){if(e.boss||e.hunter||e.titan||e.dead)continue;if(e.pr)prey++;else real++;}
@@ -880,12 +891,12 @@ const ITEM_COL={heal:'#ff8fa3',mag:'#7fc9ff',ice:'#d6f4ff',shd:'#9fe8ff'},ITEMGL
 function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never from a boss, at most 3 lying around; heals are likelier when HP is low
   if(e.boss)return;
   if(P.magDue&&!items.some(it=>it.k==='mag')){P.magDue=false;items.push({x:e.x,y:e.y,k:'mag',life:22,ph:Math.random()*TAU});return;} // the timed magnet (see update)
-  if(e.pr||--P.dropIn>0||items.length>=3)return;P.dropIn=Math.round((55+Math.random()*40)*(1+0.5*P.stage));
+  if(e.pr)return;P.dropIn-=P.hp/P.maxHp<0.35?2:1;if(P.dropIn>0||items.length>=3)return;P.dropIn=Math.round((55+Math.random()*40)*(1+0.15*P.stage)); // v20: pickups hardly thin out at the later scales, and come twice as fast while HP is low
   const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.62:0.4)?'heal':r<(low?0.78:0.56)?'shd':r<(low?0.9:0.82)?'mag':'ice'; // shd (v16): one more barrier layer
   items.push({x:e.x,y:e.y,k,life:22,ph:Math.random()*TAU});}
 function itemTick(dt){for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
 function useItem(it){const S=P.S,col=ITEM_COL[it.k];burst(it.x,it.y,24,col,260,0.6,3);rings.push({x:it.x,y:it.y,r:8*S,R:90*S,life:0.4,max:0.4,col,w:4*S});sfx('item');
-  if(it.k==='heal'){P.hp=Math.min(P.maxHp,P.hp+25);text(P.x,P.y-40*S,'+25 HP',22,'#ffb3c0',1);}
+  if(it.k==='heal'){const h=Math.round(Math.max(25,P.maxHp*0.25))+8*P.stage;P.hp=Math.min(P.maxHp,P.hp+h);text(P.x,P.y-40*S,'+'+h+' HP',24,'#ffb3c0',1.1);} // v20: a quarter of max HP (25 at least), a little more at each scale
   else if(it.k==='mag'){for(const o of orbs)o.pull=1;text(P.x,P.y-40*S,TX('it_mag'),20,'#9fd4ff',1);}
   else if(it.k==='shd'){P.guard=Math.min(3,P.guard+1);text(P.x,P.y-40*S,TX('it_shd'),20,col,1);}
   else{P.freezeT=4;rings.push({x:P.x,y:P.y,r:20*S,R:700*S,life:0.6,max:0.6,col,w:6*S});text(P.x,P.y-40*S,TX('it_ice'),22,col,1.2);}}
@@ -1288,7 +1299,7 @@ function update(dt){
     if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.frz>0?0:e.chill>0?(e.boss||e.hunter?0.8:0.75-0.1*P.frost):1);let ax=dx/d*s,ay=dy/d*s;
-    if(e.chill>0)e.chill-=dt;if(e.frz>0)e.frz-=dt;if(P.frost&&!e.titan&&d<(90+30*P.frost)*S+e.r){e.chill=0.4;if(P.iceage&&!(e.frzCd>T)){freeze(e,1.5);e.frzCd=T+5;}} // Frost Aura (Ice Age: it freezes what comes in, once every 5 s each)
+    if(e.chill>0)e.chill-=dt;if(e.frz>0){e.frz-=dt;if(e.frz<0.7&&QL>=1&&Math.random()<dt*14)burst(e.x+rand(-1,1)*e.r,e.y+e.r*0.5,1,'#bfeaff',50,0.4,2);}if(P.frost&&!e.titan&&d<(90+30*P.frost)*S+e.r){e.chill=0.4;if(P.iceage&&!(e.frzCd>T)){freeze(e,1.5);e.frzCd=T+5;}} // Frost Aura (Ice Age: it freezes what comes in, once every 5 s each)
     if(e.burn>0){e.burn-=dt;e.bT-=dt;if(e.bT<=0){e.bT=0.5;if(QL>=1)burst(e.x,e.y,1,'#ffa040',60,0.35,2.5);if(hurt(e,(1+P.ember)*(1+P.stage)*0.6*(P.sun?2:1),1))continue;}}
     if(e.lead&&e.lead.dead)e.lead=null; // the bead in front is gone: this one leads now
     if(e.titan){titanMove(e,s,dt);ax=MV[0];ay=MV[1];}
@@ -1357,7 +1368,7 @@ function tailTouch(dt,S){if(!(P.spike||P.cilia||P.ember||P.rime))return;P.tailTi
 // Burning (e.burn s left): a tick of damage every 0.5 s. A shell does not burn. Frozen (e.frz): it cannot move. Chilled (e.chill): slowed.
 // Bosses, the hunter and titans do not freeze: they are chilled instead.
 function ignite(e,t){if(e.dead||e.sh>0)return;if(!(e.burn>0))e.bT=0.5;e.burn=Math.max(e.burn||0,t||3);}
-function freeze(e,t){if(e.dead)return;if(e.boss||e.hunter||e.titan){e.chill=Math.max(e.chill||0,t);return;}e.frz=Math.max(e.frz||0,t);}
+function freeze(e,t){if(e.dead)return;if(e.boss||e.hunter||e.titan){e.chill=Math.max(e.chill||0,t);return;}if(!(e.frz>=t)){e.frz=t;e.frzMax=t;}} // frzMax: how long this freeze was to begin with (for the ring that runs down)
 function fireTick(dt){if(!fires.length)return;for(const f of fires)f.life-=dt;compact(fires,f=>f.life>0);P.fireTk=(P.fireTk||0)-dt;if(P.fireTk>0)return;P.fireTk=0.25;
   for(const f of fires)for(const e of enemies){if(e.dead||e.sh>0)continue;const dx=e.x-f.x,dy=e.y-f.y,rr=f.r+e.r;if(dx*dx+dy*dy<rr*rr)ignite(e,3);}}
 // ---------- stronger enemies: chargers, shooters, splitters ----------
@@ -1504,24 +1515,32 @@ function drawHead(x,y,a,s,alpha,hue,full){
   const f=full,dashing=f&&P.dashT>0,elc=f&&(P.volt||P.zap||P.storm),fierce=f&&(P.spine||P.oni||P.zap||P.storm||P.inferno||P.absz);
   ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.scale(s,s);ctx.globalAlpha=alpha;
   if(f&&P.memb){const m=Math.min(P.memb,5);ctx.strokeStyle=`hsla(${hue},100%,78%,0.35)`;ctx.lineWidth=1.2+m*0.8;ctx.beginPath();ctx.ellipse(0,0,15+2.5*m,11+2.5*m,0,0,TAU);ctx.stroke();}
-  if(f&&P.spike){const n=8+P.spike*3+(P.spine?4:0)+(P.asura?4:0),L=1.25+0.18*P.spike+(P.spine?0.4:0)+(P.oni?0.2:0)+(P.asura?0.3:0),w=P.spine?0.14:0.2;
+  if(f&&P.spike){const n=8+P.spike*3+(P.spine?4:0)+(P.asura?4:0),L=1.25+0.18*P.spike+(P.spine?0.4:0)+(P.oni?0.2:0)+(P.asura?0.75:0),w=P.spine?0.14:0.2;
     ctx.fillStyle=P.oni&&dashing?'#ff6a55':P.asura?'#ffb4a2':P.spine?`hsl(${hue},30%,92%)`:`hsl(${hue},55%,80%)`;
     for(let k=0;k<n;k++){const t=k/n*TAU;ctx.beginPath();ctx.moveTo(Math.cos(t-w)*14,Math.sin(t-w)*10);ctx.lineTo(Math.cos(t)*15*L,Math.sin(t)*11*L);ctx.lineTo(Math.cos(t+w)*14,Math.sin(t+w)*10);ctx.fill();}}
+  if(f&&P.asura){ctx.fillStyle='#fff1ec';ctx.strokeStyle='rgba(90,10,10,0.7)';ctx.lineWidth=0.8;for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(6,k*9);ctx.lineTo(40,k*24);ctx.lineTo(14,k*13);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-6,k*10);ctx.lineTo(-34,k*30);ctx.lineTo(-12,k*13);ctx.closePath();ctx.fill();ctx.stroke();}} // Thousand Needles: four great blades, fore and aft
   if(f&&(P.zap||P.storm)){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(110,205,255,${0.3+0.3*Math.random()})`;ctx.lineWidth=P.storm?3.2:2;ctx.beginPath();ctx.ellipse(0,0,20,16,0,0,TAU);ctx.stroke(); // a flickering halo
-    if(P.raijin){ctx.beginPath();ctx.ellipse(0,0,27,22,0,0,TAU);ctx.stroke();} // Thunder God: a second ring, and twice the bolts
+    if(P.raijin){ctx.beginPath();ctx.ellipse(0,0,27,22,0,0,TAU);ctx.stroke();ctx.strokeStyle='rgba(255,250,200,0.95)';ctx.lineWidth=2.6+Math.random()*1.2;ctx.lineJoin='miter'; // Thunder God: a second ring, twice the bolts, and antlers of lightning
+      for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(4,k*10);ctx.lineTo(11,k*21);ctx.lineTo(6,k*25);ctx.lineTo(17,k*35);ctx.lineTo(12,k*39);ctx.lineTo(26,k*48);ctx.stroke();ctx.beginPath();ctx.moveTo(11,k*21);ctx.lineTo(22,k*24);ctx.lineTo(19,k*29);ctx.lineTo(31,k*31);ctx.stroke();}
+      ctx.strokeStyle=`rgba(110,205,255,${0.3+0.3*Math.random()})`;ctx.lineWidth=3.2;}
     if(P.storm){ctx.strokeStyle='rgba(200,240,255,0.9)';ctx.lineWidth=1.3;for(let z=0;z<(P.raijin?6:3);z++){const t=Math.random()*TAU;ctx.beginPath();ctx.moveTo(Math.cos(t)*17,Math.sin(t)*13);ctx.lineTo(Math.cos(t+0.25)*23,Math.sin(t+0.25)*18);ctx.lineTo(Math.cos(t-0.1)*30,Math.sin(t-0.1)*24);ctx.stroke();}}
     ctx.globalCompositeOperation='source-over';}
   if(f&&P.ember){const h=20+4*P.ember+(P.blaze?9:0)+(P.inferno?7:0)+(P.sun?9:0);ctx.globalCompositeOperation='lighter'; // Fire line: a mane of flame streaming back off the head
-    for(const k of P.sun?[-2.5,-1.5,-0.5,0.5,1.5,2.5]:P.blaze?[-1.5,-0.5,0.5,1.5]:[-1,0,1]){const hh=h*(0.8+0.25*Math.sin(T*15+k*3)),w=hh*0.6;ctx.save();ctx.translate(-5-Math.abs(k)*2,k*5);ctx.rotate(-Math.PI/2+k*0.16);ctx.drawImage(FLAME,-w/2,-hh,w,hh);ctx.restore();}
+    if(P.sun){for(let z=0;z<11;z++){const t=z/11*TAU+0.28,hh=(Math.abs(Math.cos(t/2))<0.55?h*1.25:h*0.8)*(0.8+0.25*Math.sin(T*15+z*2.3)),w=hh*0.6;ctx.save();ctx.translate(Math.cos(t)*9,Math.sin(t)*7);ctx.rotate(t+Math.PI/2);ctx.drawImage(FLAME,-w/2,-hh,w,hh);ctx.restore();} // Flame Emperor: a corona all round the head, longest behind
+      ctx.fillStyle='rgba(255,240,170,0.35)';ctx.beginPath();ctx.ellipse(0,0,17,13,0,0,TAU);ctx.fill();}
+    else for(const k of P.blaze?[-1.5,-0.5,0.5,1.5]:[-1,0,1]){const hh=h*(0.8+0.25*Math.sin(T*15+k*3)),w=hh*0.6;ctx.save();ctx.translate(-5-Math.abs(k)*2,k*5);ctx.rotate(-Math.PI/2+k*0.16);ctx.drawImage(FLAME,-w/2,-hh,w,hh);ctx.restore();}
     if(P.inferno){ctx.strokeStyle=`rgba(255,130,40,${0.35+0.2*Math.sin(T*9)})`;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,0,20,16,0,0,TAU);ctx.stroke();}
     ctx.globalCompositeOperation='source-over';}
   if(f&&(P.frost||P.rime)){const n=P.iceage?9:P.absz?7:P.glacier?5:3,L=7+2*(P.frost||1)+(P.glacier?4:0)+(P.absz?4:0)+(P.iceage?5:0); // Ice line: a crown of crystals fanned out behind the head
     ctx.fillStyle='#dcf5ff';ctx.strokeStyle='rgba(90,170,230,0.9)';ctx.lineWidth=0.9;
     for(let k=0;k<n;k++){const t=Math.PI+(k-(n-1)/2)*(1.9/n),c=Math.cos(t),s2=Math.sin(t),l=L*(k%2?0.75:1),bx=c*13,by=s2*9.5,tx=c*(15+l),ty=s2*(11+l*0.8);
       ctx.beginPath();ctx.moveTo(bx-s2*2.6,by+c*2.6);ctx.lineTo(tx,ty);ctx.lineTo(bx+s2*2.6,by-c*2.6);ctx.closePath();ctx.fill();ctx.stroke();}
+    if(P.iceage){ctx.fillStyle='#f2fbff';for(let z=0;z<6;z++){const t=z/6*TAU+Math.PI/6,c=Math.cos(t),s2=Math.sin(t),R1=34;ctx.beginPath();ctx.moveTo(c*12-s2*3,s2*9+c*3);ctx.lineTo(c*R1,s2*R1*0.86);ctx.lineTo(c*12+s2*3,s2*9-c*3);ctx.closePath();ctx.fill();ctx.stroke(); // Ice Age: six long arms, each with a pair of barbs
+        for(const g of[-1,1]){const bx=c*23,by=s2*23*0.86,a2=t+g*0.9;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a2)*9,by+Math.sin(a2)*8);ctx.lineTo(bx+c*4,by+s2*4);ctx.closePath();ctx.fill();ctx.stroke();}}}
     if(P.absz){ctx.strokeStyle=`rgba(210,245,255,${0.4+0.15*Math.sin(T*4)})`;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.ellipse(0,0,21,17,0,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
   ctx.fillStyle=`hsl(${hue},68%,50%)`;ctx.beginPath();ctx.ellipse(0,0,15,11,0,0,TAU);ctx.fill();
   ctx.fillStyle=`hsl(${hue},100%,81%)`;ctx.beginPath();ctx.ellipse(-3,-3,8,5,0,0,TAU);ctx.fill();
+  if(f&&(P.iceage||P.raijin||P.sun)){ctx.fillStyle=P.iceage?'rgba(240,251,255,0.45)':P.raijin?'rgba(255,255,235,0.4)':'rgba(255,245,200,0.3)';ctx.beginPath();ctx.ellipse(0,0,13,9.5,0,0,TAU);ctx.fill();} // the last forms: frosted over, or white-hot
   if(f&&P.spine){ctx.strokeStyle='rgba(6,20,26,0.4)';ctx.lineWidth=2.2;for(const px of[-7,-1]){ctx.beginPath();ctx.moveTo(px,-9.5);ctx.quadraticCurveTo(px+4,0,px,9.5);ctx.stroke();}} // armour plates
   if(f&&P.devour){ctx.fillStyle='#f2fff7';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(11,k*4);ctx.quadraticCurveTo(23,k*(10+2*Math.sin(T*12)),27,k*1.5);ctx.quadraticCurveTo(19,k*5.5,11,k*4);ctx.fill();}}
   if(f&&P.horn){const hl=9+4*P.horn+(P.oni?7:0);ctx.fillStyle=P.oni?'#ffd9cf':'#f3eedd';ctx.strokeStyle='rgba(50,18,8,0.7)';ctx.lineWidth=0.9;
@@ -1544,7 +1563,7 @@ function drawHead(x,y,a,s,alpha,hue,full){
 function drawTailParts(tr,hu,S){const n=tr.length;
   if(P.spike||P.cilia){
     for(let i=3;i<n-4;i+=3){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,ux=tx/tl,uy=ty/tl,nx=-uy,ny=ux,w=(2.5+i/n*5)*S;
-      if(P.spike&&i%(QL<2?12:6)===0){const L=(5+2*P.spike)*S*(P.spine?1.8:1),bk=P.spine?L*0.55:0; // Spine Coat: long barbs swept back; Demon Spines: red while dashing
+      if(P.spike&&i%(QL<2?12:6)===0){const L=(5+2*P.spike)*S*(P.spine?1.8:1)*(P.asura?1.5:1),bk=P.spine?L*0.55:0; // Spine Coat: long barbs swept back; Demon Spines: red while dashing
         ctx.fillStyle=P.oni&&P.dashT>0?'rgba(255,96,80,0.95)':P.asura?'rgba(255,180,162,0.95)':P.spine?`hsla(${hu},30%,92%,0.95)`:`hsla(${hu},60%,84%,0.9)`;
         for(const g of[-1,1]){ctx.beginPath();ctx.moveTo(q.x+nx*g*w*0.6+ux*2.5*S,q.y+ny*g*w*0.6+uy*2.5*S);ctx.lineTo(q.x+nx*g*(w+L)-ux*bk,q.y+ny*g*(w+L)-uy*bk);ctx.lineTo(q.x+nx*g*w*0.6-ux*2.5*S,q.y+ny*g*w*0.6-uy*2.5*S);ctx.fill();}}
       if(P.cilia){const L=(4+2*Math.sin(T*18+i))*S;ctx.strokeStyle=`hsla(${hu},90%,86%,0.55)`;ctx.lineWidth=S;ctx.beginPath();
@@ -1552,15 +1571,16 @@ function drawTailParts(tr,hu,S){const n=tr.length;
   if(P.bigcoil&&n>8){ctx.strokeStyle=`hsla(${(hu+50)%360},100%,80%,0.75)`;ctx.lineWidth=1.6*S;ctx.beginPath();
     for(let i=2;i<n-2;i+=2){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,w=(2.5+i/n*5)*S*1.6,o=Math.sin(i*0.55+T*6)*w;
       const x=q.x-ty/tl*o,y=q.y+tx/tl*o;i>2?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
-  if((P.zap||P.storm)&&n>4&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=P.storm?'rgba(150,225,255,0.7)':'rgba(140,215,255,0.42)';ctx.lineWidth=(P.storm?3:1.8)*S; // Discharge on: a live wire down the tail
+  if((P.zap||P.storm)&&n>4&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle=P.raijin?'rgba(255,246,180,0.9)':P.storm?'rgba(150,225,255,0.7)':'rgba(140,215,255,0.42)';ctx.lineWidth=(P.raijin?5:P.storm?3:1.8)*S; // Discharge on: a live wire down the tail
     ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=2;i<n;i+=2)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';}
   if((P.ember||P.rime||P.frost)&&n>12){const fire=P.ember>0,ice=P.rime>0||P.frost>0,st=Math.max(QL<2?14:8,n/36|0);
     if(fire&&QL>=2){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(255,120,30,0.22)';ctx.lineWidth=12*S;ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=3;i<n;i+=3)ctx.lineTo(tr[i].x,tr[i].y);ctx.stroke();ctx.globalCompositeOperation='source-over';} // the tail runs hot // Fire line: flames lick off one side of the tail. Ice line: crystals stud the other
     for(let i=6;i<n-4;i+=st){const q=tr[i],p0=tr[i-1],p1=tr[i+1],tx=p1.x-p0.x,ty=p1.y-p0.y,tl=Math.hypot(tx,ty)+0.01,ux=tx/tl,uy=ty/tl,nx=-uy,ny=ux,w=(2.5+i/n*5)*S,g=(i/st|0)%2?1:-1;
-      if(fire){ctx.globalCompositeOperation='lighter';flame(q.x+nx*g*w*0.4,q.y+ny*g*w*0.4+3*S,(15+4*P.ember)*S*(P.blaze?1.35:1)*(P.sun?1.3:1),i);ctx.globalCompositeOperation='source-over';}
-      if(ice){const L=(4+P.rime+(P.glacier?2:0)+(P.iceage?3:0))*S,x=q.x-nx*g*(w+L*0.5),y=q.y-ny*g*(w+L*0.5);ctx.fillStyle='rgba(215,244,255,0.92)';ctx.beginPath();ctx.moveTo(x+ux*L,y+uy*L);ctx.lineTo(x+nx*L*0.55,y+ny*L*0.55);ctx.lineTo(x-ux*L,y-uy*L);ctx.lineTo(x-nx*L*0.55,y-ny*L*0.55);ctx.fill();}}}
+      if(fire){ctx.globalCompositeOperation='lighter';flame(q.x+nx*g*w*0.4,q.y+ny*g*w*0.4+3*S,(15+4*P.ember)*S*(P.blaze?1.35:1)*(P.sun?1.3:1),i);if(P.sun)flame(q.x-nx*g*w*0.4,q.y-ny*g*w*0.4+3*S,(15+4*P.ember)*S*1.5,i+7);ctx.globalCompositeOperation='source-over';}
+      if(ice){const L=(4+P.rime+(P.glacier?2:0)+(P.iceage?3:0))*S,x=q.x-nx*g*(w+L*0.5),y=q.y-ny*g*(w+L*0.5);ctx.fillStyle='rgba(215,244,255,0.92)';ctx.beginPath();ctx.moveTo(x+ux*L,y+uy*L);ctx.lineTo(x+nx*L*0.55,y+ny*L*0.55);ctx.lineTo(x-ux*L,y-uy*L);ctx.lineTo(x-nx*L*0.55,y-ny*L*0.55);ctx.fill();
+        if(P.iceage){const x2=q.x+nx*g*(w+L*0.5),y2=q.y+ny*g*(w+L*0.5);ctx.beginPath();ctx.moveTo(x2+ux*L,y2+uy*L);ctx.lineTo(x2+nx*L*0.55,y2+ny*L*0.55);ctx.lineTo(x2-ux*L,y2-uy*L);ctx.lineTo(x2-nx*L*0.55,y2-ny*L*0.55);ctx.fill();}}}}
   if(P.volt&&n>12){ctx.fillStyle='rgba(215,244,255,0.97)';for(let i=5,st=16-3*P.volt;i<n-4;i+=st){const q=tr[i];ctx.beginPath();ctx.arc(q.x,q.y,3*S,0,TAU);ctx.fill();}} // Charged Tail: bright nodes
-  const zc=(P.storm?6:P.zap?3:P.volt&&Math.random()<0.5?1:0)>>(QL<2?1:0); // arcs crawling along the tail: more of them the further the Electric line has gone
+  const zc=(P.raijin?11:P.storm?6:P.zap?3:P.volt&&Math.random()<0.5?1:0)>>(QL<2?1:0); // arcs crawling along the tail: more of them the further the Electric line has gone
   if(zc&&n>12){ctx.globalCompositeOperation='lighter';ctx.strokeStyle='rgba(150,215,255,0.8)';ctx.lineWidth=1.6*S;
     for(let z=0;z<zc;z++){const i=4+(Math.random()*(n-10)|0),a=tr[i],b=tr[i+5];ctx.beginPath();ctx.moveTo(a.x,a.y);
       for(let j=1;j<4;j++){const f=j/4;ctx.lineTo(a.x+(b.x-a.x)*f+rand(-7,7)*S,a.y+(b.y-a.y)*f+rand(-7,7)*S);}ctx.lineTo(b.x,b.y);ctx.stroke();}
@@ -1662,7 +1682,9 @@ function render(){
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
     if(e.cs===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*300*S,e.y+e.cdy*300*S);ctx.stroke();ctx.setLineDash([]);} // aiming: where the dash will go
     else if(e.cs===2){ctx.strokeStyle='rgba(255,200,205,0.45)';ctx.lineWidth=e.r*1.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-e.cdx*e.r*3,e.y-e.cdy*e.r*3);ctx.stroke();} // dashing: a streak behind it
-    if(e.frz>0){ctx.fillStyle='rgba(170,225,255,0.5)';circ(ctx,e.x,e.y,e.r*1.05);ctx.fill();ctx.strokeStyle='rgba(235,250,255,0.9)';ctx.lineWidth=1.5*S;ctx.stroke();} // frozen: cased in ice
+    if(e.frz>0){const k=Math.min(1,e.frz/(e.frzMax||e.frz)),end=e.frz<0.7; // frozen: cased in ice that shrinks as it melts, with a ring that runs down; it flickers in the last moments
+      ctx.fillStyle=`rgba(170,225,255,${end?0.18+0.3*(0.5+0.5*Math.sin(T*36)):0.28+0.27*k})`;circ(ctx,e.x,e.y,e.r*(0.78+0.3*k));ctx.fill();
+      ctx.strokeStyle='rgba(240,251,255,0.95)';ctx.lineWidth=2.4*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.08+3*S,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
     else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,0,TAU);ctx.stroke();ctx.setLineDash([6*S,7*S]);ctx.lineWidth=2*S;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(P.x,P.y);ctx.stroke();ctx.setLineDash([]);} // clamped on: the ring closes as the next injection nears
@@ -1748,7 +1770,12 @@ function panel(x,y,w,h,a){ctx.fillStyle=`rgba(3,14,34,${a||0.7})`;ctx.strokeStyl
 // Layout helpers (titleLayout, cardRects, endLayout) take the same W,H, and act() divides the pointer the same way for hit tests.
 function uiK(){return NARROW?1:clamp(Math.min(W/1024,H/600),1,1.6);}
 function ui(fn){const k=uiK();ctx.save();ctx.scale(k,k);fn(W/k,H/k,mx/k,my/k);ctx.restore();}
-function hud(){ui(hudDraw);ui(latchWarn);bossArrow();stickDraw();}
+function hud(){lowHp();ui(hudDraw);ui(latchWarn);bossArrow();stickDraw();}
+// v20: under 30% HP the edges of the screen glow red and throb (faster under 15%), so the danger shows without looking at the bar
+let VIG=null,VIGK='';
+function lowHp(){const f=P.hp/P.maxHp;if(f>=0.3||f<=0||state!=='play'||DEMO)return;const key=W+'x'+H;
+  if(VIGK!==key){VIGK=key;VIG=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.hypot(W,H)*0.56);VIG.addColorStop(0,'rgba(255,20,40,0)');VIG.addColorStop(1,'rgba(255,20,40,0.72)');}
+  const hard=f<0.15,p=META.opts.fx>0?0.5+0.5*Math.sin(performance.now()/(hard?120:230)):0.6;ctx.globalAlpha=(hard?1:0.7)*(0.3+0.45*p);ctx.fillStyle=VIG;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
 // while a phage is on the tail: a line across the lower screen that says so and what to do about it (v18)
 function latchWarn(W,H){if(!P.latPrev||state!=='play')return;const s=TX('latch_warn'),y=H*0.7;ctx.globalAlpha=0.86+0.14*Math.sin(performance.now()/90);ctx.textAlign='center';ctx.textBaseline='middle';
   fitFont(s,NARROW?18:20,900,W-30);ctx.lineJoin='round';ctx.lineWidth=6;ctx.strokeStyle='#5a0010';ctx.strokeText(s,W/2,y);ctx.fillStyle='#ffe1e4';ctx.fillText(s,W/2,y);ctx.globalAlpha=1;}
@@ -1960,8 +1987,8 @@ const FORMS=[['spk',[['spike',{spike:2}],['spine',{spike:3,horn:1,spine:true}],[
  ['fir',[['ember',{ember:2}],['blaze',{ember:3,blaze:true}],['inferno',{ember:3,blaze:true,inferno:true}],['sun',{ember:3,blaze:true,inferno:true,sun:true}]]],
  ['ice',[['frost',{frost:2}],['glacier',{frost:3,glacier:true}],['absz',{frost:3,rime:2,glacier:true,absz:true}],['iceage',{frost:3,rime:2,glacier:true,absz:true,iceage:true}]]]],
  FORM_KEYS=['spike','horn','spine','oni','volt','zap','storm','ember','blaze','inferno','frost','rime','glacier','absz','cilia','bigcoil','devour','memb','asura','raijin','sun','iceage'];
-function formDraw(x,y,k,fl){const keep={},kT=T,kD=P.dashT,sk=skin(),hu=sk.h<0?(performance.now()/20)%360:sk.h,tr=[];
-  for(const f of FORM_KEYS){keep[f]=P[f];P[f]=fl[f]||0;}T=performance.now()/1000;P.dashT=0;
+function formDraw(x,y,k,fl){const keep={},kT=T,kD=P.dashT,tr=[];
+  for(const f of FORM_KEYS){keep[f]=P[f];P[f]=fl[f]||0;}T=performance.now()/1000;P.dashT=0;const hu=hueAt();
   for(let i=0;i<=26;i++){const u=i/26;tr.push({x:x-84*k+u*70*k,y:y+Math.sin(u*5+T*2.4)*7*k*(1-u*0.7)});} // a short tail that sways; the head end comes last
   ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(const q of tr)ctx.lineTo(q.x,q.y);ctx.lineTo(x,y);
   ctx.strokeStyle=`hsl(${hu},70%,42%)`;ctx.lineWidth=9*k;ctx.stroke();ctx.strokeStyle=`hsl(${hu},100%,78%)`;ctx.lineWidth=2.6*k;ctx.stroke();
@@ -1975,7 +2002,7 @@ function formsBody(W,top,bot){const cols=NARROW?1:2,gap=20,tw=Math.min(W-24,860)
   for(const p of place){if(p.page!==pg)continue;const x=x0+p.col*(cw+gap),r=p.r;ctx.textAlign='left';ctx.textBaseline='middle';
     if(!r.id){ctx.font=`900 15px ${FONT}`;ctx.fillStyle=CATC[r.cat];const nm=TX('cat_'+r.cat);ctx.fillText(nm,x+2,p.y+hh/2+3);const w=ctx.measureText(nm).width;ctx.font=`12px ${FONT}`;ctx.fillStyle='#a9c6de';ctx.fillText(TX('ln_'+r.cat),x+12+w,p.y+hh/2+3);continue;}
     const c=CARD(r.id),e=c?null:EVO.find(v=>v.id===r.id),u=c||e,tx=x+132,lines=wrap(oneLine(u.d),fD,cw-tx+x-10).slice(0,2);panel(x,p.y+2,cw,rh-5,0.8);
-    formDraw(x+88,p.y+rh/2,0.8,r.fl);
+    formDraw(x+(e&&e.full?82:88),p.y+rh/2,e&&e.full?0.6:0.8,r.fl); // the last forms are drawn smaller: they spread much wider
     ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`900 14px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(u.n,tx,p.y+16);
     ctx.font=fD;ctx.fillStyle='#a9c6de';lines.forEach((l,i)=>ctx.fillText(l,tx,p.y+35+i*15));
     const how=c?TX('bk_card'):TX('bk_evo',(e.pre?EVO.find(v=>v.id===e.pre).n:CARD(e.base).n+' MAX')+' ＋ '+CARD(e.need).n+(e.full?' MAX':''));fitFont(how,11,'bold',cw-tx+x-10);ctx.fillStyle='#ffd166';ctx.fillText(how,tx,p.y+rh-15);}
