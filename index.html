@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v7）</title>
+<title>コイル・バクテリア（試作 v8）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -42,13 +42,14 @@ const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;r
 const STAGE_N=[['細菌','Bacteria'],['細胞','Cell'],['細胞核','Nucleus']],STAGE_TAIL=[0,1000,1700],STAGE_S=[1,1.25,1.63],MAX_TAIL=3600,FINAL_TAIL=2500;
 const ETYPES=[
  // stage 0: bacteria
- {k:'germ',  n:['球菌','Coccus'],st:0,r:9, hp:1, spd:80, dmg:7, xp:1, col:'#ff3b4e',core:'#ffb3bb',glow:'rgba(255,50,70,0.6)'},
- {k:'virus', n:['ウイルス','Virus'],st:0,r:11,hp:3, spd:64, dmg:9, xp:2, col:'#a944ff',core:'#e6c2ff',glow:'rgba(160,60,255,0.6)'},
+ {k:'germ',  n:['球菌','Coccus'],st:0,r:9, hp:1, spd:80, dmg:5, xp:1, col:'#ff3b4e',core:'#ffb3bb',glow:'rgba(255,50,70,0.6)'},
+ {k:'virus', n:['ウイルス','Virus'],st:0,r:11,hp:3, spd:64, dmg:6, xp:2, col:'#a944ff',core:'#e6c2ff',glow:'rgba(160,60,255,0.6)'},
  {k:'blob',  n:['ブドウ球菌','Staph Cluster'],st:0,r:18,hp:10,spd:44, dmg:14,xp:6, col:'#ff2f95',core:'#ffc4e2',glow:'rgba(255,50,150,0.55)'},
+ {k:'bomb',  n:['爆発菌','Blast Germ'],st:0,r:13,hp:5, spd:56, dmg:6, xp:5, col:'#ffb020',core:'#fff3c0',glow:'rgba(255,170,40,0.65)',boom:1}, // explodes when it dies (see boom())
  // stage 1: cells / organelles
  {k:'mito',  n:['ミトコンドリア','Mitochondrion'],st:1,r:23,hp:4, spd:104,dmg:9, xp:5, col:'#ff8a3d',core:'#ffd8b0',glow:'rgba(255,130,50,0.55)',rot:1},
- {k:'cell',  n:['細胞','Cell'],st:1,r:29,hp:8, spd:90, dmg:11,xp:8, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
- {k:'bigcell',n:['大型細胞','Large Cell'],st:1,r:44,hp:22,spd:70,dmg:16,xp:18,col:'#c25bff',core:'#4a137a',glow:'rgba(180,80,255,0.5)'},
+ {k:'cell',  n:['細胞','Cell'],st:1,sh:2,r:29,hp:8, spd:90, dmg:11,xp:8, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
+ {k:'bigcell',n:['大型細胞','Large Cell'],st:1,sh:3,r:44,hp:22,spd:70,dmg:16,xp:18,col:'#c25bff',core:'#4a137a',glow:'rgba(180,80,255,0.5)'},
  // stage 2: nuclei / giants
  {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:150,dmg:12,xp:16,col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
  {k:'amoeba',n:['アメーバ','Amoeba'],st:2,r:64,hp:32,spd:122,dmg:16,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)'},
@@ -102,6 +103,10 @@ function drawBody(g,t,fl){
     g.fillStyle=fl?'#fff':'#ffb07a';for(let i=0;i<5;i++){const a=i*1.25+.4,d=r*.6;g.save();g.translate(Math.cos(a)*d,Math.sin(a)*d);g.rotate(a);g.beginPath();g.roundRect?g.roundRect(-r*.13,-r*.06,r*.26,r*.12,r*.06):g.rect(-r*.13,-r*.06,r*.26,r*.12);g.fill();g.restore();}
     g.strokeStyle=fl?'#fff':'#ffd0a8';g.lineWidth=2;for(let i=0;i<3;i++){g.beginPath();g.arc(r*.05,0,r*(.38+i*.07),3.6,5.2);g.stroke();}
     g.fillStyle=core;circ(g,r*.05,0,r*.3);g.fill();g.fillStyle=col;circ(g,r*.1,-r*.05,r*.11);g.fill();break;
+  case 'bomb':g.fillStyle=fl?'#fff':'#ff5a1f';for(let i=0;i<8;i++){const a=i/8*TAU;g.beginPath();g.moveTo(Math.cos(a-.2)*r*.9,Math.sin(a-.2)*r*.9);g.lineTo(Math.cos(a)*r*1.32,Math.sin(a)*r*1.32);g.lineTo(Math.cos(a+.2)*r*.9,Math.sin(a+.2)*r*.9);g.fill();}
+    g.fillStyle=col;circ(g,0,0,r);g.fill();
+    g.strokeStyle=fl?'#fff':'#7a2a00';g.lineWidth=Math.max(1.5,r*.14);for(let i=0;i<3;i++){const a=i*2.1+.5;g.beginPath();g.arc(0,0,r*.64,a,a+1.1);g.stroke();}
+    g.fillStyle=core;circ(g,0,0,r*.34);g.fill();break;
   case 'toxin':g.fillStyle=col;g.globalAlpha=.85;circ(g,0,0,r);g.fill();g.globalAlpha=1;
     g.strokeStyle=fl?'#fff':'#eaff9a';g.lineWidth=Math.max(1.5,r*.08);g.setLineDash([r*.25,r*.18]);circ(g,0,0,r*.9);g.stroke();g.setLineDash([]);
     g.fillStyle=core;for(let i=0;i<5;i++){const a=i*1.3+.4,d=r*.45;circ(g,Math.cos(a)*d,Math.sin(a)*d,r*.13);g.fill();}
@@ -109,13 +114,14 @@ function drawBody(g,t,fl){
   }
   g.globalAlpha=1;
 }
-function bodySprite(t,fl){const ext=t.k==='mito'?t.r*1.2:t.k==='toxin'?t.r*1.35:t.r,S=(ext+8)*2,s=mk(S,S),g=s.getContext('2d');g.translate(S/2,S/2);drawBody(g,t,fl);return s;}
+function bodySprite(t,fl){const ext=t.k==='mito'?t.r*1.2:t.k==='toxin'||t.k==='bomb'?t.r*1.35:t.r,S=(ext+8)*2,s=mk(S,S),g=s.getContext('2d');g.translate(S/2,S/2);drawBody(g,t,fl);return s;}
 for(const t of [...ETYPES,...BOSS_T,...TOXIN_T]){t.spr=bodySprite(t,0);t.fspr=bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;}
+const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
 const GLOWC=new Map();
 function headGlow(h){h=(Math.round(h/15)*15)%360;let g=GLOWC.get(h);if(!g){g=glowSprite(60,`hsla(${h},100%,62%,0.55)`);GLOWC.set(h,g);}return g;}
 
 // ---------- saved progress (DNA, skins, unlocked cards) ----------
-const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave');
+const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave')&&!Q.has('t');
 function loadMeta(){try{const m=JSON.parse(localStorage.getItem(META_KEY)||'null');if(m&&typeof m==='object')return m;}catch(e){}return null;}
 const META=Object.assign({dna:0,skins:['green'],skin:'green',unlocked:['spike'],best:{t:0,stage:0,clears:0},runs:0},loadMeta()||{});
 if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'].concat(Array.isArray(META.skins)?META.skins:[]);
@@ -134,7 +140,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v7';
+const LANGS=['ja','en'],VER='v8';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -203,6 +209,9 @@ const STR={
  tip_charge_s:['最大6重。ダッシュは長押しで伸びる','Up to 6x. Hold to dash longer'],
  tip_shell:['殻のある敵','Shelled enemy'],
  tip_shell_s:['殻の数だけ巻いて割る','Coil once per shell to crack it'],
+ tip_bomb:['爆発菌が来た','Blast Germs incoming'],
+ tip_bomb_s:['倒すと周りを巻き込んで爆発する。1体囲めば連鎖する','They explode when they die. Catch one in a coil to start a chain'],
+ chain:['連鎖 +{0}','Chain +{0}'],
  // cards
  cat_body:['体質','Body'],
  cat_atk:['攻撃','Attack'],
@@ -303,8 +312,8 @@ const STR={
  h3_b:['同じ場所を何周も巻くとチャージが上がる（最大6重）。衝撃波が大きくなり、XP も増える。','Lap the same spot again to raise the charge (up to 6x). The shockwave grows and so does the XP.'],
  h4:['頭が弱点','Your head is the weak point'],
  h4_b:['ダメージを受けるのは頭だけ。尾は無敵で、敵をすり抜ける。','Only your head takes damage. The tail is invincible and passes through enemies.'],
- h5:['殻とボス','Shells and bosses'],
- h5_b:['殻のある敵は、殻の数だけ巻くと割れる。尾が伸びるとボスが出て、倒すと次の大きさへ進む。3体目を倒すとクリア。','Shelled enemies need one coil per shell. A long tail calls the boss; beat it to move up a scale. Beat the third boss to clear the game.'],
+ h5:['殻・爆発・ボス','Shells, blasts and bosses'],
+ h5_b:['大きい敵は殻を持ち、殻の数だけ巻かないと倒せない。爆発菌は倒すと周りを巻き込む。尾が伸びるとボスが出て、3体倒すとクリア。','Big enemies carry shells: coil once per shell. Blast Germs explode when they die and take their neighbours along. A long tail calls a boss; beat three to clear the game.'],
  h6:['カードと進化','Cards and evolution'],
  h6_b:['レベルアップで強化を1枚選ぶ。土台のカードを MAX にして素材のカードも持つと、ボスのカプセルで進化する。','Pick one upgrade per level. Max out a base card and hold its ingredient card, then a boss capsule evolves it.'],
  h7:['霧とアイテム','Fog and pickups'],
@@ -335,7 +344,7 @@ const GASSPR=(()=>{const R=64,c=mk(R*2,R*2),g=c.getContext('2d'),gr=g.createRadi
 
 // ---------- sound: small synthesized effects, no audio files ----------
 // A browser only lets audio start after a click, a key press or the end of a touch (audioUnlock). Until then sfx() does nothing.
-let AC=null,master=null,noiseBuf=null;const sfxAt={},SFX_GAP={pop:45,xp:55,loop:60,crack:60,ui:40};
+let AC=null,master=null,noiseBuf=null;const sfxAt={},SFX_GAP={pop:45,xp:55,loop:60,crack:60,ui:40,boom:70};
 function audioUnlock(){
   if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
     try{AC=new C();master=AC.createGain();master.gain.value=META.opts.vol*0.6;master.connect(AC.destination);
@@ -483,7 +492,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseGame(
 addEventListener('blur',pauseGame);
 
 // ---------- state ----------
-let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner,stageT;
+let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
 let calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0;}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
@@ -498,8 +507,8 @@ function reset(start){
      regen:0,captT:CAPT_TIME,xpMul:1,anti:0,ram:0,revive:0,revived:false,shatter:false,reroll:2,dropIn:35,freezeT:0,gasEver:false,killer:null,
      endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
-  T=0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;stageT=0;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];
+  T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -526,17 +535,18 @@ function compact(a,keep){let j=0;for(let i=0;i<a.length;i++){const x=a[i];if(kee
 function text(x,y,s,size,col,life){if(texts.length>40)texts.shift();texts.push({x,y,s,size,col,life:life||1,max:life||1});}
 
 // ---------- spawning ----------
-function pickType(){
-  const st=P.stage,ts=T-stageT,r=Math.random();
-  if(st>0&&r<0.22){const prev=ETYPES.filter(t=>t.st===st-1);return prev[Math.random()*prev.length|0];}
-  const base=ETYPES.filter(t=>t.st===st),q=Math.random();
-  const t0=st===0?T:ts+20,p2=Math.min(0.45,t0/160),p3=t0>50?Math.min(0.14,(t0-50)/450):0;
-  return q<p3?base[2]:q<p3+p2?base[1]:base[0];
-}
-const CAP=[260,170,110];
-function hpScale(){return 1+(T-stageT)/200+P.stage*0.4;}
-function mkEnemy(t,x,y){return{x,y,vx:0,vy:0,t,hp:Math.ceil(t.hp*hpScale()),r:t.r,ang:0,spd:t.spd*rand(0.85,1.1)*(1+Math.min(0.3,(T-stageT)/400)),
-  flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh:0,shMax:0,xpB:1,slowT:0,spk:0};}
+// One stage. The small fry never leave; tougher and stranger types join as the run goes on, they do not replace anyone.
+// [type, from second, top weight, seconds to reach that weight]
+const ROSTER=[['germ',0,10,0],['virus',20,5,60],['blob',55,2.4,90],['bomb',95,1.3,90],['mito',150,2.2,90],['cell',210,1.3,120],['bigcell',330,0.7,150]];
+function pickType(){let tot=0;const w=ROSTER.map(([k,t0,top,ramp])=>{const v=T<t0?0:top*(ramp?Math.min(1,(T-t0)/ramp):1);tot+=v;return v;});
+  let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[ROSTER[i][0]];}return ET.germ;}
+const CAP=260;
+function hpScale(){return 1+T/300+P.stage*0.3;}
+// Enemies are sized for the screen, not the world: sc = the zoom now / the zoom the type was drawn for.
+// So the swarm looks the same size however far the camera has pulled back, and a longer tail simply holds more of it.
+function mkEnemy(t,x,y){const sc=Math.max(P.S,targetS(P.tailLen))/STAGE_S[t.st],sh=t.sh||0;
+  return{x,y,vx:0,vy:0,t,sc,hp:Math.ceil(t.hp*hpScale()),r:t.r*sc,ang:0,spd:t.spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600)),
+  flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh,shMax:sh,xpB:1+0.5*sh,slowT:0,spk:0};}
 function spawnCluster(n,at){
   const Sx=Math.max(P.S,targetS(P.tailLen));let cx,cy,spread;
   if(at){cx=at.x;cy=at.y;spread=(20+Math.sqrt(n)*10)*Sx;}
@@ -544,30 +554,28 @@ function spawnCluster(n,at){
     // keep fresh groups out of the head's path
     if(Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
     const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx;}
-  const cap=CAP[P.stage];
+  const cap=CAP;
   for(let i=0;i<n&&enemies.length<cap;i++){
     const t=pickType(),aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
-    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at)maybeShell(e);enemies.push(e);
+    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at)maybeShell(e);if(t.boom)tip('bomb');enemies.push(e);
   }
 }
-// ---------- waves (per scale, by time since the scale began): [start s, minimum alive, interval s, event] ----------
-const WAVES=[
- [[0,18,1.0],[25,26,0.9],[55,34,0.8,'stream'],[85,22,1.1],[110,42,0.75,'toxin'],[150,28,1.0],[180,52,0.7,'ring'],[220,32,1.0],[250,62,0.65,'stream'],[290,38,0.9,'toxin']],
- [[0,12,1.2],[25,20,1.0],[55,28,0.9,'stream'],[85,16,1.2,'toxin'],[110,34,0.85],[150,20,1.1,'ring'],[180,40,0.8,'toxin'],[220,24,1.0],[250,46,0.75,'stream'],[290,28,0.95,'toxin']],
- [[0,9,1.3],[25,14,1.1],[55,20,1.0,'stream'],[85,11,1.3,'toxin'],[110,24,1.0],[150,14,1.2,'ring'],[180,28,0.9,'toxin'],[220,17,1.1],[250,32,0.85,'stream'],[290,20,1.0,'toxin']],
-];
-function waveNow(){const ts=T-stageT,L=WAVES[P.stage],last=L[L.length-1][0];
-  if(ts<last+40){let i=0;for(let k=0;k<L.length;k++)if(ts>=L[k][0])i=k;return{w:L[i],key:P.stage+':'+i,mul:1};}
-  const k=Math.floor((ts-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:P.stage+':'+i+':'+cyc,mul:1+0.12*cyc};}
+// ---------- waves (one stage, by time since the run began): [start s, minimum alive, interval s, event] ----------
+// Peaks and lulls as before, but the peaks keep climbing: the later it gets, the more there is to coil at once.
+const WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,30,1.1],[110,55,0.75,'toxin'],[150,40,1.0],[180,70,0.7,'ring'],[220,50,1.0],[250,85,0.65,'stream'],[290,60,0.9,'toxin'],
+ [330,100,0.65],[370,70,0.9,'ring'],[410,115,0.6,'stream'],[450,80,0.9,'toxin'],[490,130,0.6],[530,90,0.9,'ring'],[570,145,0.55,'stream'],[610,100,0.9,'toxin']];
+function waveNow(){const L=WAVES,last=L[L.length-1][0];
+  if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
+  const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
   const{w,key,mul}=waveNow();
   if(key!==P.waveKey){P.waveKey=key;if(w[3])waveEvent(w[3]);}
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
   let alive=0;for(const e of enemies)if(!e.boss&&!e.dead)alive++;
-  const min=Math.round(w[1]*mul*(P.boss?0.6:1));if(alive>=CAP[P.stage])return;
+  const min=Math.round(w[1]*mul*(P.boss?0.6:1));if(alive>=CAP)return;
   const def=min-alive;
-  if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));}
+  if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));}
   else if(Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
@@ -583,12 +591,12 @@ function waveEvent(k){
   else if(k==='ring'){ringEvent();evt(TX('ev_ring'),TX('ev_ring_s'));}
   else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt(TX('ev_toxin'),TX('ev_toxin_s'));}
 }
-function streamEvent(){const st=P.stage,Sx=Math.max(P.S,targetS(P.tailLen)),base=ETYPES.filter(t=>t.st===st)[0],n=[18,14,10][st];
+function streamEvent(){const Sx=Math.max(P.S,targetS(P.tailLen)),n=Math.min(40,18+(T/20|0));
   const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=Math.min(W,H)*0.5*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
   for(let i=0;i<n;i++){const lat=off+(i/(n-1)-0.5)*wid,dep=rand(0,90)*Sx;
-    const e=mkEnemy(base,P.x-dx*(D+dep)+nx*lat,P.y-dy*(D+dep)+ny*lat);e.sdx=dx;e.sdy=dy;e.sT=7;e.spd*=1.25;enemies.push(e);}}
-function ringEvent(){const st=P.stage,Sx=Math.max(P.S,targetS(P.tailLen)),L=ETYPES.filter(t=>t.st===st),n=[28,20,14][st],R=Math.hypot(W,H)/2*Sx*0.92;
-  for(let i=0;i<n;i++){const a=i/n*TAU,e=mkEnemy(L[i%2],P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);e.spd*=0.75;enemies.push(e);}}
+    const e=mkEnemy(ET.germ,P.x-dx*(D+dep)+nx*lat,P.y-dy*(D+dep)+ny*lat);e.sdx=dx;e.sdy=dy;e.sT=7;e.spd*=1.25;enemies.push(e);}}
+function ringEvent(){const Sx=Math.max(P.S,targetS(P.tailLen)),n=Math.min(48,28+(T/25|0)),R=Math.hypot(W,H)/2*Sx*0.92;
+  for(let i=0;i<n;i++){const a=i/n*TAU,e=mkEnemy(i%2?ET.virus:ET.germ,P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);e.spd*=0.75;enemies.push(e);}}
 function spawnToxin(){const t=TOXIN_T[P.stage],Sx=Math.max(P.S,targetS(P.tailLen)),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,Math.PI),d=Math.hypot(W,H)/2*Sx+40*Sx;
   const e=mkEnemy(t,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d);e.puffT=0.4;enemies.push(e);}
 // ---------- poison gas ----------
@@ -632,17 +640,16 @@ function drawItems(){const S=P.S;
     else if(it.k==='mag'){ctx.arc(x,y+1*u,4.5*u,0,Math.PI);ctx.moveTo(x-4.5*u,y+1*u);ctx.lineTo(x-4.5*u,y-5*u);ctx.moveTo(x+4.5*u,y+1*u);ctx.lineTo(x+4.5*u,y-5*u);}
     else for(let i=0;i<3;i++){const a=i*Math.PI/3;ctx.moveTo(x-Math.cos(a)*6*u,y-Math.sin(a)*6*u);ctx.lineTo(x+Math.cos(a)*6*u,y+Math.sin(a)*6*u);}
     ctx.stroke();}}
-// a few slow, rewarding enemies carry shells (rings = wraps needed)
-function maybeShell(e){const t=e.t,st=P.stage;let n=0;
-  if(st===0&&t.k==='blob'&&T>40&&Math.random()<0.035)n=1;
-  else if(st===1&&t.st===1&&t.k!=='mito'&&Math.random()<0.05)n=Math.random()<0.6?1:2;
-  else if(st===2&&t.st===2&&t.k!=='nucleus'&&Math.random()<0.07)n=Math.random()<0.5?2:3;
-  if(n){e.sh=e.shMax=n;e.spd*=0.8;e.xpB=1+1.5*n;tip('shell');}}
+// Shells = coils needed. Big types always have them (sh in ETYPES), so they cannot be squeezed with a single lap.
+// A few enemies are elites: one more shell, gold rings, and a capsule when beaten.
+function maybeShell(e){const t=e.t;
+  if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
+  if(e.sh)tip('shell');}
 function spawnBoss(){
   const t=BOSS_T[P.stage],Sx=Math.max(P.S,targetS(P.tailLen)),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
   const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=Math.min(8,t.sh+P.bossN); // endless: each return has one more shell and more HP
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
-    sh,shMax:sh,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
+    sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;
   banner={t:3,max:3,title:TX('boss_in'),sub:TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
@@ -658,11 +665,11 @@ function bossDown(e){
   else if(P.endless){P.bossN++;P.nextBoss=T+75;dropChest(e.x,e.y,true);}
   else{P.clearAt=T+1.4;calmUntil=1e9;}
 }
+// A boss is down: the player moves up a scale. The swarm is not replaced and the waves do not restart; there is only a short breather.
 function stageUp(){
-  const s=++P.stage;stageT=T;calmUntil=T+6;P.st0=P.tailLen;P.waveKey='';P.waveT=0.5;
+  const s=++P.stage;calmUntil=T+4;P.st0=P.tailLen;P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('scale_up'),sub:TX('scale_up_s',stageName(s))};flashT=0.35;shake=Math.max(shake,12);P.inv=Math.max(P.inv,1.6);sfx('stage');
-  for(const e of enemies){if(e.boss)continue;if(e.t.st<s){e.hp=Math.min(e.hp,1);e.sh=0;}
-    const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*700*P.S;e.vy+=dy/d*700*P.S;}
+  for(const e of enemies){if(e.boss)continue;const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*700*P.S;e.vy+=dy/d*700*P.S;}
   rings.push({x:P.x,y:P.y,r:20*P.S,R:520*P.S,life:0.8,max:0.8,col:'#eaffb0',w:8*P.S});
   growTail(1.04);bubbleStage();
   if(s>=1)mission('cell');if(s>=2&&!P.gasEver)mission('nogas');
@@ -739,21 +746,38 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
   if(dx>m||dx<-m||dy>m||dy<-m)continue;const d2=dx*dx+dy*dy;if(d2<m*m){const d=Math.sqrt(d2)||0.01;o.x=b.x+dx/d*m;o.y=b.y+dy/d*m;return b;}}return null;}
 
 // ---------- combat ----------
-function hurt(e,d,xpMul){if(e.sh>0){e.flash=0.06;return false;}e.hp-=d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul);return true;}return false;}
-function kill(e,xpMul){
+function hurt(e,d,xpMul,grp){if(e.sh>0){e.flash=0.06;return false;}e.hp-=d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
+function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
   e.dead=true;burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);kills++;sfx('pop');dropTick(e);
   const v=e.t.xp*xpMul*(e.xpB||1);
   if(e.boss){for(let k=0;k<14;k++)orbs.push({x:e.x+rand(-0.6,0.6)*e.r,y:e.y+rand(-0.6,0.6)*e.r,v:v/14,ph:Math.random()*TAU,vx:rand(-160,160),vy:rand(-160,160)});}
   else if(orbs.length<450)orbs.push({x:e.x+rand(-6,6),y:e.y+rand(-6,6),v,ph:Math.random()*TAU,vx:rand(-40,40),vy:rand(-40,40)});
   else addXP(v);
   if(e.shMax>0)mission('shell');
-  if(e.shMax>0&&!e.boss&&(e.shMax>=2||Math.random()<0.35))dropChest(e.x,e.y,false);
+  if(e.elite&&!e.boss&&(e.shMax>=2||Math.random()<0.35))dropChest(e.x,e.y,false);
   if(e.t.k==='toxin'){META.stats.toxins++;if(META.stats.toxins>=10)mission('toxin');puff(e.x,e.y,e.r*4.5,6);for(let k=0;k<3;k++){const a=Math.random()*TAU;puff(e.x+Math.cos(a)*e.r*2,e.y+Math.sin(a)*e.r*2,e.r*2.5,5);}}
+  if(e.t.boom)boom(e,xpMul,grp);
   if(e.boss)bossDown(e);
+}
+// ---------- chain explosions ----------
+// A Blast Germ blows up shortly after it dies, however it died. The blast kills what is near (shells lose one layer instead),
+// and any Blast Germ it kills blows up in turn. It never hurts the player.
+// grp ties one chain together: {n: kills by blasts, base: kills by the squeeze that started it, live: blasts still to go off}
+let booms=[];
+function boom(e,xpMul,grp){grp=grp||{n:0,base:0,live:0};grp.live++;booms.push({x:e.x,y:e.y,r:80*e.sc,t:0.13,xpMul,grp});}
+function boomTick(dt){
+  for(const b of booms){b.t-=dt;if(b.t>0)continue;const S=P.S,g=b.grp;b.done=true;g.live--;
+    rings.push({x:b.x,y:b.y,r:b.r*0.2,R:b.r,life:0.35,max:0.35,col:'#ffd27a',w:7*S});burst(b.x,b.y,26,'#ffb020',420,0.6,4);burst(b.x,b.y,10,'#ffffff',260,0.4,3);
+    shake=Math.max(shake,9);sfx('boom',8);
+    for(const e of enemies){if(e.dead)continue;const dx=e.x-b.x,dy=e.y-b.y,rr=b.r+e.r;if(dx*dx+dy*dy>rr*rr)continue;
+      if(e.sh>0)crackShell(e,1);else if(e.boss)hurt(e,8*(1+P.stage),b.xpMul,g);else{kill(e,b.xpMul,g);g.n++;}}
+    if(g.live<=0&&g.n>0){const tot=g.base+g.n;text(b.x,b.y-30*S,TX('chain',g.n),22+Math.min(24,g.n),'#ffd27a',1.2);
+      bestCombo=Math.max(bestCombo,tot);if(tot>=20)mission('c20');if(tot>=50)mission('c50');vib(25);}}
+  compact(booms,b=>!b.done);
 }
 function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
   burst(e.x,e.y,10+k*6,'#d8f4ff',220*(e.boss?1.6:1),0.55,3);shake=Math.max(shake,e.boss?6:3);sfx('crack');
-  if(e.sh===0)text(e.x,e.y-e.r-10*P.S,TX('cracked'),e.boss?26:16,'#d8f4ff',0.9);
+  if(e.sh===0&&(e.boss||e.elite))text(e.x,e.y-e.r-10*P.S,TX('cracked'),e.boss?26:16,'#d8f4ff',0.9); // common shelled enemies: the ring vanishing is enough
   else if(e.boss)text(e.x,e.y-e.r-10*P.S,TX('shell_left',e.sh),22,'#d8f4ff',0.8);}
 function addXP(v){P.xp+=v*P.xpMul;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
 function dash(){
@@ -780,15 +804,16 @@ function onLoop(poly){
 }
 function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
-  const xpMul=(dsh?2:1)*(1+0.35*(ch-1));let n=0,heal=0,kept=0;
+  const xpMul=(dsh?2:1)*(1+0.35*(ch-1)),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
-        if(!e.boss)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
-      kill(e,xpMul);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
+        if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
+      kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
   const R=(55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6,dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage);
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
-    if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
+    if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul,grp))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
+  grp.base=n;
   rings.push({x:c.x,y:c.y,r:cap.rad*0.2,R,life:0.5,max:0.5,col:dsh?'#eafff2':'#7dffb0',w:(dsh?10:6)*S});
   if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.35,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
   burst(c.x,c.y,30+n*2,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,20+ch*10,'#4fb8ff',300,0.9,3);
@@ -956,6 +981,7 @@ function update(dt){
   for(const c of captures){c.pop=Math.max(0,c.pop-dt*3);
     if(c.cinchT<0){c.timer-=dt;if(c.timer<=0){c.cinchT=0;c.dash=false;}}
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
+  boomTick(dt);
   compact(captures,c=>!c.done);
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
@@ -982,7 +1008,7 @@ function updateFx(dt){
   for(const r of rings){r.life-=dt;if(r.follow){r.x=P.x;r.y=P.y;}}compact(rings,r=>r.life>0);
   for(const g of ghosts)g.life-=dt;compact(ghosts,g=>g.life>0);
   if(banner){banner.t-=dt;if(banner.t<=0)banner=null;}
-  for(const t of toasts)t.life-=dt;toasts=toasts.filter(t=>t.life>0);
+  for(let i=0;i<toasts.length&&i<2;i++)toasts[i].life-=dt;toasts=toasts.filter(t=>t.life>0); // two on screen at a time, the rest wait
   if(evtMsg){evtMsg.t-=dt;if(evtMsg.t<=0)evtMsg=null;}
   shake=Math.max(0,shake-dt*40);if(flashT>0)flashT-=dt;
 }
@@ -1045,7 +1071,7 @@ function drawChests(){const S=P.S;
     ctx.strokeStyle=c.evo?'#7a4a00':'#0b4060';ctx.lineWidth=1.6;for(const ph of[0,Math.PI]){ctx.beginPath();for(let i=0;i<=12;i++){const x=-12+i*2,y=Math.sin(i*0.9+ph+T*3)*5;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
     ctx.restore();}}
 function drawShell(e,S){const B=e.boss,gap=B?9:5.5;ctx.lineWidth=(B?3.2:2)*S;
-  for(let i=0;i<e.sh;i++){const R=e.r+(5+i*gap)*S,rot=T*0.7*(i%2?1:-1)+e.ph+i;ctx.strokeStyle=`rgba(214,242,255,${0.95-i*0.1})`;
+  for(let i=0;i<e.sh;i++){const R=e.r+(5+i*gap)*S,rot=T*0.7*(i%2?1:-1)+e.ph+i;ctx.strokeStyle=e.elite?`rgba(255,214,90,${0.95-i*0.1})`:`rgba(214,242,255,${0.95-i*0.1})`;
     for(let k=0;k<5;k++){const a0=rot+k*TAU/5;ctx.beginPath();ctx.arc(e.x,e.y,R,a0,a0+TAU/5-0.32);ctx.stroke();}}
   if(B&&e.regenT>0){const R=e.r+(5+e.sh*gap)*S;ctx.strokeStyle=`rgba(160,200,230,${0.6*e.regenT/3.5})`;ctx.setLineDash([6*S,6*S]);ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
 function render(){
@@ -1088,14 +1114,15 @@ function render(){
   const foodR=7*S;
   const eGlow=QL>=3||(QL===2&&enemies.length<90);
   for(const e of enemies){if(e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
-    if(eGlow||e.boss){ctx.globalAlpha=e.r<foodR?0.35:1;ctx.drawImage(t.gspr,e.x-t.gR,e.y-t.gR,t.gR*2,t.gR*2);}
+    if(eGlow||e.boss){ctx.globalAlpha=e.r<foodR?0.35:1;const gr=t.gR*e.sc;ctx.drawImage(t.gspr,e.x-gr,e.y-gr,gr*2,gr*2);}
     if(e.cap)ctx.drawImage(CAPGLOW,e.x-e.r*2.4,e.y-e.r*2.4,e.r*4.8,e.r*4.8);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const e of enemies){if(e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
-    const s=e.flash>0?t.fspr:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),w=s.width*(1+wb),h=s.height*(1-wb);
+    const s=e.flash>0?t.fspr:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),w=s.width*e.sc*(1+wb),h=s.height*e.sc*(1-wb);
     ctx.globalAlpha=e.r<foodR?0.55:1;
     if(t.rot){ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.restore();}
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
+    if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
@@ -1236,7 +1263,7 @@ function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*
   fitFont(m.s,NARROW?20:24,900,w-24);ctx.strokeText(m.s,w/2,y);ctx.fillStyle='#ffffff';ctx.fillText(m.s,w/2,y);
   if(m.sub){fitFont(m.sub,14,'bold',w-24);ctx.strokeText(m.sub,w/2,y+25);ctx.fillStyle='#d8f070';ctx.fillText(m.sub,w/2,y+25);}ctx.restore();ctx.globalAlpha=1;}
 function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(NARROW?226:178);ctx.save();ctx.scale(k,k);
-  for(const t of toasts){ctx.globalAlpha=Math.max(0,Math.min(1,t.life*2,(t.max-t.life)*5));
+  for(const t of toasts.slice(0,2)){ctx.globalAlpha=Math.max(0,Math.min(1,t.life*2,(t.max-t.life)*5));
     ctx.fillStyle='rgba(40,30,4,0.92)';ctx.strokeStyle='#ffd23f';ctx.lineWidth=1.5;rrect(sw/2-w/2,y-24,w,48,10);ctx.fill();ctx.stroke();
     ctx.textAlign='center';ctx.textBaseline='middle';fitFont(t.s,15,900,w-16);ctx.fillStyle='#ffe680';ctx.fillText(t.s,sw/2,y-8);
     if(t.sub){fitFont(t.sub,12,'bold',w-16);ctx.fillStyle='#e8d9a8';ctx.fillText(t.sub,sw/2,y+12);}y+=56;}
@@ -1455,6 +1482,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
-  sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard};
+  sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO};},applyCard,
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y);enemies.push(e);return e;},get booms(){return booms.length;},get roster(){return ROSTER;},waveNow};
 })();
 </script></body></html>
