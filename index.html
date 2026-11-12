@@ -131,6 +131,16 @@ const POND_BOSS=[{k:'stentor',st:0,r:48,hp:44,spd:46,dmg:18,xp:150,col:'#5ab8ff'
  POND_TITAN=[{k:'daph',st:0,L:250,w:120,r:120,hp:30,spd:80,dmg:20,xp:120,sh:3,res:1,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',name:['ミジンコ','Water Flea'],rot:1},
   {k:'mosq',st:1,L:520,w:62,r:62,hp:60,spd:112,dmg:26,xp:300,sh:4,res:0.5,col:'#b9c7a0',core:'#3a4a20',glow:'rgba(190,205,160,0.35)',name:['ボウフラ','Mosquito Larva'],rot:1}],
  POND_HUNT=[null,{k:'mite',st:1,r:84,hp:1,spd:0,dmg:30,xp:150,col:'#ff5a4a',core:'#5a0a05',glow:'rgba(255,90,70,0.5)',name:['ミズダニ','Water Mite'],sh:7,rot:1}]; // the hunter of scale 2: it chases as the white blood cell does
+// The rush (v27): once in a run a pack comes up from behind and chases the player for RUSH_SEC seconds; then whatever is left of it is gone.
+// One type per scale, sized for that scale's world. They are weak (they can be coiled, or outrun), but there are always some thirty of them.
+const RUSH_SEC=20,BODY_RUSH=[
+ {k:'rush',look:'anti',st:0,r:10,hp:1,spd:0,dmg:7, xp:1,col:'#ff6a5a',core:'#5a0f0a',glow:'rgba(255,100,80,0.55)',name:['抗体の群れ','Antibody Swarm'],rot:1},
+ {k:'rush',look:'anti',st:1,r:15,hp:2,spd:0,dmg:10,xp:2,col:'#ff6a5a',core:'#5a0f0a',glow:'rgba(255,100,80,0.55)',name:['抗体の群れ','Antibody Swarm'],rot:1},
+ {k:'rush',look:'anti',st:2,r:32,hp:4,spd:0,dmg:15,xp:4,col:'#ff6a5a',core:'#5a0f0a',glow:'rgba(255,100,80,0.55)',name:['抗体の群れ','Antibody Swarm'],rot:1}],
+ POND_RUSH=[
+ {k:'rush',look:'nema',st:0,L:17,w:2.8,r:4,hp:1,spd:0,dmg:7, xp:1,col:'#ff6a5a',core:'#7a140a',glow:'rgba(255,100,80,0.5)',name:['イトミミズの群れ','Sludge Worm Swarm'],rot:1,fr:8},
+ {k:'rush',look:'nema',st:1,L:30,w:4.4,r:6,hp:2,spd:0,dmg:10,xp:2,col:'#ff6a5a',core:'#7a140a',glow:'rgba(255,100,80,0.5)',name:['イトミミズの群れ','Sludge Worm Swarm'],rot:1,fr:8}];
+let RUSH_T=BODY_RUSH;
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);
   gr.addColorStop(0,col);gr.addColorStop(0.4,col.replace(/[\d.]+\)$/,m=>(parseFloat(m)*0.35).toFixed(3)+')'));gr.addColorStop(1,'rgba(0,0,0,0)');
@@ -343,12 +353,12 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   g.globalAlpha=1;
 }
 function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
-for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,...POND_HUNT.filter(Boolean)]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
+for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,...POND_HUNT.filter(Boolean),...BODY_RUSH,...POND_RUSH]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
 const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
 // The field guide (v17): what it lists, in order: [scale, type, key of its line of text]. A scale's creatures show once that scale has been reached.
 let BOOK=[[0,'germ','germ'],[0,'virus','virus'],[0,'blob','blob'],[0,'bacil','run'],[0,'vibrio','orbit'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,BOSS_T[0],'boss'],[0,TITAN_T[0],'titan'],
- [1,'mito','mito'],[1,'rod','run'],[1,'cell','cell'],[1,'spiro','orbit'],[1,'neutro','charge'],[1,'strep','strep'],[1,'divider','divider'],[1,'moon','moon'],[1,'phage','phage'],[1,'bcell','shoot'],[1,'bigcell','big'],[1,HUNT_T[1],'wbc'],[1,BOSS_T[1],'boss'],[1,TITAN_T[1],'titan'],
+ [1,'mito','mito'],[1,'rod','run'],[1,'cell','cell'],[1,'spiro','orbit'],[1,'neutro','charge'],[1,'strep','strep'],[1,'divider','divider'],[1,'moon','moon'],[1,'phage','phage'],[1,'bcell','shoot'],[1,'bigcell','big'],[1,BODY_RUSH[1],'rush'],[1,HUNT_T[1],'wbc'],[1,BOSS_T[1],'boss'],[1,TITAN_T[1],'titan'],
  [2,'nucleus','nucleus'],[2,'anti','anti'],[2,'bigrod','run'],[2,'amoeba','amoeba'],[2,'spiroch','orbit'],[2,'tcell','charge'],[2,'chromo','chromo'],[2,'chroma','chroma'],[2,'mimi','mimi'],[2,'virion','virion'],[2,'dna','dna'],[2,'giant','shoot'],[2,BOSS_T[2],'boss'],[2,TITAN_T[2],'helio']]
  .map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k]);
 // v17 fire: a flame is a soft tongue with a white-hot heart, drawn additively and upright, flickering. Never a flat shape.
@@ -381,7 +391,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v26.1';
+const LANGS=['ja','en'],VER='v27';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -426,6 +436,12 @@ const STR={
  ev_stream:['群れが横切る！','Swarm crossing!'],
  ev_stream_s:['流れに尾をかぶせて巻き込め','Lay your tail across their path and coil them up'],
  ev_ring:['囲まれた！','Surrounded!'],
+ rush_in:['ラッシュ！','RUSH!'],
+ rush_in_s:['群れが追ってくる。{0}秒、ダッシュで突き放せ','A pack is on your tail. Dash to stay ahead for {0}s'],
+ rush_hud:['ラッシュ　あと{0}秒','RUSH   {0}s left'],
+ rush_out:['逃げ切った！','You outran them!'],
+ rush_out_s:['群れは散った','The pack has scattered'],
+ bk_rush:['1 回の遊びに 1 度、20 秒だけ群れで追ってくる。ダッシュで突き放す。時間が来ると消える','Once a run, a pack chases you for 20s. Dash to stay ahead. Then it is gone'],
  ev_ring_s:['ダッシュで外へ抜けろ','Dash out through the ring'],
  ev_toxin:['毒素菌が来た','Toxin germs incoming'],
  ev_lull:['波が引いた','The swarm thins out'],
@@ -692,7 +708,7 @@ const STR={
  h8:['DNA とミッション','DNA and missions'],
  h8_b:['プレイが終わると DNA がもらえる。ミッション達成でももらえる。タイトルでスキンの解放に使う。','You earn DNA after each run and from missions. Spend it on skins at the title screen.'],
 };
-loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc(POND_HUNT.filter(Boolean),'name');
+loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc(POND_HUNT.filter(Boolean),'name');loc(BODY_RUSH,'name');loc(POND_RUSH,'name');
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
  setLang(saved!==undefined?saved:/^ja\b/i.test(nav)?0:1);}
@@ -948,7 +964,7 @@ function reset(start){
      endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
      horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null,
      armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0,asura:false,raijin:false,sun:false,iceage:false,asT:2,rjT:4,
-     vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0};
+     vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0,rushT:0,rushSp:0,rushDue:false};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
   calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];
@@ -958,6 +974,7 @@ function reset(start){
   if(start)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:8);
   if(start&&Q.has('toxin'))for(let i=0;i<2;i++)spawnToxin();
   if(start&&Q.has('titan'))spawnTitan();
+  if(start&&Q.has('rush'))startRush();
   if(start&&Q.has('boss'))spawnBoss();
   if(start&&Q.has('shell'))for(let i=0;i<5;i++){spawnCluster(1);const e=enemies[enemies.length-1];if(e){e.sh=e.shMax=2;e.xpB=4;}}
   // ?give=spike,spike,horn,spine : start with these cards / evolutions (for looking at a build; never saves)
@@ -1028,7 +1045,7 @@ function spawnWedge(t,x,y){const n=t.wedge,g=t.r*2.7,L=mkEnemy(t,x,y,true);L.ang
 // ---------- waves (one stage, by time since the run began): [start s, minimum alive, interval s, event] ----------
 // Peaks and lulls as before, but the peaks keep climbing: the later it gets, the more there is to coil at once.
 let WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,18,1.1,'titan'],[110,55,0.75,'toxin'],[150,24,1.0],[180,70,0.7,'ring'],[220,26,1.0,'titan'],[250,85,0.65,'stream'],[290,30,0.9,'hunt'],
- [330,100,0.65,'toxin'],[370,34,0.9,'titan'],[410,115,0.6,'stream'],[450,36,0.9],[490,130,0.6,'ring'],[530,40,0.9,'toxin','titan'],[570,145,0.55,'stream'],[610,44,0.9,'hunt']];
+ [330,100,0.65,'toxin'],[370,34,0.9,'titan'],[410,115,0.6,'rush'],[450,36,0.9],[490,130,0.6,'ring'],[530,40,0.9,'toxin','titan'],[570,145,0.55,'stream'],[610,44,0.9,'hunt']];
 function waveNow(){const L=WAVES,last=L[L.length-1][0];
   if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
   const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
@@ -1038,17 +1055,17 @@ let REAL_K=[1,0.7,0.55]; // the wave table counts germ-sized enemies; bigger sca
 // The tables above are stage 1 ("Inside the Body"). useStage() points the working names (STAGE_N, TIERS, WAVES, BOSS_T ...) at a stage's
 // tables, so the rest of the game reads them as before. soon:1 = announced but not built yet (it cannot be started).
 const STAGES=[
- {id:'body',n:['体の中','Inside the Body'],names:STAGE_N,tiers:TIERS,waves:WAVES,boss:BOSS_T,hunt:HUNT_T,titan:TITAN_T,toxin:TOXIN_T,gas:GAS_DPS,realK:REAL_K,book:BOOK},
+ {id:'body',n:['体の中','Inside the Body'],names:STAGE_N,tiers:TIERS,waves:WAVES,boss:BOSS_T,hunt:HUNT_T,titan:TITAN_T,toxin:TOXIN_T,gas:GAS_DPS,realK:REAL_K,book:BOOK,rush:BODY_RUSH},
  {id:'pond',n:['池の水','Pond Water'],wip:1,names:[['原生生物','Protists'],['ミジンコ','Water Flea']], // v23: its first scale; v26: the second. The boss of the last scale that is there ends the run
   tiers:[[['ppara',0,10,0],['peug',15,5,50],['halt',35,3,60],['roti',55,2.2,70],['comb',75,1.8,70],['vort',95,1.2,80]],
          [['naup',0,5,0],['bosm',8,0.8,40],['cope',14,1.6,40],['nema',22,1.8,40],['ostr',34,1.3,50],['volv',46,1.0,60]]], // a wedge counts once here but comes as a whole flight
-  waves:WAVES,boss:POND_BOSS,hunt:POND_HUNT,titan:POND_TITAN,toxin:[TOXIN_T[0],TOXIN_T[1]],gas:[8,10],realK:[1,0.7],
+  waves:WAVES,boss:POND_BOSS,hunt:POND_HUNT,titan:POND_TITAN,toxin:[TOXIN_T[0],TOXIN_T[1]],gas:[8,10],realK:[1,0.7],rush:POND_RUSH,
   book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'titan'],
-        [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,POND_TITAN[1],'titan']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+        [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,POND_TITAN[1],'titan']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 ];
 loc(STAGES,'n');
 let CS=0,stgIdx=0; // the stage being played, and the one shown on the title screen
-function useStage(i){const d=STAGES[i];if(!d||d.soon)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;return true;}
+function useStage(i){const d=STAGES[i];if(!d||d.soon)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i){if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
 function stageOpen(i){return i===0||(!STAGES[i].soon&&((bestOf(i-1).clears||0)>0||FORCE_STG===i));} // a stage opens when the one before it has been cleared
@@ -1089,9 +1106,31 @@ function waveEvent(k){
   else if(k==='ring'){ringEvent();evt(TX('ev_ring'),TX('ev_ring_s'));}
   else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt(TX('ev_toxin'),TX('ev_toxin_s'));}
   else if(k==='hunt'){if(!spawnHunter())waveEvent('toxin');}
+  else if(k==='rush'){startRush();}
   else if(k==='titan'){if(!spawnTitan())P.titanDue=true;} // not while a boss is out: it comes afterwards (see waveTick) // before the Cell scale, or during a boss: toxin germs instead
 }
-function streamEvent(){const st=P.stage,Sx=Math.max(P.S,zoomT()),t=ET[st&&Math.random()<0.5?['','rod','bigrod'][st]:TIERS[st][0][0]],n=st?[0,20,14][st]:Math.min(40,18+(T/20|0)); // the basic creature of the current scale (or its rods, half the time), in a line across the screen
+// The rush. It waits for a boss or a hunter to be gone. While it lasts nothing else arrives; when the time is up the pack scatters and a lull follows.
+function startRush(){const t=RUSH_T[Math.min(P.stage,RUSH_T.length-1)];if(!t||P.rushT>0||P.clearAt)return false;if(P.boss||P.hunter){P.rushDue=true;return false;}
+  P.rushT=RUSH_SEC;P.rushDue=false;P.rushSp=1.2;calmUntil=Math.max(calmUntil,T+RUSH_SEC+5);
+  banner={t:3,max:3,title:TX('rush_in'),sub:TX('rush_in_s',RUSH_SEC)};shake=Math.max(shake,10);sfx('boss');rushSpawn(36);return true;}
+function rushSpawn(n){const t=RUSH_T[Math.min(P.stage,RUSH_T.length-1)],Sx=Math.max(P.S,zoomT()),D=Math.hypot(W,H)/2*Sx+50*Sx; // behind the player, out of sight
+  for(let i=0;i<n&&enemies.length<CAP+40;i++){const a=P.a+Math.PI+rand(-1.25,1.25),d=D+rand(0,160)*Sx,e=mkEnemy(t,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,true);
+    e.rush=true;e.ha=Math.atan2(P.y-e.y,P.x-e.x);e.ang=e.ha;e.xpB=0.5;enemies.push(e);}}
+// a chaser is a little slower than the player's walk when it is near (94%) and faster when it has dropped back (125% beyond 220 px on screen): on a straight
+// run the pack comes up to some 200 px behind, in sight, and then creeps closer (those at the back push those in front): without a dash it bites after about
+// 10 s; a dash every few seconds keeps clear of it. Any loop or turn lets it cut the corner. Close up it can turn sharply enough to bite
+function rushMove(e,dx,dy,d,dt,S){const sp=P.spd*S*(d>220*S?1.25:0.94)*(e.cap?0.3:1)*(P.freezeT>0?0.08:1),tr=(d>260*S?3.2:d>130*S?2.4:5.5)*dt;
+  e.ha+=clamp(angDiff(e.ha,Math.atan2(dy,dx)+Math.sin(T*1.7+e.ph)*0.35),-tr,tr);MV[0]=Math.cos(e.ha)*sp;MV[1]=Math.sin(e.ha)*sp;}
+function rushTick(dt){
+  if(P.rushDue&&!P.boss&&!P.hunter&&!(P.rushT>0))startRush();
+  if(!(P.rushT>0))return;
+  P.rushT-=dt;P.rushSp-=dt;
+  if(P.rushT<=0){P.rushT=0;let n=0;for(const e of enemies)if(e.rush&&!e.dead){e.dead=true;if(n++<40)burst(e.x,e.y,4,e.t.col,120,0.4,2.5);} // time is up: the pack is gone, with nothing to show for it
+    banner=null;evt(TX('rush_out'),TX('rush_out_s'),3);sfx('stage');mission('rush');calmUntil=Math.max(calmUntil,T+6);
+    if(P.hp/P.maxHp<0.7&&items.length<3){const S=P.S;items.push({x:P.x+Math.cos(P.a)*170*S,y:P.y+Math.sin(P.a)*170*S,k:'heal',life:22,ph:Math.random()*TAU});}
+    return;}
+  if(P.rushSp<=0){P.rushSp=1.2;let n=0;for(const e of enemies)if(e.rush&&!e.dead&&!e.pr)n++;if(n<34)rushSpawn(Math.min(8,34-n));}} // the pack is kept up to strength
+function streamEvent(){const st=P.stage,Sx=Math.max(P.S,zoomT()),alt=CS===0?['','rod','bigrod'][st]:'',t=ET[alt&&Math.random()<0.5?alt:TIERS[st][0][0]],n=st?[0,20,14][st]:Math.min(40,18+(T/20|0)); // the basic creature of the current scale (or its rods, half the time), in a line across the screen
   const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=Math.min(W,H)*0.5*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
   for(let i=0;i<n;i++){const lat=off+(i/(n-1)-0.5)*wid,dep=rand(0,90)*Sx;
     const e=mkEnemy(t,P.x-dx*(D+dep)+nx*lat,P.y-dy*(D+dep)+ny*lat,true);e.sdx=dx;e.sdy=dy;e.sT=7;e.spd*=1.25;enemies.push(e);}}
@@ -1254,6 +1293,7 @@ const MISSIONS=[
  {id:'inf',  dna:30, n:['∞ 締めを決める','Land an ∞ squeeze']},
  {id:'dash', dna:30, n:['ダッシュ締めで合計300体倒す','Defeat 300 with dash squeezes in total'],prog:()=>[META.stats.dashKills,300]},
  {id:'min5', dna:20, n:['5分生き残る','Survive 5 minutes']},
+ {id:'rush', dna:40, n:['ラッシュを逃げ切る','Outrun a rush']},
  {id:'evo',  dna:30, n:['進化を1つ手に入れる','Get an evolution']},
  {id:'nogas',dna:40, n:['毒の霧に入らず細胞核に着く','Reach Nucleus scale without touching poison fog']},
  {id:'boss2',dna:40, n:['巨大細胞を倒す','Defeat the Giant Cell']},
@@ -1615,7 +1655,7 @@ function update(dt){
   if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:P.tailLen>=gateLen()))spawnBoss();
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
   // spawn: VS-style waves with peaks, lulls and events
-  waveTick(dt);
+  waveTick(dt);rushTick(dt);
   gasTick(dt);chestTick();itemTick(dt);if(state!=='play')return;
   // pulse
   P.pulseT-=dt;
@@ -1637,6 +1677,7 @@ function update(dt){
     if(e.lead&&e.lead.dead)e.lead=null; // the bead in front is gone: this one leads now
     if(e.titan){titanMove(e,s,dt);ax=MV[0];ay=MV[1];}
     else if(e.hunter){hunterMove(e,dx,dy,d,dt,S);if(e.dead)continue;ax=MV[0];ay=MV[1];}
+    else if(e.rush&&!e.pr){rushMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}
     else if(e.lead){if(!e.cap){follow(e,s);ax=MV[0];ay=MV[1];}}
     else if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
     else if(e.t.mv&&!e.cap&&mover(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
@@ -2197,6 +2238,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
   if(P.boss){const b=P.boss,t=TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
   else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
@@ -2236,7 +2278,7 @@ function edgeArrow(wx,wy,wr,col,label){const Z=1/P.S,sx=W/2+(wx-P.x)*Z,sy=H/2+(w
   ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-11);ctx.lineTo(-8,11);ctx.closePath();ctx.fill();ctx.restore();ctx.globalAlpha=1;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${12*k|0}px ${FONT}`;ctx.fillStyle=col;ctx.fillText(label,ax-dx*26,ay-dy*26);}
 const ARW=[]; // where this frame's edge arrows sit
-function bossArrow(){const b=P.boss,h=P.hunter;ARW.length=0;if(b)edgeArrow(b.x,b.y,b.r,'#ffd23f',TX('boss_tag'));if(h)edgeArrow(h.x,h.y,h.r,'#e6efff',TX('hunt_tag'));
+function bossArrow(){const b=P.boss,h=P.hunter;ARW.length=0;if(b)edgeArrow(b.x,b.y,b.r,'#ffd23f',TX('boss_tag'));if(h)edgeArrow(h.x,h.y,h.r,'#e6efff',CS===0?TX('hunt_tag'):h.t.name);
   const cs=chests.slice().sort((p,q)=>Math.hypot(p.x-P.x,p.y-P.y)-Math.hypot(q.x-P.x,q.y-P.y)); // capsules: nearest first, and only the nearest is named
   cs.forEach((c,i)=>edgeArrow(c.x,c.y,20*P.S,PICK,i?'':TX('chest_tag')));}
 function drawEvt(){if(!evtMsg)return;const m=evtMsg,a=Math.max(0,Math.min(1,m.t*2,(m.max-m.t)*5)),k=uiK(),w=W/k,y=NARROW?188:140;
@@ -2521,8 +2563,8 @@ requestAnimationFrame(frame);
 window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
-  boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,get skin(){return skin().id;},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,get skin(){return skin().id;},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
