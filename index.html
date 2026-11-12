@@ -134,7 +134,10 @@ let TITAN_T=[
 // stage 2's boss and titan for its first scale. The titan is a creature of the scale to come (a Water Flea), as in stage 1
 const POND_BOSS=[{k:'stentor',st:0,r:48,hp:44,spd:46,dmg:18,xp:150,col:'#5ab8ff',core:'#0a2a66',glow:'rgba(90,180,255,0.5)',name:['ラッパムシ','Stentor'],sh:3,rot:1,pull:1},
   {k:'hydra',st:1,r:64,hp:120,spd:16,dmg:22,xp:380,col:'#e0b070',core:'#6a3a10',glow:'rgba(235,190,120,0.5)',name:['ヒドラ','Hydra'],sh:4,arms:6}], // arms: see armsTick
- POND_TITAN=[{k:'daph',st:0,L:250,w:120,r:120,hp:30,spd:80,dmg:20,xp:120,sh:3,res:1,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',name:['ミジンコ','Water Flea'],rot:1},
+ // v29.1: the Water Flea with its shell broken. It is red and comes at the player in lunges (rageMove). A type of its own, for the colour, the name and the damage
+ DAPH_R={k:'daph',st:0,L:290,w:140,r:140,hp:36,spd:125,dmg:28,xp:160,sh:0,res:1,col:'#ff5a4a',core:'#5a0a0a',glow:'rgba(255,90,70,0.4)',name:['怒ったミジンコ','Raging Water Flea'],rot:1},
+ // home: while it is on its way in it turns toward the player, this many rad/s. hop: it swims in strokes. rage: what it becomes when its last shell breaks
+ POND_TITAN=[{k:'daph',st:0,L:290,w:140,r:140,hp:30,spd:125,dmg:22,xp:120,sh:3,res:1,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',name:['ミジンコ','Water Flea'],rot:1,home:0.35,hop:1,rage:DAPH_R},
   {k:'mosq',st:1,L:520,w:62,r:62,hp:60,spd:112,dmg:26,xp:300,sh:4,res:0.5,col:'#b9c7a0',core:'#3a4a20',glow:'rgba(190,205,160,0.35)',name:['ボウフラ','Mosquito Larva'],rot:1}],
  POND_HUNT=[null,{k:'mite',st:1,r:84,hp:1,spd:0,dmg:30,xp:150,col:'#ff5a4a',core:'#5a0a05',glow:'rgba(255,90,70,0.5)',name:['ミズダニ','Water Mite'],sh:7,rot:1}]; // the hunter of scale 2: it chases as the white blood cell does
 // The rush (v27): once in a run a pack comes up from behind and chases the player for RUSH_SEC seconds; then whatever is left of it is gone.
@@ -367,7 +370,7 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   g.globalAlpha=1;
 }
 function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
-for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,...POND_HUNT.filter(Boolean),...BODY_RUSH,...POND_RUSH,...JAR_BOSS,...JAR_RUSH]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
+for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...BODY_RUSH,...POND_RUSH,...JAR_BOSS,...JAR_RUSH]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
 const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
 // The field guide (v17): what it lists, in order: [scale, type, key of its line of text]. A scale's creatures show once that scale has been reached.
@@ -405,7 +408,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29';
+const LANGS=['ja','en'],VER='v29.1';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -464,6 +467,8 @@ const STR={
  ev_peak:['大群が来る！','A big wave is coming!'],
  ev_peak_s:['尾を広げて、まとめて巻け','Spread your tail and coil them all at once'],
  ev_titan:['{0}が横切る','A {0} drifts through'],
+ ev_rage:['{0}が怒った！','The {0} is enraged!'],
+ ev_rage_s:['赤い帯が突進の合図。もう爆発が効く','The red lane shows its lunge. Blasts hurt it now'],
  ev_titan_s:['ぶつかるな。尾が届くなら巻ける','Keep clear. Coil it if your tail can reach around'],
  ev_toxin_s:['倒すと毒の霧が残る。頭で入るとダメージ','They leave poison fog when killed. Keep your head out of it'],
  poison:['毒','Poison'],
@@ -662,6 +667,7 @@ const STR={
  bk_bomb:['倒すと爆発して、周りを巻き込む','Explodes when it dies and takes its neighbours'],
  bk_toxin:['遅い。毒の霧を残していく','Slow. Leaves poison fog behind it'],
  bk_boss:['このスケールのボス。殻は時間がたつと戻る','The boss of this scale. Its shells grow back'],
+ bk_daph:['巨大。寄ってくる。殻を割ると赤くなって暴れる','Huge. Comes for you. Break its shell and it rages, red'],
  bk_titan:['巨大。触れると痛い。次のスケールなら巻ける','Huge. Hurts to touch. Can be coiled at the next scale'],
  bk_helio:['巨大。まわりの棘には当たりがない','Huge. Its rays do not hurt'],
  bk_mito:['このスケールの基本の敵。速い','The basic enemy of this scale. Fast'],
@@ -733,7 +739,7 @@ const STR={
  h8:['DNA とミッション','DNA and missions'],
  h8_b:['プレイが終わると DNA がもらえる。ミッション達成でももらえる。タイトルでスキンの解放に使う。','You earn DNA after each run and from missions. Spend it on skins at the title screen.'],
 };
-loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc(POND_HUNT.filter(Boolean),'name');loc(BODY_RUSH,'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(JAR_RUSH,'name');
+loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(BODY_RUSH,'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(JAR_RUSH,'name');
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
  setLang(saved!==undefined?saved:/^ja\b/i.test(nav)?0:1);}
@@ -1086,7 +1092,7 @@ const STAGES=[
   tiers:[[['ppara',0,10,0],['peug',15,5,50],['halt',35,3,60],['roti',55,2.2,70],['comb',75,1.8,70],['vort',95,1.2,80]],
          [['naup',0,5,0],['bosm',8,0.8,40],['cope',14,1.6,40],['nema',22,1.8,40],['ostr',34,1.3,50],['volv',46,1.0,60]]], // a wedge counts once here but comes as a whole flight
   waves:WAVES,boss:POND_BOSS,hunt:POND_HUNT,titan:POND_TITAN,toxin:[TOXIN_T[0],TOXIN_T[1]],gas:[8,10],realK:[1,0.7],rush:POND_RUSH,
-  book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'titan'],
+  book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'daph'],
         [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,POND_TITAN[1],'titan']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'jar',n:['蠱毒','Kodoku'],wip:1,names:[['壺の底','The Jar']], // v29: the player's own kind, many of them, among other creatures; the boss is a giant one
   tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
@@ -1406,8 +1412,14 @@ function boomTick(dt){
 }
 function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
   burst(e.x,e.y,10+k*6,'#d8f4ff',220*(e.boss?1.6:1),0.55,3);shake=Math.max(shake,e.boss?6:3);sfx('crack');
+  if(e.sh===0&&e.t.rage&&!e.rage){enrage(e);return;}
   if(e.sh===0&&(e.boss||e.hunter||e.titan||e.elite))text(e.x,e.y-e.r-10*P.S,TX('cracked'),e.boss||e.hunter||e.titan?26:16,'#d8f4ff',0.9); // common shelled enemies: the ring vanishing is enough
   else if(e.boss||e.hunter||e.titan)text(e.x,e.y-e.r-10*P.S,TX('shell_left',e.sh),22,'#d8f4ff',0.8);}
+// A giant with a rage type (the Water Flea), its last shell broken: it does not wait to be squeezed. It turns red, slips the coil that holds it (the coil
+// stays, with whatever else is in it) and comes at the player in lunges (rageMove). It cannot be coiled for 2 s; after that a coil kills it, and so do blasts.
+function enrage(e){const S=P.S,nm=e.t.name,t=e.t.rage;e.rage=1;e.t=t;e.sh=0;e.hp=Math.ceil(t.hp*hpScale());e.cap=null;e.freeT=T+2;e.hq=3;e.hT=0.9;e.hn=0;e.bite=0.5;e.flash=0.3;
+  text(e.x,e.y-t.w-14*S,TX('kin_rage'),32,'#ff8a8a',1.8);evt(TX('ev_rage',nm),TX('ev_rage_s'),3.2);rings.push({x:e.x,y:e.y,r:t.w,R:t.w*3,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});
+  for(let k=-2;k<=2;k++)burst(e.x+Math.cos(e.ang)*k*t.L*0.4,e.y+Math.sin(e.ang)*k*t.L*0.4,10,'#ff8a8a',300,0.7,4);shake=Math.max(shake,14);sfx('boss');}
 function addXP(v){P.xp+=v*P.xpMul;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
 function dash(){
   if(state!=='play'||P.dashCdT>0)return;
@@ -1472,7 +1484,7 @@ function explode(cap){
   const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
   const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
   for(const e of enemies){if(e.dead)continue;
-    if(e.cap===cap||(!cap.inf&&e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){ // (the blast of a figure eight holds nothing: it only hurts)
+    if(e.cap===cap||(!cap.inf&&!(e.freeT>T)&&e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){ // (the blast of a figure eight holds nothing: it only hurts; nor does a coil hold what has just slipped it)
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
@@ -1967,8 +1979,25 @@ function spawnTitan(i){if(P.boss||P.clearAt)return false;let n=0;for(const e of 
 const CP=[0,0];
 function capD(e,x,y){const c=Math.cos(e.ang),s=Math.sin(e.ang),h=e.t.L-e.t.w,qx=x-e.x,qy=y-e.y,u=clamp(qx*c+qy*s,-h,h);CP[0]=qx-c*u;CP[1]=qy-s*u;return Math.hypot(CP[0],CP[1]);}
 // it holds its line (with a slow sway) and shoulders aside whatever is in its way, real enemies and prey alike
-function titanMove(e,s,dt){e.ha+=Math.sin(T*0.7+e.ph)*0.2*dt;if(e.bite>0)e.bite-=dt;MV[0]=Math.cos(e.ha)*s;MV[1]=Math.sin(e.ha)*s;
-  const w=e.t.w;for(const o of enemies){if(o===e||o.dead||o.boss||o.hunter||o.titan||o.cap)continue;const q=capD(e,o.x,o.y),m=w+o.r*0.6;if(q<m&&q>0.01){const k=(m-q)/q;o.x+=CP[0]*k;o.y+=CP[1]*k;}}}
+function titanMove(e,s,dt){const t=e.t;if(e.bite>0)e.bite-=dt;
+  if(e.rage)rageMove(e,s,dt);
+  else{let df=9;if(t.home&&!e.cap){e.age=(e.age||0)+dt;if(e.age<10)df=angDiff(e.ha,Math.atan2(P.y-e.y,P.x-e.x));}
+    if(Math.abs(df)<1.3)e.ha+=clamp(df,-t.home*dt,t.home*dt); // it comes for the player, once: past the player (or after 10 s) it goes on and away
+    else e.ha+=Math.sin(T*0.7+e.ph)*0.2*dt;
+    const k=t.hop?0.35+1.3*Math.pow(Math.max(0,Math.sin(T*3.2+e.ph)),2):1;MV[0]=Math.cos(e.ha)*s*k;MV[1]=Math.sin(e.ha)*s*k;}
+  const w=t.w;for(const o of enemies){if(o===e||o.dead||o.boss||o.hunter||o.titan||o.cap)continue;const q=capD(e,o.x,o.y),m=w+o.r*0.6;if(q<m&&q>0.01){const k=(m-q)/q;o.x+=CP[0]*k;o.y+=CP[1]*k;}}}
+// A giant in a rage: it rests and turns toward the player (0.5 s), draws back while a red lane shows where it will go (0.5 s), and lunges down that lane
+// (RAGE_LUNGE s at RAGE_V times the player's walk). After three lunges it is winded for 3 s. hq: 0 resting, 1 drawing back, 2 lunging, 3 winded.
+// Its heading is fixed from the moment it draws back, so a step to the side gets clear. On average it is slower than the player walks.
+const RAGE_LUNGE=0.45,RAGE_V=1.9;
+function rageMove(e,s,dt){const S=P.S,ps=P.spd*S*s/(e.spd*Math.max(0.8,S/STAGE_S[e.t.st])),a=Math.atan2(P.y-e.y,P.x-e.x);let v=0; // (s carries whatever slows it: cold, a freeze)
+  if(e.cap){MV[0]=MV[1]=0;return;}
+  e.hT-=dt;
+  if(e.hq===0){e.ha+=clamp(angDiff(e.ha,a),-2.4*dt,2.4*dt);v=ps*0.25;if(e.hT<=0){e.hq=1;e.hT=0.5;}}
+  else if(e.hq===1){if(e.hT<=0){e.hq=2;e.hT=RAGE_LUNGE;sfx('dash');}}
+  else if(e.hq===2){v=ps*RAGE_V;if(e.hT<=0){e.hn++;if(e.hn>=3){e.hn=0;e.hq=3;e.hT=3;text(e.x,e.y-e.t.w-14*S,TX('kin_tired'),18,'#ffd9a8',1.4);}else{e.hq=0;e.hT=0.5;}}}
+  else{e.ha+=clamp(angDiff(e.ha,a),-0.6*dt,0.6*dt);v=ps*0.12;if(e.hT<=0){e.hq=0;e.hT=0.4;}}
+  e.ang+=angDiff(e.ang,e.ha)*Math.min(1,dt*8);MV[0]=Math.cos(e.ha)*v;MV[1]=Math.sin(e.ha)*v;}
 function titanDown(e){hitstop=Math.max(hitstop,0.15);shake=Math.max(shake,22);flashT=0.3;text(e.x,e.y,TX('boss_down',e.t.name),34,'#ffe680',1.5);sfx('bossdown');vib([60,40,90]);
   for(let k=-2;k<=2;k++)burst(e.x+Math.cos(e.ang)*k*e.t.L*0.4,e.y+Math.sin(e.ang)*k*e.t.L*0.4,22,e.t.col,380,0.9,5);dropChest(e.x,e.y,true);mission('titan');}
 // ---------- the hunter (White Blood Cell): a stretch of running away ----------
@@ -2174,8 +2203,12 @@ function render(){
   ctx.globalAlpha=1;
   ctx.globalCompositeOperation='source-over';
   for(const e of enemies){if(!e.titan)continue;const t=e.t,m=t.L*2.1;if(e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue; // titans go under everything else that lives
-    const s=t.spr,w=s.width/t.res,sh=s.height/t.res,wb=Math.sin(T*2+e.ph)*0.02,h=t.L-t.w;
-    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.globalAlpha=e.flash>0?1:0.9;ctx.drawImage(s,-w/2*(1+wb),-sh/2*(1-wb),w*(1+wb),sh*(1-wb));ctx.globalAlpha=1;
+    const s=t.spr,w=s.width/t.res,sh=s.height/t.res,wb=e.rage&&e.hq===1?Math.sin(T*46)*0.025:Math.sin(T*2+e.ph)*0.02,h=t.L-t.w;
+    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);
+    if(e.rage&&e.hq===1&&!e.cap){const D=P.spd*S*RAGE_V*RAGE_LUNGE,k=1-e.hT/0.5; // drawing back: the lane its body is about to go down
+      ctx.fillStyle=`rgba(255,60,70,${(0.1+0.16*k).toFixed(3)})`;ctx.beginPath();ctx.moveTo(0,-t.w);ctx.lineTo(h+D,-t.w);ctx.arc(h+D,0,t.w,-Math.PI/2,Math.PI/2);ctx.lineTo(0,t.w);ctx.closePath();ctx.fill();
+      ctx.strokeStyle=`rgba(255,150,160,${(0.55+0.4*Math.sin(T*30)).toFixed(3)})`;ctx.lineWidth=3*S;ctx.setLineDash([14*S,10*S]);ctx.stroke();ctx.setLineDash([]);}
+    ctx.globalAlpha=e.flash>0?1:0.9;ctx.drawImage(s,-w/2*(1+wb),-sh/2*(1-wb),w*(1+wb),sh*(1-wb));ctx.globalAlpha=1;
     if(e.sh>0){ctx.lineWidth=2.6*S;ctx.setLineDash([64*S,24*S]);for(let i=0;i<e.sh;i++){const R=t.w+(12+i*9)*S;ctx.strokeStyle=`rgba(214,242,255,${0.8-i*0.1})`;ctx.lineDashOffset=T*30*S*(i%2?1:-1); // its shells run round the whole body
         ctx.beginPath();ctx.arc(h,0,R,-Math.PI/2,Math.PI/2);ctx.arc(-h,0,R,Math.PI/2,Math.PI*1.5);ctx.closePath();ctx.stroke();}
       ctx.setLineDash([]);ctx.lineDashOffset=0;}
@@ -2758,7 +2791,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO,SUPER};},applyCard,
-  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,cycleStage,get INF(){return INF;},get choices(){return choices?choices.map(c=>(c&&c.id)||''):null;},get stage(){return{cur:CS,sel:stgIdx,list:STAGES.map((s,i)=>({id:s.id,name:s.n,open:stageOpen(i),soon:!!s.soon}))};},spawnTitan,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
+  spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,cycleStage,get INF(){return INF;},get choices(){return choices?choices.map(c=>(c&&c.id)||''):null;},get stage(){return{cur:CS,sel:stgIdx,list:STAGES.map((s,i)=>({id:s.id,name:s.n,open:stageOpen(i),soon:!!s.soon}))};},spawnTitan,enrage,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
 })();
 </script></body></html>
