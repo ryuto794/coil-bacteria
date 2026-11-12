@@ -304,7 +304,7 @@ const META_KEY='coil-bacteria-meta-v1',SAVE=!DEMO&&!Q.has('nosave')&&!Q.has('t')
 function loadMeta(){try{const m=JSON.parse(localStorage.getItem(META_KEY)||'null');if(m&&typeof m==='object')return m;}catch(e){}return null;}
 const META=Object.assign({dna:0,skins:['green'],skin:'green',unlocked:['spike'],best:{t:0,stage:0,clears:0},runs:0},loadMeta()||{});
 if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'].concat(Array.isArray(META.skins)?META.skins:[]);
-if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn','ember','frost'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
+if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn','ember','frost','sip'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
 META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick'},META.opts&&typeof META.opts==='object'?META.opts:{});
@@ -319,7 +319,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v24';
+const LANGS=['ja','en'],VER='v24.1';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -826,7 +826,7 @@ function reset(start){
      endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
      horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null,
      armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0,asura:false,raijin:false,sun:false,iceage:false,asT:2,rjT:4,
-     vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,overdrive:false,srMiss:0};
+     vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
   calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];
@@ -1329,6 +1329,7 @@ const RARE=[
  {id:'helix', r:1,cat:'atk', max:1,n:['二重らせん','Double Helix'],d:['包囲が2重から\n始まる','Coils start\nat 2x'],f:()=>P.helix=true},
  {id:'anti',  r:1,cat:'body',max:2,n:['抗毒素','Antitoxin'],d:['毒の霧のダメージ\n-40%（重ねて強化）','Poison fog damage\n-40% (stacks)'],f:()=>P.anti++},
  {id:'ram',   r:1,cat:'atk', max:3,n:['突進','Ram'],d:['ダッシュで触れた敵への\nダメージ +100%（重ねて強化）','Dash contact damage\n+100% (stacks)'],f:()=>P.ram++},
+ {id:'sip',   r:1,cat:'body',max:2,n:['DNA修復','DNA Repair'],d:['XP を10個拾うごとに\nHP +2（重ねて +3）','Every 10 XP picked up\nrestores 2 HP (3 at level 2)'],f:()=>P.sip++},
  // Spike line (spk) and Electric line (elc): each has cards, a first evolution and a second one that builds on the first
  {id:'horn',  r:1,cat:'spk', max:2,n:['ツノ','Horns'],d:['頭に触れた敵にダメージ。\n受けるダメージ -15%（重ねて強化）','Enemies that touch your head\nget hurt. Damage taken -15% (stacks)'],f:()=>P.horn++},
  {id:'needle',r:1,cat:'spk', max:3,n:['針とばし','Needle Burst'],d:['締めたとき、囲いから\n針が8本飛ぶ（重ねて +4本）','Squeezes fire 8 needles\nout of the coil (+4 per level)'],f:()=>P.needle++},
@@ -1384,7 +1385,7 @@ function avail(u){return (P.lv[u.id]||0)<u.max;}
 function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');if(u.id==='ember'&&P.lv.ember>=u.max)mission('embermax');if(u.id==='frost'&&P.lv.frost>=u.max)mission('frostmax');}
 function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>=(e.full?CARD(e.need).max:1);}
 function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(e.base&&u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
-const DEFC=['memb','armor','guard','regen'],LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
+const DEFC=['memb','armor','guard','regen','sip'],LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
 function rollChoices(){
   choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
   // v16: once, early on, the level-up is a choice of line: three of the four first cards (Spike, Electric, Fire, Ice). A reroll draws again from the four.
@@ -1525,7 +1526,8 @@ function update(dt){
     if(d<mag){const s=(520*(1-d/mag)+160)*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;}
     else if(o.pull){const s=900*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;} // pulled in by the magnet pickup
     o.x+=o.vx*dt;o.y+=o.vy*dt;o.vx*=Math.pow(0.05,dt);o.vy*=Math.pow(0.05,dt);
-    if(d<16*S){o.dead=true;addXP(o.v);sfx('xp');}}
+    if(d<16*S){o.dead=true;addXP(o.v);sfx('xp');
+      if(P.sip&&++P.sipN>=10){P.sipN=0;if(P.hp<P.maxHp){const h=1+P.sip;P.hp=Math.min(P.maxHp,P.hp+h);text(P.x,P.y-30*S,'+'+h,14,'#9dffc4',0.6);rings.push({x:P.x,y:P.y,r:6*S,R:26*S,life:0.3,max:0.3,col:'#9dffc4',w:2*S});}}}} // DNA Repair: every tenth piece picked up heals
   compact(orbs,o=>!o.dead);
   if(pendingLv>0&&state==='play'&&!P.clearAt)openLevel();
   if(DEMO&&P.hp<P.maxHp)P.hp+=dt*5;
@@ -1846,7 +1848,7 @@ function render(){
     const s=(o.v>3?1.5:1)*S;if(orbGlow)ctx.drawImage(ORBGLOW,o.x-14*s,o.y-14*s,28*s,28*s);
     const a=T*4+o.ph,c=Math.cos(a)*5*s,si=Math.sin(a)*5*s;
     ctx.strokeStyle='#8fd0ff';ctx.lineWidth=1.5*s;ctx.beginPath();ctx.moveTo(o.x-c,o.y-si);ctx.lineTo(o.x+c,o.y+si);ctx.stroke();
-    ctx.fillStyle='#d8f0ff';ctx.fillRect(o.x-c-1.5*s,o.y-si-1.5*s,3*s,3*s);ctx.fillStyle='#4aa8ff';ctx.fillRect(o.x+c-1.5*s,o.y+si-1.5*s,3*s,3*s);}
+    ctx.fillStyle=P.sip?'#9dffc4':'#d8f0ff';ctx.fillRect(o.x-c-1.5*s,o.y-si-1.5*s,3*s,3*s);ctx.fillStyle='#4aa8ff';ctx.fillRect(o.x+c-1.5*s,o.y+si-1.5*s,3*s,3*s);}
   for(const f of fires){const k=Math.min(1,f.life),r=f.r;ctx.globalAlpha=k*0.7;ctx.drawImage(FIREGLOW,f.x-r*1.5,f.y-r*1.5,r*3,r*3);ctx.globalAlpha=k; // burning ground (drawn additively): a glow on the floor, tongues of flame standing in it
     flame(f.x-r*0.3,f.y+r*0.35,r*1.5*k,f.x);if(QL>=2)flame(f.x+r*0.35,f.y+r*0.2,r*1.15*k,f.y);}
   ctx.globalAlpha=1;
