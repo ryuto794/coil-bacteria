@@ -319,7 +319,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v23';
+const LANGS=['ja','en'],VER='v24';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -385,6 +385,12 @@ const STR={
  coil_n:['{0}重巻き！','{0}x coil!'],
  enclose:['包囲！','Encircled!'],
  enclose_n:['包囲！ {0}重','Encircled! {0}x'],
+ ch2:['ダブル締め！','Double squeeze!'],
+ ch3:['トリプル締め！','Triple squeeze!'],
+ chn:['{0}連締め！','{0}x squeeze chain!'],
+ inf_sq:['∞ 締め！','∞ squeeze!'],
+ snap:['速攻締め！','Snap squeeze!'],
+ more_n:['ほか{0}','+{0} more'],
  dash_xp:['ダッシュ締め ×2 XP','Dash squeeze ×2 XP'],
  bonus:['{0}重 BONUS','{0}x BONUS'],
  shell_held:['殻が残った','Shell held'],
@@ -395,6 +401,10 @@ const STR={
  tip_dash:['ダッシュで締める','Dash to squeeze'],
  tip_dash_st:['短くタップ、または右下の DASH。囲いの中を一掃','Quick tap or the DASH button. Wipes out everything inside'],
  tip_dash_sm:['クリックかスペース。囲いの中を一掃','Click or Space. Wipes out everything inside'],
+ tip_stretch:['ダッシュ中は体が伸びる','Dashing stretches your body'],
+ tip_stretch_s:['伸びている間に囲むと、その場でダッシュ締め','Close a loop while stretched: it squeezes at once'],
+ tip_chain:['続けて締まると連鎖','Squeezes in a row chain up'],
+ tip_chain_s:['あとの輪ほど強い。8 の字に巻くと ∞ 締め','Each hits harder. A figure eight: ∞ squeeze'],
  tip_charge:['何周も巻くとチャージUP','More laps, bigger charge'],
  tip_charge_s:['最大10重。ダッシュは長押しで伸びる','Up to 10x. Hold to dash longer'],
  tip_shell:['殻のある敵','Shelled enemy'],
@@ -597,6 +607,8 @@ const STR={
  h6_b:['レベルアップで強化を1枚選ぶ。土台のカードを MAX にして素材のカードも持つと、ボスのカプセルで進化する。トゲ系と電流系は2段階まで進化し、姿も変わる。','Pick one upgrade per level. Max out a base card and hold its ingredient card, then a boss capsule evolves it. The Spike and Electric lines evolve twice and change how you look.'],
  h7:['霧とアイテム','Fog and pickups'],
  h7_b:['毒素菌の霧に頭を入れるとダメージ。敵がときどき落とすアイテムは、回復・XP の吸い寄せ・敵を止める、の3種類。','Poison fog hurts your head. Enemies sometimes drop pickups: heal, pull in all XP, or freeze enemies.'],
+ h9:['技','Moves'],
+ h9_b:['尾の通り道でできた輪は、ぜんぶ別々に数える。輪が続けて締まると連鎖になり、あとの輪ほど強い（ダブル締め、トリプル締め…）。向きを変えて 8 の字に巻くと「∞ 締め」：2 つの輪がその場でダッシュ締めの強さで弾け、まとめてもう一発。ダッシュ中とその直後は体が伸びる。伸びている間に閉じた輪は、すぐにダッシュ締めになる（速攻締め）。','Every loop your trail closes counts on its own. Loops that squeeze one after another chain up, each hitting harder (double squeeze, triple squeeze...). Turn the other way and draw a figure eight for an ∞ squeeze: both loops go off at dash strength, then one more blast covers them both. Your body stretches during a dash and just after. A loop closed while stretched squeezes at once, at dash strength (snap squeeze).'],
  h8:['DNA とミッション','DNA and missions'],
  h8_b:['プレイが終わると DNA がもらえる。ミッション達成でももらえる。タイトルでスキンの解放に使う。','You earn DNA after each run and from missions. Spend it on skins at the title screen.'],
 };
@@ -645,6 +657,7 @@ const SFX={
  loop:c=>{const f=392*Math.pow(1.1225,((c||1)-1)*2);tone(f,f*1.5,0.13,0.22,'triangle');}, // rises with the coil charge
  boom:n=>{const k=Math.min(1,(n||0)/40);tone(150,38,0.32+0.25*k,0.5+0.3*k);noise(0.25+0.3*k,0.35+0.3*k,1800,200,0.7);},
  miss:()=>tone(200,120,0.15,0.15,'triangle'),
+ chain:k=>{const f=523*Math.pow(1.189,Math.min(6,k||1));tone(f,f*1.5,0.16,0.2,'square');tone(f*1.5,f*2,0.2,0.14,'triangle',0.07);}, // rises with the place in the chain
  pop:()=>tone(620+Math.random()*260,300,0.05,0.07,'square'),
  xp:()=>tone(1200,1700,0.05,0.05),
  level:()=>arp([523,659,784,1047],0.12,0.2,0.07),
@@ -805,7 +818,7 @@ function reset(start){
   const tl=+Q.get('tail')||640;
   P={x:0,y:0,a:0,spd:195,turn:4.0,hp:100,maxHp:100,inv:0,tailLen:tl,dashCd:2.2,dashT:0,dashCdT:0,dashAge:0,ghostT:0,
      dashBase:0.55,dashHoldMax:0.85,dashStacks:0,
-     trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,S:targetS(tl)*Math.pow(GROW,stageOf(tl)),stage:stageOf(tl),grow:Math.pow(GROW,stageOf(tl)),stageT:0,
+     trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,knots:[],lastKnot:null,lastLoop:null,str:0,strT:0,chainAt:-9,chainN:0,chainId:0,chainSum:null,infAt:0,S:targetS(tl)*Math.pow(GROW,stageOf(tl)),stage:stageOf(tl),grow:Math.pow(GROW,stageOf(tl)),stageT:0,
      pulseR:72,pulseDmg:1,pulseInt:1.1,pulseT:0.5,magnet:95,blast:1,lvl:1,xp:0,xpNeed:55,
      spike:0,cilia:false,enzyme:0,helix:false,devour:false,zap:false,pulseLv:0,blastLv:0,flag:0,memb:0,rareMiss:0,
      boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0,
@@ -833,7 +846,7 @@ function reset(start){
 function segInt(ax,ay,bx,by,cx,cy,dx,dy){
   const rx=bx-ax,ry=by-ay,sx=dx-cx,sy=dy-cy,den=rx*sy-ry*sx;if(Math.abs(den)<1e-9)return null;
   const t=((cx-ax)*sy-(cy-ay)*sx)/den,u=((cx-ax)*ry-(cy-ay)*rx)/den;
-  if(t>=0&&t<=1&&u>=0&&u<=1)return{x:ax+rx*t,y:ay+ry*t};return null;
+  if(t>=0&&t<=1&&u>=0&&u<=1)return{x:ax+rx*t,y:ay+ry*t,t,u};return null;
 }
 function polyArea(p){let a=0;for(let i=0,j=p.length-1;i<p.length;j=i++)a+=p[j].x*p[i].y-p[i].x*p[j].y;return a/2;}
 function centroid(p){let x=0,y=0;for(const q of p){x+=q.x;y+=q.y;}return{x:x/p.length,y:y/p.length};}
@@ -1084,6 +1097,8 @@ const MISSIONS=[
  {id:'frostmax',card:'rime', n:['冷気を MAX にする','Take Frost Aura to MAX']},
  {id:'c20',  dna:20, n:['1回の締めで20体倒す','Defeat 20 in one squeeze']},
  {id:'c50',  dna:40, n:['1回の締めで50体倒す','Defeat 50 in one squeeze']},
+ {id:'multi3',dna:30,n:['トリプル締めを決める','Land a triple squeeze']},
+ {id:'inf',  dna:30, n:['∞ 締めを決める','Land an ∞ squeeze']},
  {id:'dash', dna:30, n:['ダッシュ締めで合計300体倒す','Defeat 300 with dash squeezes in total'],prog:()=>[META.stats.dashKills,300]},
  {id:'min5', dna:20, n:['5分生き残る','Survive 5 minutes']},
  {id:'evo',  dna:30, n:['進化を1つ手に入れる','Get an evolution']},
@@ -1168,36 +1183,67 @@ function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastC
 function addXP(v){P.xp+=v*P.xpMul;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
 function dash(){
   if(state!=='play'||P.dashCdT>0)return;
-  P.dashT=P.dashBase;P.dashAge=0;P.dashCdT=P.dashCd;P.ghostT=0;P.dashN++;sfx('dash');
+  P.dashT=P.dashBase;P.dashAge=0;P.dashCdT=P.dashCd;P.ghostT=0;P.dashN++;sfx('dash');if(P.dashN>2)tip('stretch');
   burst(P.x,P.y,22,'#9dffc4',240,0.4,3);
   rings.push({x:P.x,y:P.y,r:6*P.S,R:60*P.S,life:0.3,max:0.3,col:'#d8ffe6',w:4*P.S});
-  let any=false;for(const c of captures)if(c.cinchT<0){c.cinchT=0;c.dash=true;any=true;}
+  let any=false;for(const c of captures)if(c.cinchT<0){if(c.hold>0)c.dash=true;else cinch(c,true);any=true;}
   shake=Math.max(shake,any?7:3);
 }
 const MAXC=10; // most laps one coil can hold
+const STR_HOLD=1.0; // after a dash ends the tail tip stays put this long (the body is stretched); then the length eases back
+// start the squeeze of one coil. Coils squeezed one after another make a chain: each goes 0.14 s after the one before, and each is stronger (see explode())
+function cinch(c,dsh){
+  const live=T<P.chainAt+1.3,at=live?Math.max(T,P.chainAt+0.14):T;
+  c.link=live?P.chainN+1:0;P.chainN=c.link;P.chainAt=at;c.dash=dsh;if(!live)P.chainId++;c.chain=P.chainId;
+  if(at>T)c.hold=at-T;else c.cinchT=0;
+}
+// a figure eight (two loops side by side, drawn in opposite directions): both go at once at dash strength, and a third blast covers them both
+function infinity(a,b){
+  const S=P.S,mx=(a.c.x+b.c.x)/2,my=(a.c.y+b.c.y)/2,R=Math.hypot(a.c.x-b.c.x,a.c.y-b.c.y)/2+Math.max(a.rad,b.rad)*0.9,poly=[];
+  for(let i=0;i<28;i++){const t=i/28*TAU;poly.push({x:mx+Math.cos(t)*R,y:my+Math.sin(t)*R});}
+  const f={poly,c:{x:mx,y:my},rad:R,area:Math.PI*R*R,rnd:1,charge:Math.min(MAXC,a.charge+b.charge),timer:P.captT,cinchT:-1,dash:true,pop:1,inf:1};captures.push(f);
+  for(const e of enemies){if(e.dead)continue;const dx=e.x-mx,dy=e.y-my;if(dx*dx+dy*dy<R*R){if(!e.cap)e.cap=f;if(e.sh>0)crackShell(e,1);}}
+  if(a.cinchT<0&&!a.done){if(a.hold>0)a.dash=true;else cinch(a,true);}
+  cinch(b,true);cinch(f,true);a.inf2=b.inf2=1;
+  text(mx,my,'\u221e',64,'#ffd86a',0.55);rings.push({x:mx,y:my,r:R*0.3,R:R*1.1,life:0.5,max:0.5,col:'#ffd86a',w:6*S});sfx('chain',4);shake=Math.max(shake,9);
+}
 const CAPT_TIME=1.6;
-function onLoop(poly){
-  const c=centroid(poly);let rad=0;for(const q of poly)rad+=Math.hypot(q.x-c.x,q.y-c.y);rad/=poly.length;
-  let cap=captures.find(k=>k.cinchT<0&&Math.hypot(k.c.x-c.x,k.c.y-c.y)<k.rad*1.2+30*P.S),crack=1;
-  if(cap){cap.charge=Math.min(MAXC,cap.charge+1);cap.poly=poly;cap.c=c;cap.rad=rad;cap.timer=P.captT;cap.pop=1;
+// old: the head crossed a part of the trail that lies behind an earlier crossing (such crossings were not looked at before v24)
+function onLoop(poly,old){
+  const c=centroid(poly),ar=polyArea(poly),area=Math.abs(ar),sgn=ar>0?1:-1,free=k=>k.cinchT<0&&!(k.hold>0);let rad=0,per=0;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const q=poly[i];rad+=Math.hypot(q.x-c.x,q.y-c.y);per+=Math.hypot(q.x-poly[j].x,q.y-poly[j].y);}rad/=poly.length;
+  const rnd=12.566*area/(per*per); // how round the region is: 1 = a circle, about 0.25 = a sliver ten times as long as it is wide
+  let cap=captures.find(k=>free(k)&&Math.hypot(k.c.x-c.x,k.c.y-c.y)<k.rad*1.2+30*P.S),crack=1,fresh=false;
+  if(old){ // such a region is a lap only when it goes around the coil that stands there. A piece of a standing coil is nothing new. Anything else is a region of its own
+    if(cap&&!(inPoly(cap.c.x,cap.c.y,poly)&&area>=0.5*cap.area))cap=null;
+    if(!cap&&captures.some(k=>free(k)&&inPoly(c.x,c.y,k.poly)))return;
+  }
+  if(cap){cap.charge=Math.min(MAXC,cap.charge+1);cap.poly=poly;cap.c=c;cap.rad=rad;cap.area=area;cap.rnd=rnd;cap.timer=P.captT;cap.pop=1;
     text(c.x,c.y-rad,TX('coil_n',cap.charge),22+cap.charge*3,'#b6ffd2',0.8);}
-  else{const c0=P.bigcoil?3:P.helix?2:1;cap={poly,c,rad,charge:c0,timer:P.captT,cinchT:-1,dash:false,pop:1};captures.push(cap);crack=c0;
-    text(c.x,c.y-rad,c0>1?TX('enclose_n',c0):TX('enclose'),22,'#b6ffd2',0.7);tip('dash');}
+  else{const c0=P.bigcoil?3:P.helix?2:1;cap={poly,c,rad,area,rnd,charge:c0,timer:P.captT,cinchT:-1,dash:false,pop:1};captures.push(cap);crack=c0;fresh=true;
+    text(c.x,c.y-rad,c0>1?TX('enclose_n',c0):TX('enclose'),22,'#b6ffd2',0.7);tip('dash');
+    const st=captures.filter(free);if(st.length>7)cinch(st[0],false);} // no more than seven coils stand at once
   P.loops++;sfx('loop',cap.charge);if(cap.charge>=6)mission('coil6');if(cap.charge>=MAXC)mission('coil10');
   crack+=P.enzyme+(P.storm?1:0);if(P.storm)bolt(P.x,P.y,c.x,c.y);
   const b=bbox(poly);
   for(const e of enemies){if(e.dead||e.x<b.x0||e.x>b.x1||e.y<b.y0||e.y>b.y1)continue;if(inPoly(e.x,e.y,poly)){e.cap=cap;if(e.sh>0)crackShell(e,crack);}}
   for(let i=0;i<poly.length;i+=3)burst(poly[i].x,poly[i].y,1,'#7dffb0',40,0.5,2.5);
+  let inf=false;
+  if(fresh){const o=P.lastLoop,oc=o&&o.cap,amin=3200*P.S*P.S; // a figure eight: the loop before this one, drawn the other way round, right beside it. Both must be real loops (not slivers), and it cannot be done again for 4 s
+    if(oc&&!oc.inf&&T>=P.infAt&&T-o.t<5&&o.sgn!==sgn&&area>=amin&&oc.area>=amin&&rnd>=0.4&&oc.rnd>=0.4&&Math.min(area,oc.area)>=0.2*Math.max(area,oc.area)&&Math.hypot(oc.c.x-c.x,oc.c.y-c.y)<(oc.rad+rad)*1.5&&!inPoly(oc.c.x,oc.c.y,poly)&&!inPoly(c.x,c.y,oc.poly)){infinity(oc,cap);inf=true;P.infAt=T+4;}
+    else if(P.strT>0){cinch(cap,true);text(c.x,c.y-rad-24*P.S,TX('snap'),20,'#ffffff',0.9);} // closed while the body is stretched by a dash: squeezed on the spot, as a dash squeeze
+  }
+  P.lastLoop=inf?null:{cap,sgn,t:T};
 }
 function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
-  const xpMul=(dsh?2:1)*(1+0.35*(ch-1)),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
+  const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
+  const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+0.25*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
-  const R=(55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6,dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage);
+  const R=((55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6)*(1+0.12*lk),dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage)*(1+0.5*lk);
   for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
     if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul,grp))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
@@ -1212,31 +1258,50 @@ function explode(cap){
   if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.35,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
   burst(c.x,c.y,30+n*2,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,20+ch*10,'#4fb8ff',300,0.9,3);
   for(const e of enemies)if(e.cap===cap)e.cap=null;
-  if(n>0){const big=Math.min(1,n/40);
-    text(c.x,c.y,'x'+n+'!',30+big*46+(dsh?10:0),dsh?'#ffffff':'#c8ffd9',1.2);
+  if(cap.inf){text(c.x,c.y-74*S,TX('inf_sq'),34,'#ffd86a',1.5);rings.push({x:c.x,y:c.y,r:0,R:R*1.5,life:0.9,max:0.9,col:'#ffd86a',w:7*S});sfx('chain',6);mission('inf');shake=Math.max(shake,16);}
+  else if(lk>0&&n>0&&!cap.inf2){text(c.x,c.y-74*S,lk===1?TX('ch2'):lk===2?TX('ch3'):TX('chn',cap.link+1),20+4*lk,'#ffd86a',1.3);sfx('chain',lk);tip('chain');if(cap.link>=2)mission('multi3');}
+  // a chain is one squeeze in several beats: the number shown, the best combo and the missions count the total so far
+  if(!P.chainSum||cap.chain===undefined||P.chainSum.id!==cap.chain)P.chainSum={id:cap.chain,n:0};P.chainSum.n+=n;const tot=P.chainSum.n;
+  if(n>0){const big=Math.min(1,tot/40);
+    text(c.x,c.y,'x'+tot+'!',30+big*46+(dsh?10:0),dsh?'#ffffff':'#c8ffd9',1.2);
     if(dsh)text(c.x,c.y+44*S,TX('dash_xp'),18,'#7dffb0',1.1);
     if(ch>1)text(c.x,c.y-44*S,TX('bonus',ch),18,'#7fc9ff',1.1);
-    bestCombo=Math.max(bestCombo,n);tip('charge');sfx('boom',n);vib(dsh?35:18);
-    if(n>=20)mission('c20');if(n>=50)mission('c50');if(dsh){META.stats.dashKills+=n;if(META.stats.dashKills>=300)mission('dash');}
+    bestCombo=Math.max(bestCombo,tot);tip('charge');sfx('boom',n);vib(dsh?35:18);
+    if(tot>=20)mission('c20');if(tot>=50)mission('c50');if(dsh){META.stats.dashKills+=n;if(META.stats.dashKills>=300)mission('dash');}
     hitstop=Math.max(hitstop,0.05+Math.min(0.13,n*0.004)+(dsh?0.03:0));
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));flashT=Math.min(0.25,0.06+n*0.004);
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
-  else{text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);}
+  else if(!lk&&!cap.inf){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
+}
+// the outline of the region closed by a crossing at `hit` on trail segment j: along the trail from there to the head.
+// Earlier crossings are kept as knots. Where the walk comes to the older side of one, it steps over the region that knot closed,
+// so a zigzag over the tail gives one region per crossing, side by side, and not one outline folded over itself.
+function loopPoly(j,hit){
+  const tr=P.trail,s0=tr[0].s,n=tr.length,poly=[{x:hit.x,y:hit.y}];let k=j+1,u=hit.u,g=0;
+  while(k<n&&g++<n+80){let kn=null;
+    for(const q of P.knots)if(q.a===tr[k].s&&q.u>u&&(!kn||q.u<kn.u))kn=q;
+    if(kn){poly.push({x:kn.x,y:kn.y});k=kn.b-s0;u=kn.v;continue;}
+    poly.push(tr[k]);k++;u=-1;}
+  return poly;
 }
 function advanceTrail(dt){
   if(P.loopCd>0)P.loopCd-=dt;
   const S=P.S,tr=P.trail,L=tr[tr.length-1],ddx=P.x-L.x,ddy=P.y-L.y;
   if(ddx*ddx+ddy*ddy<25*S*S)return;
-  const B={x:P.x,y:P.y,s:P.serial++};
-  if(P.loopCd<=0){
-    for(let j=tr.length-4;j>=0;j--){const C=tr[j],D=tr[j+1];if(C.s<P.minSerial)break;
-      const hit=segInt(L.x,L.y,B.x,B.y,C.x,C.y,D.x,D.y);
-      if(hit){const poly=[hit];for(let k=j+1;k<tr.length;k++)poly.push(tr[k]);poly.push(B);
-        if(Math.abs(polyArea(poly))>1600*S*S){onLoop(poly);P.minSerial=D.s;P.loopCd=0.1;}break;}}
+  const B={x:P.x,y:P.y,s:P.serial++};let hits=null;
+  // every place where the new piece of the trail crosses the older trail closes a region (v24: the whole trail counts, not only the part after the last crossing)
+  for(let j=tr.length-4;j>=0;j--){const C=tr[j],D=tr[j+1],hit=segInt(L.x,L.y,B.x,B.y,C.x,C.y,D.x,D.y);if(hit){hit.j=j;(hits||(hits=[])).push(hit);}}
+  if(hits){if(hits.length>1)hits.sort((a,b)=>a.t-b.t);
+    for(const hit of hits){const lk=P.lastKnot;
+      if(P.loopCd>0&&lk&&Math.hypot(lk.x-hit.x,lk.y-hit.y)<6*S)continue; // the same crossing, met again on the next step
+      const D=tr[hit.j+1],old=tr[hit.j].s<P.minSerial,poly=loopPoly(hit.j,hit),k={a:D.s,u:hit.u,b:B.s,v:hit.t,x:hit.x,y:hit.y};
+      P.knots.push(k);P.lastKnot=k;P.minSerial=Math.max(P.minSerial,D.s);P.loopCd=0.1;
+      if(poly.length>2&&Math.abs(polyArea(poly))>1600*S*S)onLoop(poly,old);}
   }
   tr.push(B);
-  let len=0;for(let i=tr.length-1;i>0;i--){len+=Math.hypot(tr[i].x-tr[i-1].x,tr[i].y-tr[i-1].y);if(len>P.tailLen*P.grow){tr.splice(0,i-1);break;}}
+  let len=0;const lim=P.tailLen*P.grow+P.str;for(let i=tr.length-1;i>0;i--){len+=Math.hypot(tr[i].x-tr[i-1].x,tr[i].y-tr[i-1].y);if(len>lim){tr.splice(0,i-1);break;}}
+  if(P.knots.length&&(P.knots[0].a<=tr[0].s||P.knots.length>60)){const s0=tr[0].s;P.knots=P.knots.filter(q=>q.a>s0);if(P.knots.length>60)P.knots.splice(0,P.knots.length-60);}
 }
 
 // ---------- level up ----------
@@ -1366,6 +1431,9 @@ function update(dt){
   const tr=P.turn*(P.dashT>0?1.3:1)*dt;P.a+=clamp(angDiff(P.a,desired),-tr,tr);
   const sp=P.spd*S*(P.dashT>0?2.3:Math.pow(LATCH_SLOW,Math.min(2,P.latPrev||0))); // phages on the tail drag
   P.x+=Math.cos(P.a)*sp*dt;P.y+=Math.sin(P.a)*sp*dt;
+  // Dash stretch: while dashing, and for a moment after, the tail tip stays where it is, so the body is longer. Then it eases back
+  if(P.dashT>0)P.strT=STR_HOLD;
+  if(P.strT>0){if(P.dashT<=0)P.strT-=dt;P.str=Math.min(P.str+sp*dt,0.6*P.tailLen*P.grow);}else if(P.str>0)P.str=Math.max(0,P.str-(260*S+P.str*2.2)*dt);
   {const hb=pushOut(P,11*S);if(hb)hb.wob=0.35;}
   if(P.dashT>0){P.dashT-=dt;P.dashAge+=dt;if((mdown||keys.has(' '))&&P.dashAge<P.dashHoldMax)P.dashT=Math.max(P.dashT,0.02);
     P.ghostT-=dt;if(P.ghostT<=0){P.ghostT=0.04;ghosts.push({x:P.x,y:P.y,a:P.a,life:0.32});}
@@ -1446,7 +1514,7 @@ function update(dt){
   if(P.vortex)for(const c of captures){if(c.cinchT>=0)continue;const R=c.rad+230*S; // Vortex: a standing coil draws in what is around it (not bosses, the hunter or titans)
     for(const e of enemies){if(e.dead||e.cap===c||e.boss||e.hunter||e.titan)continue;const dx=c.c.x-e.x,dy=c.c.y-e.y,d2=dx*dx+dy*dy;if(d2<R*R&&d2>4){const d=Math.sqrt(d2);e.x+=dx/d*260*S*dt;e.y+=dy/d*260*S*dt;}}}
   for(const c of captures){c.pop=Math.max(0,c.pop-dt*3);
-    if(c.cinchT<0){c.timer-=dt;if(c.timer<=0){c.cinchT=0;c.dash=false;}}
+    if(c.cinchT<0){if(c.hold>0){c.hold-=dt;if(c.hold<=0)c.cinchT=0;}else{c.timer-=dt;if(c.timer<=0)cinch(c,false);}}
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
   boomTick(dt);
   compact(captures,c=>!c.done);
@@ -1765,9 +1833,9 @@ function render(){
     const k=c.cinchT<0?1:1-0.85*Math.pow(c.cinchT/0.2,2);
     ctx.beginPath();c.poly.forEach((q,i)=>{const x=c.c.x+(q.x-c.c.x)*k,y=c.c.y+(q.y-c.c.y)*k;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();
     const pulse=0.5+0.5*Math.sin(T*18);
-    ctx.fillStyle=`rgba(90,255,150,${0.08+0.06*c.charge+0.05*pulse+(c.cinchT>=0?0.25:0)})`;ctx.fill();
-    ctx.setLineDash([10*S,8*S]);ctx.lineDashOffset=-T*60*S;ctx.strokeStyle=`rgba(180,255,210,${0.6+0.4*pulse})`;ctx.lineWidth=(2+c.charge)*S;ctx.stroke();ctx.setLineDash([]);
-    if(c.cinchT<0){ctx.strokeStyle='rgba(180,255,210,0.8)';ctx.lineWidth=3*S;ctx.beginPath();ctx.arc(c.c.x,c.c.y,16*S,-Math.PI/2,-Math.PI/2+TAU*(c.timer/P.captT));ctx.stroke();
+    ctx.fillStyle=`rgba(${c.inf?'255,216,106':'90,255,150'},${(c.inf?0.1:0.08+0.06*c.charge)+0.05*pulse+(c.cinchT>=0||c.hold>0?0.25:0)})`;ctx.fill();
+    ctx.setLineDash([10*S,8*S]);ctx.lineDashOffset=-T*60*S;ctx.strokeStyle=`rgba(${c.inf?'255,236,170':'180,255,210'},${0.6+0.4*pulse})`;ctx.lineWidth=(c.inf?4:2+c.charge)*S;ctx.stroke();ctx.setLineDash([]);
+    if(c.cinchT<0&&!(c.hold>0)&&!c.inf){ctx.strokeStyle='rgba(180,255,210,0.8)';ctx.lineWidth=3*S;ctx.beginPath();ctx.arc(c.c.x,c.c.y,16*S,-Math.PI/2,-Math.PI/2+TAU*(c.timer/P.captT));ctx.stroke();
       ctx.fillStyle='#eafff2';ctx.font=`bold ${(16+c.charge*2+c.pop*10)*S}px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×'+c.charge,c.c.x,c.c.y);}
   }
   if(P.vortex)for(const c of captures){if(c.cinchT>=0)continue;const R=c.rad+230*S;ctx.strokeStyle='rgba(205,170,255,0.4)';ctx.lineWidth=2*S;ctx.setLineDash([14*S,16*S]);for(let k=0;k<3;k++){ctx.lineDashOffset=T*90*S;circ(ctx,c.c.x,c.c.y,c.rad+(R-c.rad)*(1-((T*0.9+k/3)%1)));ctx.stroke();}ctx.setLineDash([]);ctx.lineDashOffset=0;} // Vortex: rings closing in on the coil
@@ -1829,7 +1897,7 @@ function render(){
   if(tr.length>1){
     ctx.lineCap='round';ctx.lineJoin='round';ctx.globalCompositeOperation='lighter';
     ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=1;i<tr.length;i++)ctx.lineTo(tr[i].x,tr[i].y);ctx.lineTo(P.x,P.y);
-    const dsh=P.dashT>0;
+    const dsh=P.dashT>0||P.str>0;
     if(QL>=2){ctx.strokeStyle=`hsla(${hu},100%,62%,0.12)`;ctx.lineWidth=26*S;ctx.stroke();}
     ctx.strokeStyle=dsh?`hsla(${hu},100%,82%,0.5)`:`hsla(${hu},100%,62%,0.35)`;ctx.lineWidth=12*S;ctx.stroke();
     ctx.strokeStyle=`hsla(${hu},100%,90%,0.9)`;ctx.lineWidth=3*S;ctx.stroke();
@@ -1837,6 +1905,7 @@ function render(){
     const n=tr.length,h2=skin().h2,bc1=`hsl(${hu},72%,56%)`,bc2=`hsl(${hu},88%,68%)`,bd1=`hsl(${h2},72%,56%)`,bd2=`hsl(${h2},88%,68%)`;
     for(let i=n-1;i>=0;i-=3){const q=tr[i],f=i/n;if(prism){const hh=(hu+(n-i)*2)%360;ctx.fillStyle=i%6===0?`hsl(${hh},72%,56%)`:`hsl(${hh},88%,68%)`;}else if(h2!==undefined&&((n-i)/30|0)%2)ctx.fillStyle=i%6===0?bd1:bd2;else ctx.fillStyle=i%6===0?bc1:bc2;ctx.beginPath();ctx.arc(q.x,q.y,(2.5+f*5)*S,0,TAU);ctx.fill();}
     drawTailParts(tr,hu,S);
+    if(P.str>0){const q=tr[0],k=Math.min(1,P.str/(120*S));ctx.strokeStyle=`hsla(${hu},100%,86%,${0.75*k})`;ctx.lineWidth=2*S;ctx.beginPath();ctx.arc(q.x,q.y,(8+3*Math.sin(T*16))*S,0,TAU);ctx.stroke();} // the tail tip, held in place while the body is stretched
   }
   // rings
   for(const r of rings){const f=1-r.life/r.max,rad=r.r+(r.R-r.r)*(1-Math.pow(1-f,3));
@@ -2093,7 +2162,7 @@ function wrap(s,font,maxW){const key=font+'|'+(maxW|0)+'|'+s;let out=wrapC.get(k
 // how to play: sections flow down one column on a phone, two on wide screens, and onto more pages if they do not fit
 function helpBody(W,top,bot){
   const cols=NARROW?1:2,gap=28,tw=Math.min(W-32,880),cw=(tw-(cols-1)*gap)/cols,x0=W/2-tw/2,fT=`900 15px ${FONT}`,fB=`13px ${FONT}`,lh=19;
-  const secs=[['h1',TOUCH?'h1_t':'h1_m'],['h2','h2_b'],['h3','h3_b'],['h4','h4_b'],['h5','h5_b'],['h6','h6_b'],['h7','h7_b'],['h8','h8_b']].map(([t,b])=>({t:TX(t),lines:wrap(TX(b),fB,cw)}));
+  const secs=[['h1',TOUCH?'h1_t':'h1_m'],['h2','h2_b'],['h9','h9_b'],['h3','h3_b'],['h4','h4_b'],['h5','h5_b'],['h6','h6_b'],['h7','h7_b'],['h8','h8_b']].map(([t,b])=>({t:TX(t),lines:wrap(TX(b),fB,cw)}));
   let page=0,col=0,y=top;const place=[];
   for(const s of secs){const h=24+s.lines.length*lh+12;if(y+h>bot&&y>top){col++;y=top;if(col>=cols){col=0;page++;}}place.push({s,page,col,y});y+=h;}
   const pages=page+1,pg=Math.min(menuPage,pages-1);ctx.textAlign='left';ctx.textBaseline='middle';
@@ -2238,8 +2307,10 @@ function endScreen(W,H,clear){
   if(R){
     if(!tight&&R.rec.length){const s=TX('rec',R.rec.map(k=>TX('rec_'+k)).join(TX('sep')));fitFont(s,15,900,W-24);ctx.fillStyle='#ffe680';ctx.fillText(s,W/2,y0+138);}
     const l3=TX('end_dna',R.dna,META.dna);fitFont(l3,NARROW?17:19,900,W-24);ctx.fillStyle='#8fd0ff';ctx.fillText(l3,W/2,tight?y+54:y0+170);
-    if(!tight){const got=[];if(R.mis.length)got.push(TX('end_mis',R.mis.length));if(R.newU.length)got.push(TX('end_new',R.newU.join(TX('sep'))));
-      if(got.length){const s=got.join(LI?'   ':'　');fitFont(s,13,'bold',W-24);ctx.fillStyle='#ffd86a';ctx.fillText(s,W/2,y0+198);}
+    if(!tight){const nm=R.newU.slice();let more=0,s='';
+      const mk=()=>{const got=[];if(R.mis.length)got.push(TX('end_mis',R.mis.length));if(nm.length)got.push(TX('end_new',nm.join(TX('sep'))+(more?TX('sep')+TX('more_n',more):'')));return got.join(LI?'   ':'　');};
+      s=mk();ctx.font=`bold 11px ${FONT}`;while(nm.length>1&&ctx.measureText(s).width>W-24){nm.pop();more++;s=mk();} // a long list of unlocked cards: the first few, then "+N more"
+      if(s){fitFont(s,13,'bold',W-24);ctx.fillStyle='#ffd86a';ctx.fillText(s,W/2,y0+198);}
       cardChips(W,y0+224,3);}
   }
   btn(L.retry,TX('retry'),1);btn(L.title,TX('to_title'),0);
@@ -2271,7 +2342,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
