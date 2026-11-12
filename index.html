@@ -391,7 +391,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v28';
+const LANGS=['ja','en'],VER='v28.1';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1384,6 +1384,10 @@ function dash(){
 }
 const MAXC=10; // most laps one coil can hold
 const STR_HOLD=1.0; // after a dash ends the tail tip stays put this long (the body is stretched); then the length eases back
+// How much a dash squeeze and each further link of a chain add to a squeeze (v28.1: brought down; the owner found the blasts too big for how easily they come).
+// DASH_R / DASH_D: blast radius and damage of a dash squeeze against a plain one (were 1.7 and 2). LINK_*: per link of a chain (were +12% radius, +50% damage, +25% XP).
+// A dash squeeze still gives double XP.
+const DASH_R=1.35,DASH_D=1.5,LINK_R=0.05,LINK_D=0.25,LINK_XP=0.15;
 // start the squeeze of one coil. Coils squeezed one after another make a chain: each goes 0.14 s after the one before, and each is stronger (see explode())
 function cinch(c,dsh){
   const live=T<P.chainAt+1.3,at=live?Math.max(T,P.chainAt+0.14):T;
@@ -1392,9 +1396,9 @@ function cinch(c,dsh){
 }
 // a figure eight (two loops side by side, drawn in opposite directions): both go at once at dash strength, and a third blast covers them both
 function infinity(a,b){
-  const S=P.S,mx=(a.c.x+b.c.x)/2,my=(a.c.y+b.c.y)/2,R=Math.hypot(a.c.x-b.c.x,a.c.y-b.c.y)/2+Math.max(a.rad,b.rad)*0.9,poly=[];
+  const S=P.S,mx=(a.c.x+b.c.x)/2,my=(a.c.y+b.c.y)/2,R=Math.hypot(a.c.x-b.c.x,a.c.y-b.c.y)/2+Math.max(a.rad,b.rad)*0.45,poly=[];
   for(let i=0;i<28;i++){const t=i/28*TAU;poly.push({x:mx+Math.cos(t)*R,y:my+Math.sin(t)*R});}
-  const f={poly,c:{x:mx,y:my},rad:R,area:Math.PI*R*R,rnd:1,charge:Math.min(MAXC,a.charge+b.charge),timer:P.captT,cinchT:-1,dash:true,pop:1,inf:1};captures.push(f);
+  const f={poly,c:{x:mx,y:my},rad:R,area:Math.PI*R*R,rnd:1,charge:Math.max(a.charge,b.charge),timer:P.captT,cinchT:-1,dash:true,pop:1,inf:1};captures.push(f);
   for(const e of enemies){if(e.dead)continue;const dx=e.x-mx,dy=e.y-my;if(dx*dx+dy*dy<R*R){if(!e.cap)e.cap=f;if(e.sh>0)crackShell(e,1);}}
   if(a.cinchT<0&&!a.done){if(a.hold>0)a.dash=true;else cinch(a,true);}
   cinch(b,true);cinch(f,true);a.inf2=b.inf2=1;
@@ -1430,14 +1434,14 @@ function onLoop(poly,old){
 function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
   const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
-  const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+0.25*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
+  const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
-  const R=((55+26*ch)*P.blast*(dsh?1.7:1)*S+cap.rad*0.6)*(1+0.12*lk),dmg=(1+ch)*(dsh?2:1)*P.blast*(1+P.stage)*(1+0.5*lk);
+  const R=((55+26*ch)*P.blast*(dsh?DASH_R:1)*S+cap.rad*0.6)*(1+LINK_R*lk),dmg=(1+ch)*(dsh?DASH_D:1)*P.blast*(1+P.stage)*(1+LINK_D*lk);
   for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
     if(d<R+e.r){if(P.shatter&&e.sh>0)crackShell(e,1);if(hurt(e,dmg,xpMul,grp))n++;else{const k=(dsh?520:300)*S/(d+1);e.vx+=dx*k*0.6;e.vy+=dy*k*0.6;}}}
@@ -2641,7 +2645,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
