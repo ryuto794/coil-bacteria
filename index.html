@@ -319,7 +319,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v24.1';
+const LANGS=['ja','en'],VER='v25';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -338,6 +338,8 @@ const STR={
  buy:['DNA {0} で解放','Unlock for {0} DNA'],
  need:['DNA {0} が必要','Need {0} DNA'],
  skin_n:['スキン {0} / {1}　左右で切り替え','Skin {0} / {1} - arrows to switch'],
+ sk_t1:['レア','RARE'],
+ sk_t2:['プレミアム','PREMIUM'],
  start:['スタート','Start'],
  start_key:['スタート（Enter）','Start (Enter)'],
  best:['DNA {0}　最長 {1}　最高到達 {2}　クリア {3}回','DNA {0}   Best {1}   Reached {2}   Clears {3}'],
@@ -616,18 +618,60 @@ loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
  setLang(saved!==undefined?saved:/^ja\b/i.test(nav)?0:1);}
-const SKINS=[ // h: hue (-1 = rainbow); h2: second hue, the tail is banded with it
+// ---------- skins ----------
+// h: the skin's own hue: glow, feelers, and the body when there is no pattern (-1 = rainbow). h2: a second hue, in bands of ten beads.
+// cols: the colours of the beads down the body, [hue, saturation %, lightness %] each. runs: how many beads each colour lasts (default: seg, or 4).
+// pat: 'grad' blends from each colour to the next over seg beads; 'star' is a grad whose beads twinkle;
+//      'run' has a body of cols[0] with lights in the other colours running down it (per: beads between lights, spd: beads per second).
+// head: the head's colour (default: from h). eye: 'big' | 'cat' | 'one' | 'sleepy'.
+// tier: 0 basic, 1 rare, 2 premium (the ones meant to be sold later; for now every skin is unlocked with DNA).
+const SKINS=[
  {id:'green', n:['緑藻','Green Algae'],h:142,cost:0},
  {id:'blue',  n:['藍藻','Blue-Green Algae'],h:198,cost:40},
  {id:'pink',  n:['紅藻','Red Algae'],h:330,cost:60},
  {id:'violet',n:['紫紺菌','Violet Germ'],h:272,cost:80},
  {id:'gold',  n:['黄金菌','Golden Germ'],h:46,cost:150},
- {id:'flame', n:['火炎菌','Flame Germ'],h:14,h2:48,cost:200},
- {id:'prism', n:['虹色菌','Prism Germ'],h:-1,cost:300},
- {id:'aurora',n:['オーロラ菌','Aurora Germ'],h:165,h2:285,cost:400},
+ {id:'flame', n:['火炎菌','Flame Germ'],h:14,h2:48,cost:200,tier:1},
+ {id:'prism', n:['虹色菌','Prism Germ'],h:-1,cost:300,tier:1},
+ {id:'aurora',n:['オーロラ菌','Aurora Germ'],h:165,h2:285,cost:400,tier:1},
+ {id:'candy', n:['キャンディ菌','Candy Germ'],h:350,cols:[[350,85,58],[0,0,96]],runs:[3,3],head:[350,85,58],eye:'big',cost:500,tier:1},
+ {id:'bee',   n:['ミツバチ菌','Bumblebee Germ'],h:48,cols:[[48,95,56],[30,40,22]],runs:[3,2],head:[48,95,56],eye:'big',cost:500,tier:1},
+ {id:'mint',  n:['チョコミント菌','Choc-Mint Germ'],h:160,cols:[[160,60,72],[22,45,26]],runs:[3,1],head:[160,60,66],cost:600,tier:1},
+ {id:'sakura',n:['桜菌','Sakura Germ'],h:338,cols:[[338,90,82],[0,0,98],[338,75,70]],runs:[2,1,2],head:[338,85,76],eye:'sleepy',cost:600,tier:1},
+ {id:'ocean', n:['深海菌','Deep Sea Germ'],h:205,pat:'grad',seg:5,cols:[[225,80,34],[200,90,52],[180,85,74],[200,90,52]],head:[205,85,50],cost:700,tier:1},
+ {id:'tiger', n:['トラ菌','Tiger Germ'],h:28,cols:[[28,95,55],[20,45,20]],runs:[3,1],head:[28,95,55],eye:'cat',cost:700,tier:1},
+ {id:'parade',n:['パレード菌','Parade Germ'],h:200,seg:3,cols:[[0,85,58],[30,95,58],[52,95,58],[130,65,50],[210,85,58],[275,70,62]],head:[52,95,58],eye:'big',cost:800,tier:1},
+ {id:'cyclops',n:['ひとつ目菌','Cyclops Germ'],h:172,cols:[[172,70,45],[172,80,62]],runs:[2,2],head:[172,70,45],eye:'one',cost:1200,tier:2},
+ {id:'neon',  n:['ネオン菌','Neon Germ'],h:310,pat:'run',per:14,spd:16,cols:[[250,40,27],[310,100,65],[185,100,60]],head:[250,40,30],cost:1500,tier:2},
+ {id:'galaxy',n:['銀河菌','Galaxy Germ'],h:265,pat:'star',seg:6,cols:[[240,70,26],[275,75,45],[320,70,55],[275,75,45]],head:[262,70,36],cost:1500,tier:2},
+ {id:'magma', n:['溶岩菌','Magma Germ'],h:18,pat:'run',per:9,spd:7,cols:[[12,35,23],[30,100,58],[50,100,70]],head:[12,40,26],eye:'cat',cost:1500,tier:2},
 ];
 loc(SKINS,'n');
-function skin(){return SKINS.find(s=>s.id===META.skin)||SKINS[0];}
+const FORCE_SKIN=SKINS.find(s=>s.id===Q.get('skin'))||null; // ?skin=neon: wear that skin for this visit, owned or not (for testing; nothing is saved)
+let tryOn=null;
+function skin(){return tryOn||FORCE_SKIN||SKINS.find(s=>s.id===META.skin)||SKINS[0];}
+// the bead colours of a skin, worked out once. fin: the hue of the last form of a line, which takes over every hue of the skin
+// (its light and dark stay, so stripes still show), or -1
+const SKC=new Map();
+function skinTab(k,fin){const key=k.id+'|'+fin;let t=SKC.get(key);if(t)return t;
+  const hsl=(c,dl,ds)=>`hsl(${Math.round(fin>=0&&!c[3]?fin:c[0])},${Math.round(Math.min(100,c[1]+(ds||0)))}%,${Math.round(Math.min(95,c[2]+dl))}%)`,seq=[];
+  if(!k.cols){const a=[k.h<0?0:k.h,72,56];seq.push(a);if(k.h2!==undefined){for(let i=1;i<10;i++)seq.push(a);const b=[k.h2,72,56,1];for(let i=0;i<10;i++)seq.push(b);}
+    t={seq:seq.map(c=>[hsl(c,0),hsl(c,12,16)])};}
+  else{const K=k.cols.length,sg=k.seg||4;
+    if(k.pat==='grad'||k.pat==='star')for(let i=0;i<K;i++){const a=k.cols[i],b=k.cols[(i+1)%K],dh=((b[0]-a[0]+540)%360)-180;for(let s=0;s<sg;s++){const u=s/sg;seq.push([(a[0]+dh*u+360)%360,a[1]+(b[1]-a[1])*u,a[2]+(b[2]-a[2])*u]);}}
+    else if(k.pat==='run')seq.push(k.cols[0]);
+    else k.cols.forEach((c,i)=>{for(let s=0,m=k.runs?k.runs[i]:sg;s<m;s++)seq.push(c);});
+    t={seq:seq.map(c=>[hsl(c,0),hsl(c,k.pat==='run'?3:5)])};
+    if(k.pat==='run'){t.run=k.spd||14;t.per=k.per||14;t.half=t.per>>1;t.lit=k.cols.slice(1).map(c=>hsl(c,0));}
+    if(k.pat==='star')t.star=1;}
+  SKC.set(key,t);return t;}
+// the colour of bead j of the body (0 = next to the head) at time t
+function beadCol(k,tab,j,t,hu){
+  if(k.h<0){const hh=(hu+j*6)%360;return j&1?`hsl(${hh},88%,68%)`:`hsl(${hh},72%,56%)`;}
+  let c=tab.seq[j%tab.seq.length][j&1];
+  if(tab.run){const ph=((j-((t*tab.run)|0))%tab.per+tab.per)%tab.per;if(ph<2)c=tab.lit[0];else if(tab.lit[1]&&ph>=tab.half&&ph<tab.half+2)c=tab.lit[1];}
+  else if(tab.star&&((j*7919+((t*5)|0)*104729)>>>0)%17===0)c='#ffffff';
+  return c;}
 function hueAt(){if(P){if(P.sun)return 26;if(P.iceage)return 192;if(P.raijin)return 52;if(P.asura)return 348;} // the last form takes the line's own colour over the skin's
   const s=skin();return s.h<0?(performance.now()/20)%360:s.h;}
 const ORBGLOW=glowSprite(14,'rgba(70,170,255,0.8)');
@@ -1705,8 +1749,8 @@ function updateFx(dt){
 const motes=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),z:rand(0.2,0.7),r:rand(1,3)}));
 // The head shows what has been taken. Spike line: rim spikes, Horns, armour and longer spikes with Spine Coat, red eyes with Demon Spines.
 // Electric line: jagged sparking feelers, glowing eyes with Storm Lord. An evolution in either line adds the scowl.
-function drawHead(x,y,a,s,alpha,hue,full){
-  if(hue===undefined)hue=142;
+function drawHead(x,y,a,s,alpha,hue,full,sk){
+  if(hue===undefined)hue=142;sk=sk||skin();
   const f=full,dashing=f&&P.dashT>0,elc=f&&(P.volt||P.zap||P.storm),fierce=f&&(P.spine||P.oni||P.zap||P.storm||P.inferno||P.absz);
   ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.scale(s,s);ctx.globalAlpha=alpha;
   if(f&&P.memb){const m=Math.min(P.memb,5);ctx.strokeStyle=`hsla(${hue},100%,78%,0.35)`;ctx.lineWidth=1.2+m*0.8;ctx.beginPath();ctx.ellipse(0,0,15+2.5*m,11+2.5*m,0,0,TAU);ctx.stroke();}
@@ -1733,8 +1777,9 @@ function drawHead(x,y,a,s,alpha,hue,full){
     if(P.iceage){ctx.fillStyle='#f2fbff';for(let z=0;z<6;z++){const t=z/6*TAU+Math.PI/6,c=Math.cos(t),s2=Math.sin(t),R1=34;ctx.beginPath();ctx.moveTo(c*12-s2*3,s2*9+c*3);ctx.lineTo(c*R1,s2*R1*0.86);ctx.lineTo(c*12+s2*3,s2*9-c*3);ctx.closePath();ctx.fill();ctx.stroke(); // Ice Age: six long arms, each with a pair of barbs
         for(const g of[-1,1]){const bx=c*23,by=s2*23*0.86,a2=t+g*0.9;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+Math.cos(a2)*9,by+Math.sin(a2)*8);ctx.lineTo(bx+c*4,by+s2*4);ctx.closePath();ctx.fill();ctx.stroke();}}}
     if(P.absz){ctx.strokeStyle=`rgba(210,245,255,${0.4+0.15*Math.sin(T*4)})`;ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.ellipse(0,0,21,17,0,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
-  ctx.fillStyle=`hsl(${hue},68%,50%)`;ctx.beginPath();ctx.ellipse(0,0,15,11,0,0,TAU);ctx.fill();
-  ctx.fillStyle=`hsl(${hue},100%,81%)`;ctx.beginPath();ctx.ellipse(-3,-3,8,5,0,0,TAU);ctx.fill();
+  const hc=sk.head&&!(f&&(P.sun||P.iceage||P.raijin||P.asura))?sk.head:null,hb=hc?`hsl(${hc[0]},${hc[1]}%,${hc[2]}%)`:`hsl(${hue},68%,50%)`; // the skin's own head colour, unless the last form of a line has taken over
+  ctx.fillStyle=hb;ctx.beginPath();ctx.ellipse(0,0,15,11,0,0,TAU);ctx.fill();
+  ctx.fillStyle=hc?`hsl(${hc[0]},${hc[1]}%,${Math.min(95,hc[2]+26)}%)`:`hsl(${hue},100%,81%)`;ctx.beginPath();ctx.ellipse(-3,-3,8,5,0,0,TAU);ctx.fill();
   if(f&&(P.iceage||P.raijin||P.sun)){ctx.fillStyle=P.iceage?'rgba(240,251,255,0.45)':P.raijin?'rgba(255,255,235,0.4)':'rgba(255,245,200,0.3)';ctx.beginPath();ctx.ellipse(0,0,13,9.5,0,0,TAU);ctx.fill();} // the last forms: frosted over, or white-hot
   if(f&&P.spine){ctx.strokeStyle='rgba(6,20,26,0.4)';ctx.lineWidth=2.2;for(const px of[-7,-1]){ctx.beginPath();ctx.moveTo(px,-9.5);ctx.quadraticCurveTo(px+4,0,px,9.5);ctx.stroke();}} // armour plates
   if(f&&P.devour){ctx.fillStyle='#f2fff7';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(11,k*4);ctx.quadraticCurveTo(23,k*(10+2*Math.sin(T*12)),27,k*1.5);ctx.quadraticCurveTo(19,k*5.5,11,k*4);ctx.fill();}}
@@ -1748,10 +1793,13 @@ function drawHead(x,y,a,s,alpha,hue,full){
         if(elc){ctx.lineTo(15*L,k*(11+rand(-1.2,1.2))*L);ctx.lineTo(18*L,k*(6+rand(-1.2,1.2))*L);ctx.lineTo(26*L,k*10*L);}
         else ctx.quadraticCurveTo(18,k*(10+3*Math.sin(T*25)),24,k*(6+4*Math.sin(T*25+1)));
         ctx.stroke();if(elc){ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(26*L,k*10*L,(zz?1.8:1)+Math.random()*1.4,0,TAU);ctx.fill();}}}
-    if(f&&P.storm){ctx.fillStyle='rgba(60,200,255,0.5)';for(const k of[-1,1]){ctx.beginPath();ctx.arc(7,k*5,5.4,0,TAU);ctx.fill();}} // glowing eyes
-    ctx.fillStyle='#fff';for(const k of[-1,1]){ctx.beginPath();ctx.arc(7,k*5,3.6,0,TAU);ctx.fill();}
-    ctx.fillStyle=f&&P.oni?'#ff2d20':f&&P.storm?'#22c4ff':f&&P.inferno?'#ff7a1a':f&&P.absz?'#58c8ff':'#032';for(const k of[-1,1]){ctx.beginPath();ctx.arc(8.4,k*5,fierce?2.1:1.8,0,TAU);ctx.fill();}
-    if(fierce){ctx.strokeStyle='#03141c';ctx.lineWidth=1.9;ctx.lineCap='round';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(3.2,k*8.8);ctx.lineTo(10.9,k*3.3);ctx.stroke();}} // the scowl
+    const ey=sk.eye,big=ey==='big',one=ey==='one',ex=one?8:7,er=one?6.2:big?4.8:3.6,pr=(one?3:big?2.5:1.8)+(fierce?0.3:0),ks=one?[0]:[-1,1]; // eyes: the skin may have big ones, a single one, slit pupils or heavy lids
+    if(f&&P.storm){ctx.fillStyle='rgba(60,200,255,0.5)';for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er+1.8,0,TAU);ctx.fill();}} // glowing eyes
+    ctx.fillStyle=ey==='cat'?'#ffe98a':'#fff';for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er,0,TAU);ctx.fill();}
+    ctx.fillStyle=f&&P.oni?'#ff2d20':f&&P.storm?'#22c4ff':f&&P.inferno?'#ff7a1a':f&&P.absz?'#58c8ff':'#032';
+    for(const k of ks){ctx.beginPath();if(ey==='cat')ctx.ellipse(ex+1.2,k*5,1.1,er*0.8,0,0,TAU);else ctx.arc(ex+(one?2:big?1.7:1.4),k*5,pr,0,TAU);ctx.fill();}
+    if(ey==='sleepy'&&!fierce){ctx.fillStyle=hb;for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er+0.5,Math.PI*0.5,Math.PI*1.5);ctx.fill();}} // heavy lids over the back half of each eye
+    if(fierce&&!one){ctx.strokeStyle='#03141c';ctx.lineWidth=1.9;ctx.lineCap='round';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(3.2,k*8.8);ctx.lineTo(10.9,k*3.3);ctx.stroke();}} // the scowl
   }
   ctx.restore();ctx.globalAlpha=1;
 }
@@ -1904,8 +1952,9 @@ function render(){
     ctx.strokeStyle=dsh?`hsla(${hu},100%,82%,0.5)`:`hsla(${hu},100%,62%,0.35)`;ctx.lineWidth=12*S;ctx.stroke();
     ctx.strokeStyle=`hsla(${hu},100%,90%,0.9)`;ctx.lineWidth=3*S;ctx.stroke();
     ctx.globalCompositeOperation='source-over';
-    const n=tr.length,h2=skin().h2,bc1=`hsl(${hu},72%,56%)`,bc2=`hsl(${hu},88%,68%)`,bd1=`hsl(${h2},72%,56%)`,bd2=`hsl(${h2},88%,68%)`;
-    for(let i=n-1;i>=0;i-=3){const q=tr[i],f=i/n;if(prism){const hh=(hu+(n-i)*2)%360;ctx.fillStyle=i%6===0?`hsl(${hh},72%,56%)`:`hsl(${hh},88%,68%)`;}else if(h2!==undefined&&((n-i)/30|0)%2)ctx.fillStyle=i%6===0?bd1:bd2;else ctx.fillStyle=i%6===0?bc1:bc2;ctx.beginPath();ctx.arc(q.x,q.y,(2.5+f*5)*S,0,TAU);ctx.fill();}
+    const n=tr.length,sk=skin(),tab=skinTab(sk,P.sun||P.iceage||P.raijin||P.asura?hu:-1);
+    if(sk.cols)for(let i=0;i<n;i++){const q=tr[i],f=i/n;ctx.fillStyle=beadCol(sk,tab,((n-1-i)/3)|0,T,hu);ctx.beginPath();ctx.arc(q.x,q.y,(3.6+f*5.2)*S,0,TAU);ctx.fill();} // a patterned skin: the beads sit close and overlap, so the body is one piece and its stripes read as stripes (drawn tail first, the head end on top)
+    else for(let i=n-1,j=0;i>=0;i-=3,j++){const q=tr[i],f=i/n;ctx.fillStyle=beadCol(sk,tab,j,T,hu);ctx.beginPath();ctx.arc(q.x,q.y,(2.5+f*5)*S,0,TAU);ctx.fill();}
     drawTailParts(tr,hu,S);
     if(P.str>0){const q=tr[0],k=Math.min(1,P.str/(120*S));ctx.strokeStyle=`hsla(${hu},100%,86%,${0.75*k})`;ctx.lineWidth=2*S;ctx.beginPath();ctx.arc(q.x,q.y,(8+3*Math.sin(T*16))*S,0,TAU);ctx.stroke();} // the tail tip, held in place while the body is stretched
   }
@@ -2100,11 +2149,13 @@ function titleScreen(W,H){
   fitFont(TX('tagline',VER),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',VER),W/2,ty+40);
   if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),TX('goal')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,ty+82+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
-  const hue=k.h<0?(now/20)%360:k.h,cx=W/2+22,cy=p.y+40;ctx.globalAlpha=own?1:0.35;
-  for(let j=13;j>=0;j--){const x=cx-24-j*8,y=cy+Math.sin(j*0.6+now/300)*6,hh=k.h<0?(hue+j*12)%360:k.h2!==undefined&&(j/4|0)%2?k.h2:hue;ctx.fillStyle=j%2?`hsl(${hh},88%,68%)`:`hsl(${hh},72%,56%)`;ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/14)*4)*1.3,0,TAU);ctx.fill();}
-  drawHead(cx,cy,0,2,own?1:0.35,hue,false);ctx.globalAlpha=1;
+  const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
+  for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
+  drawHead(cx,cy,0,2,1,hue,false,k);
+  if(k.tier){const s=TX(k.tier>1?'sk_t2':'sk_t1'),gold=k.tier>1;ctx.font=`900 10px ${FONT}`;const bw=ctx.measureText(s).width+14,bx=p.x+64,by=p.y+8;ctx.fillStyle=gold?'rgba(255,216,106,0.18)':'rgba(111,182,255,0.18)';ctx.strokeStyle=gold?'#ffd86a':'#6fb6ff';ctx.lineWidth=1;rrect(bx,by,bw,17,8.5);ctx.fill();ctx.stroke();
+    ctx.fillStyle=gold?'#ffd86a':'#9fd0ff';ctx.textAlign='center';ctx.fillText(s,bx+bw/2,by+9);}
   ctx.fillStyle='#9dc4e0';for(const [r,dir] of [[L.left,-1],[L.right,1]]){const ax=r.x+r.w/2,ay=r.y+r.h/2;ctx.beginPath();ctx.moveTo(ax+dir*9,ay);ctx.lineTo(ax-dir*7,ay-13);ctx.lineTo(ax-dir*7,ay+13);ctx.closePath();ctx.fill();}
-  ctx.textAlign='center';ctx.font=`900 17px ${FONT}`;ctx.fillStyle=own?'#eafff2':'#9fb3c4';ctx.fillText(k.n+(own&&META.skin===k.id?TX('in_use'):''),W/2,p.y+78);
+  ctx.textAlign='center';ctx.font=`900 17px ${FONT}`;ctx.fillStyle=own?'#eafff2':'#9fb3c4';ctx.fillText(k.n+(own&&META.skin===k.id?TX('in_use'):''),W/2,p.y+75);
   if(!own){const can=META.dna>=k.cost;btn(L.buy,TX(can?'buy':'need',k.cost),0,!can);}
   else{ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('skin_n',skinIdx+1,SKINS.length),W/2,p.y+p.h-24);}
   btn(L.start,TX(TOUCH?'start':'start_key'),1,!stageOpen(stgIdx));
@@ -2344,7 +2395,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,get skin(){return skin().id;},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},

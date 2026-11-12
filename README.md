@@ -29,8 +29,10 @@
 
 タイトル画面の「図鑑」で、たどり着いたスケールまでの敵を見られる。
 
+スキンは 19 種類（縞、グラデーション、走る光、目の違い）。プレイでたまる DNA で解放する。見た目だけで、強さは変わらない。
+
 ## 開発メモ
 
 - 本体は `index.html` のみ（バニラ JS + Canvas）。
 - Claude Code 向け: `CLAUDE.md` / 詳細引き継ぎ: `HANDOFF.md`
-- テスト: `?demo` / `?demo&swarm` / `?tail=1900` / `?boss` / `?shell` / `?toxin` / `?titan` / `?nosave` / `?lang=en` / `?t=600` / `?give=…`
+- テスト: `?demo` / `?demo&swarm` / `?tail=1900` / `?boss` / `?shell` / `?toxin` / `?titan` / `?nosave` / `?skin=neon` / `?lang=en` / `?t=600` / `?give=…`
