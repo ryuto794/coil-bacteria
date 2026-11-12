@@ -98,6 +98,12 @@ const ETYPES=[
  {k:'ostr', n:['カイミジンコ','Seed Shrimp'],st:1,sh:2,r:25,hp:10,spd:78,dmg:13,xp:16,col:'#c9b27a',core:'#4a3a12',glow:'rgba(215,190,130,0.5)',rot:1,brittle:1},
  {k:'volv', n:['ボルボックス','Volvox'],st:1,sh:1,r:34,hp:14,spd:64,dmg:14,xp:14,col:'#57d86a',core:'#0f5a20',glow:'rgba(90,220,110,0.5)',spin:0.8,split:['volvd',4]},
  {k:'volvd',look:'volvd',n:['娘群体','Daughter Colony'],st:1,r:14,hp:3,spd:120,dmg:8,xp:3,col:'#8cf08a',core:'#0f5a20',glow:'rgba(130,240,130,0.5)',spin:1.6},
+ // stage 3 (Kodoku): the player's own kind. kin: it has a head and a tail and moves as the player does (kinMove). kb: what it does: circle = goes round and
+ // round on the spot, hunt = runs rings round the player to close a coil on it, dash = lines up and darts through. tl: tail length. kc: which colours (KIN_SK).
+ // A loop one of them closes with the player's head inside becomes an enemy coil (ecaps): it squeezes after a moment unless the player gets out.
+ {k:'kinc',look:'kin',n:['とぐろ','Coiler'],st:0,r:10,hp:4,spd:0,dmg:8,xp:6,col:'#ff5a7a',core:'#5a0a1a',glow:'rgba(255,90,120,0.5)',kin:1,kb:'circle',tl:380,kc:0},
+ {k:'kind',look:'kin',n:['突き手','Lancer'],st:0,r:10,hp:5,spd:0,dmg:12,xp:8,col:'#ffa24a',core:'#6a2a05',glow:'rgba(255,160,70,0.5)',kin:1,kb:'dash',tl:260,kc:2},
+ {k:'kinh',look:'kin',n:['囲い手','Encircler'],st:0,sh:1,r:11,hp:8,spd:0,dmg:10,xp:14,col:'#c98cff',core:'#3a1a7a',glow:'rgba(190,130,255,0.5)',kin:1,kb:'hunt',tl:640,kc:1},
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
 let TOXIN_T=[
@@ -141,6 +147,11 @@ const RUSH_SEC=20,BODY_RUSH=[
  {k:'rush',look:'nema',st:0,L:17,w:2.8,r:4,hp:1,spd:0,dmg:7, xp:1,col:'#ff6a5a',core:'#7a140a',glow:'rgba(255,100,80,0.5)',name:['イトミミズの群れ','Sludge Worm Swarm'],rot:1,fr:8},
  {k:'rush',look:'nema',st:1,L:30,w:4.4,r:6,hp:2,spd:0,dmg:10,xp:2,col:'#ff6a5a',core:'#7a140a',glow:'rgba(255,100,80,0.5)',name:['イトミミズの群れ','Sludge Worm Swarm'],rot:1,fr:8}];
 let RUSH_T=BODY_RUSH;
+// stage 3: the boss is a giant of the player's own kind, and the rush is its young
+const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#ff3a4a',core:'#3a0508',glow:'rgba(255,60,80,0.55)',name:['蠱毒の王','King of the Jar'],sh:5,kin:1,kb:'boss',tl:1700,kc:3}],
+ JAR_RUSH=[{k:'rush',look:'nema',st:0,L:17,w:2.8,r:4,hp:1,spd:0,dmg:7,xp:1,col:'#c98cff',core:'#3a1a7a',glow:'rgba(190,130,255,0.5)',name:['幼体の群れ','Hatchling Swarm'],rot:1,fr:8}],
+ KIN_SK=[{id:'kin0',h:350,angry:1},{id:'kin1',h:280,angry:1,eye:'cat'},{id:'kin2',h:28,angry:1},
+  {id:'kin3',h:352,angry:1,eye:'big',cols:[[352,85,48],[0,0,12],[45,95,58],[0,0,12]],runs:[3,1,2,1],head:[352,85,45]}]; // how each kind of kin is coloured (read as skins are)
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);
   gr.addColorStop(0,col);gr.addColorStop(0.4,col.replace(/[\d.]+\)$/,m=>(parseFloat(m)*0.35).toFixed(3)+')'));gr.addColorStop(1,'rgba(0,0,0,0)');
@@ -294,6 +305,9 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
     g.globalAlpha=1;g.strokeStyle=col;g.lineWidth=w*.09;g.beginPath();g.ellipse(L*.55,0,L*.17,w*.95,0,0,TAU);g.stroke();g.beginPath();g.ellipse(L*.84,0,L*.13,w*.62,0,0,TAU);g.stroke();
     g.strokeStyle=core;g.globalAlpha=.55;g.lineWidth=w*.3;g.beginPath();g.moveTo(L*.7,0);g.lineTo(-L*.8,0);g.stroke();
     g.globalAlpha=1;g.fillStyle='#10161c';for(const k of[-1,1]){circ(g,L*.88,k*w*.34,w*.16);g.fill();}break;}
+  case 'kin':{g.lineCap='round';g.strokeStyle=col;g.lineWidth=r*.5; // the player's own kind (this picture is for the field guide; in play it is drawn with a real head and tail)
+    g.beginPath();for(let i=0;i<=20;i++){const x=-r*1.6+i/20*r*1.9,y=Math.sin(i/20*7)*r*.45*(1-i/28);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+    g.fillStyle=col;g.beginPath();g.ellipse(r*.75,0,r*.7,r*.52,0,0,TAU);g.fill();g.fillStyle='#fff';for(const k of[-1,1]){circ(g,r*1.05,k*r*.24,r*.17);g.fill();}g.fillStyle=core;for(const k of[-1,1]){circ(g,r*1.12,k*r*.24,r*.09);g.fill();}break;}
   // ---- the titans (drawn in world units; the sprite is scaled by res) ----
   case 'para':{const u=t.w/92,L=t.L/u,w=92,N=72;g.scale(u,u);const X=a=>{const c=Math.cos(a);return L*Math.sign(c)*Math.pow(Math.abs(c),0.8);},Y=a=>w*Math.sin(a)*(0.8+0.2*Math.cos(a)), // a slipper: round in front, narrower behind
       out=k=>{g.beginPath();for(let i=0;i<=N;i++){const a=i/N*TAU;i?g.lineTo(X(a)*k,Y(a)*k):g.moveTo(X(a)*k,Y(a)*k);}g.closePath();};
@@ -352,8 +366,8 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   }
   g.globalAlpha=1;
 }
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
-for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,...POND_HUNT.filter(Boolean),...BODY_RUSH,...POND_RUSH]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+for(const t of [...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...POND_BOSS,...POND_TITAN,...POND_HUNT.filter(Boolean),...BODY_RUSH,...POND_RUSH,...JAR_BOSS,...JAR_RUSH]){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
 const ET={};for(const t of ETYPES)ET[t.k]=t; // enemy types by key
 // The field guide (v17): what it lists, in order: [scale, type, key of its line of text]. A scale's creatures show once that scale has been reached.
@@ -391,7 +405,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v28.1';
+const LANGS=['ja','en'],VER='v28.2';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -584,7 +598,7 @@ const STR={
  b_book:['図鑑','Field guide'],
  stg_n:['ステージ {0}','Stage {0}'],
  stg_soon:['（準備中）','(coming soon)'],
- stg_wip:['（試作: スケール 2 まで）','(prototype: two scales so far)'],
+ stg_wip:['（試作: 作りかけ）','(prototype: unfinished)'],
  tip_pull:['渦に引き寄せられる','A whirlpool is dragging you'],
  tip_pull_s:['ワムシの近くは引かれる。巻いて倒せ','Rotifers pull you in when you are near. Coil them'],
  tip_esc:['ケンミジンコは跳んで逃げる','Copepods jump out of coils'],
@@ -603,6 +617,15 @@ const STR={
  bk_volv:['倒すと 4 つの娘群体に分かれる','Breaks into four daughter colonies'],
  bk_volvd:['ボルボックスから出てくる。小さくて速い','Comes out of a Volvox. Small and quick'],
  bk_hydra:['このスケールのボス。腕が、進む先へ伸びてくる','The boss of this scale. Its arms shoot out to where you are heading'],
+ tip_ecoil:['同族に囲まれた','One of your own kind has ringed you'],
+ tip_ecoil_s:['赤い輪の中にいると締められる。外へ出ろ','Stay inside the red ring and it squeezes. Get out'],
+ ecoil:['囲まれた！','Ringed!'],
+ ecoil_out:['抜けた！','Out!'],
+ kin_tired:['息切れ','Winded'],
+ bk_kinc:['同族。その場でぐるぐる回る。輪の中に入ると締められる','Your own kind. Goes round and round. Step into its ring and it squeezes'],
+ bk_kind:['同族。狙いを定めて、ダッシュで突っ込んでくる','Your own kind. Lines you up and dashes through'],
+ bk_kinh:['同族。まわりを回って囲んでくる。赤い輪ができたら外へ','Your own kind. Runs rings round you. When the red ring closes, get out'],
+ bk_kinb:['このステージのボス。大きく囲み、ダッシュで突っ込む。息切れの間に巻く','The boss of this stage. Rings you wide, then dashes through. Coil it while it is winded'],
  tip_spring:['ツリガネムシ','Vorticella'],
  tip_spring_s:['動かないが、近づくと伸びて噛みつく','It stays put, but lunges out when you come near'],
  bk_hop:['跳ねて近づく。動きが読みにくい','Comes in hops. Hard to read'],
@@ -704,11 +727,11 @@ const STR={
  h7:['霧とアイテム','Fog and pickups'],
  h7_b:['毒素菌の霧に頭を入れるとダメージ。取ってよいものは、どれも水色に光り、輪が広がって、星がきらめく：XP の粒、カプセル、敵がときどき落とすアイテム（回復・バリア・XP の吸い寄せ・敵を止める）。','Poison fog hurts your head. Everything good to pick up glows aqua, with a ring that pings outward and twinkling stars: XP, capsules, and the pickups enemies sometimes drop (heal, barrier, pull in all XP, freeze enemies).'],
  h9:['技','Moves'],
- h9_b:['尾の通り道でできた輪は、ぜんぶ別々に数える。輪が続けて締まると連鎖になり、あとの輪ほど強い（ダブル締め、トリプル締め…）。向きを変えて 8 の字に巻くと「∞ 締め」：2 つの輪がその場でダッシュ締めの強さで弾け、まとめてもう一発。ダッシュ中とその直後は体が伸びる。伸びている間に閉じた輪は、すぐにダッシュ締めになる（速攻締め）。','Every loop your trail closes counts on its own. Loops that squeeze one after another chain up, each hitting harder (double squeeze, triple squeeze...). Turn the other way and draw a figure eight for an ∞ squeeze: both loops go off at dash strength, then one more blast covers them both. Your body stretches during a dash and just after. A loop closed while stretched squeezes at once, at dash strength (snap squeeze).'],
+ h9_b:['尾の通り道でできた輪は、ぜんぶ別々に数える。輪が続けて締まると連鎖になり、あとの輪ほど強い（ダブル締め、トリプル締め…）。同じくらいの大きさの輪 2 つで、きれいな 8 の字を描くと「∞ 締め」：2 つの輪がその場で続けて弾け、真ん中でもう一発。ダッシュ中とその直後は体が伸びる。伸びている間に閉じた輪は、すぐにダッシュ締めになる（速攻締め）。','Every loop your trail closes counts on its own. Loops that squeeze one after another chain up, each hitting harder (double squeeze, triple squeeze...). Draw a clean figure eight, two loops of about the same size, for an ∞ squeeze: both loops go off at once, one after the other, with one more blast where they meet. Your body stretches during a dash and just after. A loop closed while stretched squeezes at once, at dash strength (snap squeeze).'],
  h8:['DNA とミッション','DNA and missions'],
  h8_b:['プレイが終わると DNA がもらえる。ミッション達成でももらえる。タイトルでスキンの解放に使う。','You earn DNA after each run and from missions. Spend it on skins at the title screen.'],
 };
-loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc(POND_HUNT.filter(Boolean),'name');loc(BODY_RUSH,'name');loc(POND_RUSH,'name');
+loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc(POND_HUNT.filter(Boolean),'name');loc(BODY_RUSH,'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(JAR_RUSH,'name');
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
  setLang(saved!==undefined?saved:/^ja\b/i.test(nav)?0:1);}
@@ -967,7 +990,7 @@ function reset(start){
      vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0,rushT:0,rushSp:0,rushDue:false};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];
+  calmUntil=0;bossKills=0;toasts=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -1026,7 +1049,8 @@ function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, 
     if(!prey&&Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
     const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx*(prey?1.7:1);}
   for(let i=0;i<n&&enemies.length<CAP;i++){
-    const t=prey?pickPrey():pickType(),aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
+    let t=prey?pickPrey():pickType();if(t.kin&&!prey){let nk=0,nh=0;for(const q of enemies)if(q.t.kin&&!q.dead&&!q.boss){nk++;if(q.t.kb==='hunt')nh++;}if(nk>=12||(t.kb==='hunt'&&nh>=2))t=ET[TIERS[P.stage][0][0]];}
+    const aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
     if(t.chain){i+=Math.max(1,spawnChain(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.wedge&&!prey){i+=Math.max(1,spawnWedge(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.mv==='spring'&&!prey&&!at){const a2=P.a+rand(-1.2,1.2),d2=rand(250,400)*Sx,e=mkEnemy(t,P.x+Math.cos(a2)*d2,P.y+Math.sin(a2)*d2);burst(e.x,e.y,8,t.col,120,0.5,3);enemies.push(e);continue;} // rooted: it sprouts ahead of the player, in sight
@@ -1062,6 +1086,10 @@ const STAGES=[
   waves:WAVES,boss:POND_BOSS,hunt:POND_HUNT,titan:POND_TITAN,toxin:[TOXIN_T[0],TOXIN_T[1]],gas:[8,10],realK:[1,0.7],rush:POND_RUSH,
   book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'titan'],
         [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,POND_TITAN[1],'titan']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'jar',n:['蠱毒','Kodoku'],soon:1,wip:1,names:[['壺の底','The Jar']], // v29: the player's own kind, many of them, among other creatures; the boss is a giant one
+  tiers:[[['germ',0,8,0],['kinc',6,2.2,30],['virus',20,3,50],['kind',30,1.6,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
+  waves:WAVES,boss:JAR_BOSS,hunt:[null],titan:[null],toxin:[TOXIN_T[0]],gas:[8],realK:[1],rush:JAR_RUSH,
+  book:[[0,'germ','germ'],[0,'kinc','kinc'],[0,'virus','virus'],[0,'kind','kind'],[0,'halt','hop'],[0,'kinh','kinh'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,JAR_RUSH[0],'rush'],[0,JAR_BOSS[0],'kinb']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 ];
 loc(STAGES,'n');
 let CS=0,stgIdx=0; // the stage being played, and the one shown on the title screen
@@ -1107,7 +1135,7 @@ function waveEvent(k){
   else if(k==='toxin'){const n=P.stage===0?1:2;for(let i=0;i<n;i++)spawnToxin();evt(TX('ev_toxin'),TX('ev_toxin_s'));}
   else if(k==='hunt'){if(!spawnHunter())waveEvent('toxin');}
   else if(k==='rush'){startRush();}
-  else if(k==='titan'){if(!spawnTitan())P.titanDue=true;} // not while a boss is out: it comes afterwards (see waveTick) // before the Cell scale, or during a boss: toxin germs instead
+  else if(k==='titan'){if(!spawnTitan())P.titanDue=!!TITAN_T[P.stage];} // not while a boss is out: it comes afterwards (see waveTick) // before the Cell scale, or during a boss: toxin germs instead
 }
 // The rush. It waits for a boss or a hunter to be gone. While it lasts nothing else arrives; when the time is up the pack scatters and a lull follows.
 function startRush(){const t=RUSH_T[Math.min(P.stage,RUSH_T.length-1)];if(!t||P.rushT>0||P.clearAt)return false;if(P.boss||P.hunter){P.rushDue=true;return false;}
@@ -1116,10 +1144,10 @@ function startRush(){const t=RUSH_T[Math.min(P.stage,RUSH_T.length-1)];if(!t||P.
 function rushSpawn(n){const t=RUSH_T[Math.min(P.stage,RUSH_T.length-1)],Sx=Math.max(P.S,zoomT()),D=Math.hypot(W,H)/2*Sx+50*Sx; // behind the player, out of sight
   for(let i=0;i<n&&enemies.length<CAP+40;i++){const a=P.a+Math.PI+rand(-1.25,1.25),d=D+rand(0,160)*Sx,e=mkEnemy(t,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,true);
     e.rush=true;e.ha=Math.atan2(P.y-e.y,P.x-e.x);e.ang=e.ha;e.xpB=0.5;enemies.push(e);}}
-// a chaser is a little slower than the player's walk when it is near (94%) and faster when it has dropped back (125% beyond 220 px on screen): on a straight
+// a chaser is a little slower than the player's walk when it is near (91%) and faster when it has dropped back (125% beyond 220 px on screen): on a straight
 // run the pack comes up to some 200 px behind, in sight, and then creeps closer (those at the back push those in front): without a dash it bites after about
 // 10 s; a dash every few seconds keeps clear of it. Any loop or turn lets it cut the corner. Close up it can turn sharply enough to bite
-function rushMove(e,dx,dy,d,dt,S){const sp=P.spd*S*(d>220*S?1.25:0.94)*(e.cap?0.3:1)*(P.freezeT>0?0.08:1),tr=(d>260*S?3.2:d>130*S?2.4:5.5)*dt;
+function rushMove(e,dx,dy,d,dt,S){const sp=P.spd*S*(d>220*S?1.25:0.91)*(e.cap?0.3:1)*(P.freezeT>0?0.08:1),tr=(d>260*S?3.2:d>130*S?2.4:5.5)*dt;
   e.ha+=clamp(angDiff(e.ha,Math.atan2(dy,dx)+Math.sin(T*1.7+e.ph)*0.35),-tr,tr);MV[0]=Math.cos(e.ha)*sp;MV[1]=Math.sin(e.ha)*sp;}
 function rushTick(dt){
   if(P.rushDue&&!P.boss&&!P.hunter&&!(P.rushT>0))startRush();
@@ -1383,7 +1411,7 @@ function dash(){
   shake=Math.max(shake,any?7:3);
 }
 const MAXC=10; // most laps one coil can hold
-const STR_HOLD=1.0; // after a dash ends the tail tip stays put this long (the body is stretched); then the length eases back
+const STR_HOLD=0.5; // (1.0 until v28.1) after a dash ends the tail tip stays put this long (the body is stretched); then the length eases back
 // How much a dash squeeze and each further link of a chain add to a squeeze (v28.1: brought down; the owner found the blasts too big for how easily they come).
 // DASH_R / DASH_D: blast radius and damage of a dash squeeze against a plain one (were 1.7 and 2). LINK_*: per link of a chain (were +12% radius, +50% damage, +25% XP).
 // A dash squeeze still gives double XP.
@@ -1394,14 +1422,15 @@ function cinch(c,dsh){
   c.link=live?P.chainN+1:0;P.chainN=c.link;P.chainAt=at;c.dash=dsh;if(!live)P.chainId++;c.chain=P.chainId;
   if(at>T)c.hold=at-T;else c.cinchT=0;
 }
-// a figure eight (two loops side by side, drawn in opposite directions): both go at once at dash strength, and a third blast covers them both
+// a figure eight (two loops side by side, drawn in opposite directions, meeting at one crossing): the two squeeze at once, one after the other, and a small
+// blast goes off where they meet. v28.2: it gives no dash strength any more, the blast only hurts (it does not kill what it covers outright), and the eight
+// has to be drawn on purpose (see onLoop). Before, circling about at random set it off again and again.
 function infinity(a,b){
-  const S=P.S,mx=(a.c.x+b.c.x)/2,my=(a.c.y+b.c.y)/2,R=Math.hypot(a.c.x-b.c.x,a.c.y-b.c.y)/2+Math.max(a.rad,b.rad)*0.45,poly=[];
+  const S=P.S,mx=(a.c.x+b.c.x)/2,my=(a.c.y+b.c.y)/2,R=Math.max(a.rad,b.rad)*0.5,poly=[];
   for(let i=0;i<28;i++){const t=i/28*TAU;poly.push({x:mx+Math.cos(t)*R,y:my+Math.sin(t)*R});}
-  const f={poly,c:{x:mx,y:my},rad:R,area:Math.PI*R*R,rnd:1,charge:Math.max(a.charge,b.charge),timer:P.captT,cinchT:-1,dash:true,pop:1,inf:1};captures.push(f);
-  for(const e of enemies){if(e.dead)continue;const dx=e.x-mx,dy=e.y-my;if(dx*dx+dy*dy<R*R){if(!e.cap)e.cap=f;if(e.sh>0)crackShell(e,1);}}
-  if(a.cinchT<0&&!a.done){if(a.hold>0)a.dash=true;else cinch(a,true);}
-  cinch(b,true);cinch(f,true);a.inf2=b.inf2=1;
+  const f={poly,c:{x:mx,y:my},rad:R,area:Math.PI*R*R,rnd:1,charge:Math.max(a.charge,b.charge),timer:P.captT,cinchT:-1,dash:false,pop:1,inf:1};captures.push(f);
+  if(a.cinchT<0&&!a.done&&!(a.hold>0))cinch(a,false);
+  cinch(b,false);cinch(f,false);a.inf2=b.inf2=1;
   text(mx,my,'\u221e',64,'#ffd86a',0.55);rings.push({x:mx,y:my,r:R*0.3,R:R*1.1,life:0.5,max:0.5,col:'#ffd86a',w:6*S});sfx('chain',4);shake=Math.max(shake,9);
 }
 const CAPT_TIME=1.6;
@@ -1425,18 +1454,18 @@ function onLoop(poly,old){
   for(const e of enemies){if(e.dead||e.x<b.x0||e.x>b.x1||e.y<b.y0||e.y>b.y1)continue;if(inPoly(e.x,e.y,poly)){e.cap=cap;if(e.sh>0)crackShell(e,crack);}}
   for(let i=0;i<poly.length;i+=3)burst(poly[i].x,poly[i].y,1,'#7dffb0',40,0.5,2.5);
   let inf=false;
-  if(fresh){const o=P.lastLoop,oc=o&&o.cap,amin=3200*P.S*P.S; // a figure eight: the loop before this one, drawn the other way round, right beside it. Both must be real loops (not slivers), and it cannot be done again for 4 s
-    if(oc&&!oc.inf&&T>=P.infAt&&T-o.t<5&&o.sgn!==sgn&&area>=amin&&oc.area>=amin&&rnd>=0.4&&oc.rnd>=0.4&&Math.min(area,oc.area)>=0.2*Math.max(area,oc.area)&&Math.hypot(oc.c.x-c.x,oc.c.y-c.y)<(oc.rad+rad)*1.5&&!inPoly(oc.c.x,oc.c.y,poly)&&!inPoly(c.x,c.y,oc.poly)){infinity(oc,cap);inf=true;P.infAt=T+4;}
+  if(fresh){const o=P.lastLoop,oc=o&&o.cap,amin=6000*P.S*P.S,k0=poly[0]; // a figure eight: the loop before this one, drawn the other way round, right beside it. v28.2: the two must be round, alike in size (the smaller at least 45% of the larger) and closed at the same crossing, within 4 s; and it cannot be done again for 10 s
+    if(oc&&!oc.inf&&T>=P.infAt&&T-o.t<4&&o.sgn!==sgn&&area>=amin&&oc.area>=amin&&rnd>=0.55&&oc.rnd>=0.55&&Math.min(area,oc.area)>=0.45*Math.max(area,oc.area)&&Math.hypot(o.k.x-k0.x,o.k.y-k0.y)<0.7*Math.min(rad,oc.rad)&&Math.hypot(oc.c.x-c.x,oc.c.y-c.y)<(oc.rad+rad)*1.5&&!inPoly(oc.c.x,oc.c.y,poly)&&!inPoly(c.x,c.y,oc.poly)){infinity(oc,cap);inf=true;P.infAt=T+10;}
     else if(P.strT>0){cinch(cap,true);text(c.x,c.y-rad-24*P.S,TX('snap'),20,'#ffffff',0.9);} // closed while the body is stretched by a dash: squeezed on the spot, as a dash squeeze
   }
-  P.lastLoop=inf?null:{cap,sgn,t:T};
+  P.lastLoop=inf?null:{cap,sgn,t:T,k:poly[0]};
 }
 function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
   const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
   const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
   for(const e of enemies){if(e.dead)continue;
-    if(e.cap===cap||(e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){
+    if(e.cap===cap||(!cap.inf&&e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){ // (the blast of a figure eight holds nothing: it only hurts)
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
@@ -1453,10 +1482,10 @@ function explode(cap){
   grp.base=n;
   if(P.absz){const D=Math.hypot(W,H)*0.6*S;for(const e of enemies)if(!e.dead&&Math.abs(e.x-P.x)<D&&Math.abs(e.y-P.y)<D)freeze(e,2);rings.push({x:c.x,y:c.y,r:R*0.5,R:D,life:0.6,max:0.6,col:'#d6f4ff',w:5*S});} // Absolute Zero
   rings.push({x:c.x,y:c.y,r:cap.rad*0.2,R,life:0.5,max:0.5,col:dsh?'#eafff2':'#7dffb0',w:(dsh?10:6)*S});
-  if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.35,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
+  if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.1,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
   burst(c.x,c.y,30+n*2,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,20+ch*10,'#4fb8ff',300,0.9,3);
   for(const e of enemies)if(e.cap===cap)e.cap=null;
-  if(cap.inf){text(c.x,c.y-74*S,TX('inf_sq'),34,'#ffd86a',1.5);rings.push({x:c.x,y:c.y,r:0,R:R*1.5,life:0.9,max:0.9,col:'#ffd86a',w:7*S});sfx('chain',6);mission('inf');shake=Math.max(shake,16);}
+  if(cap.inf){text(c.x,c.y-74*S,TX('inf_sq'),34,'#ffd86a',1.5);rings.push({x:c.x,y:c.y,r:0,R:R*1.05,life:0.7,max:0.7,col:'#ffd86a',w:5*S});sfx('chain',6);mission('inf');shake=Math.max(shake,10);}
   else if(lk>0&&n>0&&!cap.inf2){text(c.x,c.y-74*S,lk===1?TX('ch2'):lk===2?TX('ch3'):TX('chn',cap.link+1),20+4*lk,'#ffd86a',1.3);sfx('chain',lk);tip('chain');if(cap.link>=2)mission('multi3');}
   // a chain is one squeeze in several beats: the number shown, the best combo and the missions count the total so far
   if(!P.chainSum||cap.chain===undefined||P.chainSum.id!==cap.chain)P.chainSum={id:cap.chain,n:0};P.chainSum.n+=n;const tot=P.chainSum.n;
@@ -1659,7 +1688,7 @@ function update(dt){
   if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:P.tailLen>=gateLen()))spawnBoss();
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
   // spawn: VS-style waves with peaks, lulls and events
-  waveTick(dt);rushTick(dt);
+  waveTick(dt);rushTick(dt);ecapTick(dt);
   gasTick(dt);chestTick();itemTick(dt);if(state!=='play')return;
   // pulse
   P.pulseT-=dt;
@@ -1682,6 +1711,7 @@ function update(dt){
     if(e.titan){titanMove(e,s,dt);ax=MV[0];ay=MV[1];}
     else if(e.hunter){hunterMove(e,dx,dy,d,dt,S);if(e.dead)continue;ax=MV[0];ay=MV[1];}
     else if(e.rush&&!e.pr){rushMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}
+    else if(e.t.kin&&!e.pr){if(!e.cap){kinMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}else{ax=0;ay=0;}}
     else if(e.lead){if(!e.cap){follow(e,s);ax=MV[0];ay=MV[1];}}
     else if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
     else if(e.t.mv&&!e.cap&&mover(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
@@ -1839,6 +1869,68 @@ function mover(e,dx,dy,d,s,dt,S){
     return false;
   }
   return false;}
+// ---------- the player's own kind (stage 3) ----------
+// Each keeps a trail as the player does, and turns only so fast. Speeds are set against the player's walk. When its head crosses its own trail with the
+// player's head inside the loop, the loop becomes an enemy coil (ecaps): it squeezes after a moment, unless the player gets out or the one that made it dies.
+let ecaps=[];
+function kinMove(e,dx,dy,d,dt,S){const t=e.t,ps=P.spd*S*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.chill>0?0.8:1),st=t.r*0.9;
+  if(!e.tr){e.tr=[{x:e.x,y:e.y}];e.ha=Math.atan2(dy,dx);e.kq=0;e.kT=rand(3,5);e.sd=Math.random()<0.5?1:-1;e.cx=e.x;e.cy=e.y;}
+  const L=e.tr[e.tr.length-1],ll=(e.x-L.x)*(e.x-L.x)+(e.y-L.y)*(e.y-L.y);
+  if(ll>st*st*36){e.tr=[{x:e.x,y:e.y}];} // it was moved a long way at once (a boss brought back into range): the old trail is dropped
+  else if(ll>st*st){if(t.kb==='circle')kinLoop(e,L);e.tr.push({x:e.x,y:e.y});let len=0;for(let i=e.tr.length-1;i>0;i--){len+=Math.hypot(e.tr[i].x-e.tr[i-1].x,e.tr[i].y-e.tr[i-1].y);if(len>t.tl){e.tr.splice(0,i-1);break;}}
+    }
+  let want=Math.atan2(dy,dx),sp=ps*0.8,turn=4;e.kT-=dt;e.cs=0;
+  // round the player at about R, faster than the player walks. The angle it has gone round is added up (e.wa); once that is a full turn its body is a ring
+  // round the player: an enemy coil, a circle where the player stands, as wide as this one is far away. True if the ring has just closed.
+  const ring=(R,k)=>{const a=Math.atan2(-dy,-dx);want=a+e.sd*(Math.PI/2+clamp((d-R)/R,-0.7,0.7));sp=ps*k;
+    if(e.wp!==undefined&&d<R*1.7)e.wa+=angDiff(e.wp,a);else e.wa=0;e.wp=a;
+    if(Math.abs(e.wa)<TAU||ecaps.length>=3||ecaps.some(c=>c.e===e))return false;
+    const poly=[],rr=Math.max(R*0.8,d),tq=e.boss?1.4:1.0;for(let i=0;i<28;i++){const b=i/28*TAU;poly.push({x:P.x+Math.cos(b)*rr,y:P.y+Math.sin(b)*rr});}
+    ecaps.push({poly,c:{x:P.x,y:P.y},t:tq,max:tq,dmg:Math.round(t.dmg*1.5),by:t,e});e.wa=0;e.wp=undefined;text(P.x,P.y-46*S,TX('ecoil'),20,'#ff9a9a',1);tip('ecoil');sfx('latch');return true;};
+  switch(t.kb){
+  case 'circle':{const k=Math.min(1,dt*0.09);e.cx+=(P.x-e.cx)*k;e.cy+=(P.y-e.cy)*k; // round and round a spot that drifts toward the player
+    const qx=e.x-e.cx,qy=e.y-e.cy,q=Math.hypot(qx,qy)+0.01,Rr=t.tl/8;want=Math.atan2(qy,qx)+e.sd*(Math.PI/2+clamp((q-Rr)/Rr,-0.7,0.7));sp=ps*0.78;break;}
+  case 'hunt':
+    if(e.kq===3){want=Math.atan2(-dy,-dx);sp=ps*0.7;e.wp=undefined;if(e.kT<=0){e.kq=0;e.kT=rand(7,9);e.sd=-e.sd;}}
+    else if(d>e.r*22){sp=ps*1.1;e.wp=undefined;}
+    else if(ring(e.r*8.5,1.5)){e.kq=3;e.kT=2.4;} // its ring is closed: it falls back for a moment
+    else if(e.kT<=0){e.kq=3;e.kT=1.6;} // it gives up after a while and comes round again
+    break;
+  case 'dash':
+    if(e.kq===0){sp=ps*0.9;if(d<e.r*28&&e.kT<=1.5){e.kq=1;e.kT=0.55;e.cdx=dx/d;e.cdy=dy/d;}} // close enough: it stops and takes aim
+    else if(e.kq===1){sp=0;e.cs=1;want=Math.atan2(e.cdy,e.cdx);turn=10;if(e.kT<=0){e.kq=2;e.kT=0.5;e.ha=want;}}
+    else if(e.kq===2){sp=ps*2.3;e.cs=2;want=e.ha;turn=0;if(e.kT<=0){e.kq=3;e.kT=1.4;}}
+    else{sp=ps*0.4;if(e.kT<=0){e.kq=0;e.kT=rand(2,3.5);}}
+    break;
+  case 'boss': // rings the player wide until its coil closes (or 7 s), rests, takes aim, dashes through, rests; and again
+    if(e.kq===0){let got=false;if(d>e.r*10){sp=ps*1.2;e.wp=undefined;}else got=ring(e.r*5.5,1.45);if(got||e.kT<=0){e.kq=3;e.kT=1.4;e.wp=undefined;text(e.x,e.y-e.r-10*S,TX('kin_tired'),16,'#ffd9a8',1.2);}}
+    else if(e.kq===3){sp=ps*0.3;if(e.kT<=0){if(e.kn){e.kn=0;e.kq=0;e.kT=9;e.sd=-e.sd;}else{e.kn=1;e.kq=1;e.kT=0.6;e.cdx=dx/d;e.cdy=dy/d;}}}
+    else if(e.kq===1){sp=0;e.cs=1;want=Math.atan2(e.cdy,e.cdx);turn=10;if(e.kT<=0){e.kq=2;e.kT=0.75;e.ha=want;sfx('dash');}}
+    else{sp=ps*2.2;e.cs=2;want=e.ha;turn=0;if(e.kT<=0){e.kq=3;e.kT=1.5;text(e.x,e.y-e.r-10*S,TX('kin_tired'),16,'#ffd9a8',1.2);}}
+    break;}
+  e.ha+=clamp(angDiff(e.ha,want),-turn*dt,turn*dt);e.ang=e.ha;MV[0]=Math.cos(e.ha)*sp;MV[1]=Math.sin(e.ha)*sp;}
+// has this one's body gone all the way round the player's head? (Its trail, followed back from the head, turns through a full circle as seen from the
+// player.) Then that stretch of trail is an enemy coil. A body that winds round does not always cross itself, so crossings are not what is looked for.
+function kinLoop(e,L){const tr=e.tr,n=tr.length,S=P.S;if(e.pr||n<8||ecaps.length>=3||ecaps.some(c=>c.e===e))return false;
+  let a0=Math.atan2(e.y-P.y,e.x-P.x),sum=0;
+  for(let i=n-1;i>=0;i--){const a=Math.atan2(tr[i].y-P.y,tr[i].x-P.x);sum+=angDiff(a0,a);a0=a;
+    if(Math.abs(sum)>=TAU*1.03){const poly=[{x:e.x,y:e.y}];for(let k=n-1;k>=i;k--)poly.push(tr[k]);
+      if(Math.abs(polyArea(poly))<e.r*e.r*14||!inPoly(P.x,P.y,poly))return false;
+      const c=centroid(poly),tq=e.boss?1.4:1.0;ecaps.push({poly,c,t:tq,max:tq,dmg:Math.round(e.t.dmg*1.5),by:e.t,e});
+      text(P.x,P.y-46*S,TX('ecoil'),20,'#ff9a9a',1);tip('ecoil');sfx('latch');return true;}}
+  return false;}
+function ecapTick(dt){for(const c of ecaps){c.t-=dt;
+    if(c.e.dead){c.t=-1;c.gone=1;continue;} // the one that made it is gone: its coil falls apart
+    if(c.t<=0){const S=P.S;rings.push({x:c.c.x,y:c.c.y,r:10*S,R:120*S,life:0.35,max:0.35,col:'#ff6a7a',w:5*S});
+      if(inPoly(P.x,P.y,c.poly)){if(hitHead(c.dmg,c.by))shake=Math.max(shake,12);}else text(P.x,P.y-46*S,TX('ecoil_out'),16,'#b6ffd2',0.8);}}
+  compact(ecaps,c=>c.t>0);}
+function drawKinTail(e){const sk=KIN_SK[e.t.kc],tb=skinTab(sk,-1),tr=e.tr,n=tr.length;if(n<2)return;
+  ctx.strokeStyle=`hsla(${sk.h},100%,60%,0.25)`;ctx.lineWidth=e.r*1.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=1;i<n;i++)ctx.lineTo(tr[i].x,tr[i].y);ctx.lineTo(e.x,e.y);ctx.stroke();
+  for(let i=0;i<n;i++){const q=tr[i],f=i/n;ctx.fillStyle=beadCol(sk,tb,((n-1-i)/2)|0,T,sk.h);ctx.beginPath();ctx.arc(q.x,q.y,e.r*(0.3+f*0.5),0,TAU);ctx.fill();}}
+function drawEcaps(S){for(const c of ecaps){const k=1-0.35*Math.pow(1-c.t/c.max,2),pulse=0.5+0.5*Math.sin(T*22); // an enemy coil: red where the player's own is green; it tightens as its time runs out
+    ctx.beginPath();c.poly.forEach((q,i)=>{const x=c.c.x+(q.x-c.c.x)*k,y=c.c.y+(q.y-c.c.y)*k;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();
+    ctx.fillStyle=`rgba(255,60,80,${(0.1+0.25*(1-c.t/c.max)+0.05*pulse).toFixed(3)})`;ctx.fill();ctx.setLineDash([10*S,8*S]);ctx.lineDashOffset=T*60*S;ctx.strokeStyle=`rgba(255,150,160,${0.6+0.4*pulse})`;ctx.lineWidth=3*S;ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(255,200,205,0.9)';ctx.lineWidth=3*S;ctx.beginPath();ctx.arc(c.c.x,c.c.y,14*S,-Math.PI/2,-Math.PI/2+TAU*(c.t/c.max));ctx.stroke();}}
 function shotTick(dt,S){const tr=P.trail,n=tr.length,hr=15*S;
   for(const b of shots){b.life-=dt;b.x+=b.vx*dt;b.y+=b.vy*dt;const dx=P.x-b.x,dy=P.y-b.y;
     if(dx*dx+dy*dy<hr*hr){if(hitHead(b.dmg,b.by)||P.inv>0)b.life=0;continue;}
@@ -1855,7 +1947,8 @@ function titanAt(t,a){const Sx=Math.max(P.S,zoomT()),D=Math.hypot(W,H)/2*Sx+t.L*
   const e={x,y,vx:0,vy:0,t,sc:1,pr:false,hp:Math.ceil(t.hp*hpScale()),r:t.r,ang:ha,spd:t.spd,dm:1,flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh:t.sh,shMax:t.sh,xpB:1,slowT:0,spk:0,titan:true,ha,bite:0};
   enemies.push(e);return e;}
 function spawnTitan(i){if(P.boss||P.clearAt)return false;let n=0;for(const e of enemies)if(e.titan&&!e.dead)n++;if(n>=2)return false;
-  const st=i===undefined?P.stage:i,a=P.a+(Math.random()<0.5?1:-1)*rand(0.9,2.3),e=titanAt(TITAN_T[st],a);
+  const st=i===undefined?P.stage:i;if(!TITAN_T[st])return false;
+  const a=P.a+(Math.random()<0.5?1:-1)*rand(0.9,2.3),e=titanAt(TITAN_T[st],a);
   if(i===undefined&&st>0&&n===0)titanAt(TITAN_T[st-1],a+Math.PI*rand(0.6,1));
   evt(TX('ev_titan',e.t.name),TX('ev_titan_s'),3.4);shake=Math.max(shake,6);sfx('boss');return e;}
 // distance from (x, y) to the line down the middle of a titan's body; CP is the vector from the nearest point on that line
@@ -1918,7 +2011,7 @@ const motes=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),z:rand(
 // Electric line: jagged sparking feelers, glowing eyes with Storm Lord. An evolution in either line adds the scowl.
 function drawHead(x,y,a,s,alpha,hue,full,sk){
   if(hue===undefined)hue=142;sk=sk||skin();
-  const f=full,dashing=f&&P.dashT>0,elc=f&&(P.volt||P.zap||P.storm),fierce=f&&(P.spine||P.oni||P.zap||P.storm||P.inferno||P.absz);
+  const f=full,dashing=f&&P.dashT>0,elc=f&&(P.volt||P.zap||P.storm),fierce=(f&&(P.spine||P.oni||P.zap||P.storm||P.inferno||P.absz))||!!sk.angry;
   ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.scale(s,s);ctx.globalAlpha=alpha;
   if(f&&P.memb){const m=Math.min(P.memb,5);ctx.strokeStyle=`hsla(${hue},100%,78%,0.35)`;ctx.lineWidth=1.2+m*0.8;ctx.beginPath();ctx.ellipse(0,0,15+2.5*m,11+2.5*m,0,0,TAU);ctx.stroke();}
   if(f&&P.spike){const n=8+P.spike*3+(P.spine?4:0)+(P.asura?4:0),L=1.25+0.18*P.spike+(P.spine?0.4:0)+(P.oni?0.2:0)+(P.asura?0.75:0),w=P.spine?0.14:0.2;
@@ -1963,7 +2056,7 @@ function drawHead(x,y,a,s,alpha,hue,full,sk){
     const ey=sk.eye,big=ey==='big',one=ey==='one',ex=one?8:7,er=one?6.2:big?4.8:3.6,pr=(one?3:big?2.5:1.8)+(fierce?0.3:0),ks=one?[0]:[-1,1]; // eyes: the skin may have big ones, a single one, slit pupils or heavy lids
     if(f&&P.storm){ctx.fillStyle='rgba(60,200,255,0.5)';for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er+1.8,0,TAU);ctx.fill();}} // glowing eyes
     ctx.fillStyle=ey==='cat'?'#ffe98a':'#fff';for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er,0,TAU);ctx.fill();}
-    ctx.fillStyle=f&&P.oni?'#ff2d20':f&&P.storm?'#22c4ff':f&&P.inferno?'#ff7a1a':f&&P.absz?'#58c8ff':'#032';
+    ctx.fillStyle=f&&P.oni?'#ff2d20':f&&P.storm?'#22c4ff':f&&P.inferno?'#ff7a1a':f&&P.absz?'#58c8ff':sk.angry?'#c0001a':'#032';
     for(const k of ks){ctx.beginPath();if(ey==='cat')ctx.ellipse(ex+1.2,k*5,1.1,er*0.8,0,0,TAU);else ctx.arc(ex+(one?2:big?1.7:1.4),k*5,pr,0,TAU);ctx.fill();}
     if(ey==='sleepy'&&!fierce){ctx.fillStyle=hb;for(const k of ks){ctx.beginPath();ctx.arc(ex,k*5,er+0.5,Math.PI*0.5,Math.PI*1.5);ctx.fill();}} // heavy lids over the back half of each eye
     if(fierce&&!one){ctx.strokeStyle='#03141c';ctx.lineWidth=1.9;ctx.lineCap='round';for(const k of[-1,1]){ctx.beginPath();ctx.moveTo(3.2,k*8.8);ctx.lineTo(10.9,k*3.3);ctx.stroke();}} // the scowl
@@ -2090,6 +2183,8 @@ function render(){
     if(e.ax!==undefined){const mx2=(e.ax+e.x)/2+(e.y-e.ay)*0.18,my2=(e.ay+e.y)/2-(e.x-e.ax)*0.18;ctx.strokeStyle='rgba(215,200,255,0.8)';ctx.lineWidth=2.4*S;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.ax,e.ay);ctx.quadraticCurveTo(mx2,my2,e.x,e.y);ctx.stroke();ctx.fillStyle='rgba(215,200,255,0.9)';circ(ctx,e.ax,e.ay,3.5*S);ctx.fill(); // a rooted creature's stalk and foot
       if(e.q===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.ax,e.ay);ctx.lineTo(e.ax+e.qx*165*S,e.ay+e.qy*165*S);ctx.stroke();ctx.setLineDash([]);}} // about to lunge: where it will go
     if(e.pl>0){const R=(e.boss?330:170)*S;ctx.strokeStyle='rgba(170,215,255,0.28)';ctx.lineWidth=2*S;ctx.setLineDash([12*S,14*S]);for(let k=0;k<3;k++){ctx.lineDashOffset=T*80*S;circ(ctx,e.x,e.y,R*(1-((T*0.8+k/3)%1)*0.85));ctx.stroke();}ctx.setLineDash([]);ctx.lineDashOffset=0;}} // a whirlpool: rings closing in
+  if(ecaps.length)drawEcaps(S);
+  for(const e of enemies){if(!e.tr||e.x<vx0-e.t.tl||e.x>vx1+e.t.tl||e.y<vy0-e.t.tl||e.y>vy1+e.t.tl)continue;drawKinTail(e);} // the tails of the player's own kind, under everything else
   ctx.lineCap='round';for(let pr=0;pr<2;pr++){let any=null;ctx.beginPath(); // the links of the chains, under the beads: one path for the real ones, one for prey
     for(const e of enemies){const L=e.lead;if(!L||L.dead||e.ox!==undefined||!e.pr!==!pr||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;any=e;ctx.moveTo(e.x,e.y);ctx.lineTo(L.x,L.y);}
     if(any){ctx.strokeStyle=any.t.col;ctx.globalAlpha=pr?0.45:0.8;ctx.lineWidth=any.r*0.7;ctx.stroke();}}
@@ -2097,7 +2192,8 @@ function render(){
   for(const e of enemies){if(e.titan||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
     const s=e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),w=s.width*e.sc*(1+wb),h=s.height*e.sc*(1-wb);
     ctx.globalAlpha=e.pr?0.72:1;
-    if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
+    if(t.kin&&e.tr){drawHead(e.x,e.y,e.ha,e.r/11,1,KIN_SK[t.kc].h,false,KIN_SK[t.kc]);if(e.flash>0){ctx.fillStyle='rgba(255,255,255,0.65)';circ(ctx,e.x,e.y,e.r);ctx.fill();}} // one of the player's own kind: a real head
+    else if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
     if(e.cs===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*300*S,e.y+e.cdy*300*S);ctx.stroke();ctx.setLineDash([]);} // aiming: where the dash will go
@@ -2645,7 +2741,7 @@ window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:o
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
