@@ -408,7 +408,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.3';
+const LANGS=['ja','en'],VER='v29.4';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -2448,12 +2448,44 @@ function drawToasts(top){const k=uiK(),sw=W/k,w=Math.min(330,sw-24);let y=top||(
 // ----- title: language switch, skins bought with DNA -----
 // One stack (title, tagline, two how-to lines, skin panel, start, records) placed a little above centre.
 // Short screens (tight) drop the how-to lines; the rest is taught by tips during play.
+// The title logo (v29.4; the owner chose it from the drafts): puffy two-tone letters "Coilio", and the player, drawn exactly as in play (drawHead, the default
+// green skin; the owner: do not change its face), coiled once round the C (in front of the C below its middle, behind it above) and peeking at the o.
+// Drawn with code every frame, no image file. The letters use the heaviest Latin system font, measured each time, so the shape holds on any device.
+// cy: the middle of the letters, fs: their size. The logo reaches about 0.9 fs above cy (the head's feelers) and 0.6 fs below it.
+function titleLogo(cx,cy,fs){const g=ctx,u=fs/118,k=1.45*u,base=cy+fs*0.36,str=[...'Coilio'],sk=SKINS.find(s=>s.id==='green');
+  g.save();g.font=`900 ${fs}px ${FONTS[1]}`;g.textAlign='left';g.textBaseline='alphabetic';g.lineJoin='round';g.lineCap='round';
+  const ws=str.map(c=>g.measureText(c).width),gap=12*u,tot=ws.reduce((a,b)=>a+b,0)+gap*(str.length-1),xs=[];let x=cx-(tot+0.38*fs)/2+0.3*fs;for(const w of ws){xs.push(x);x+=w+gap;}
+  // the path: once and a bit round the C, then up and over to look at the o
+  const c0x=xs[0]+ws[0]/2,c0y=base-fs*0.37,rx=ws[0]/2+26*u,ry=fs*0.47,ae=-Math.PI*0.28,a0=ae-2*Math.PI*1.2,pts=[];
+  for(let i=0;i<=160;i++){const a=a0+(ae-a0)*i/160;pts.push([c0x+Math.cos(a)*rx,c0y+Math.sin(a)*ry]);}
+  const ex=pts[160][0],ey=pts[160][1],qx=ex+30*u,qy=ey+24*u,hx=c0x+rx+44*u,hy=c0y-ry-6*u;
+  for(let i=1;i<=30;i++){const t=i/30,m=1-t;pts.push([m*m*ex+2*m*t*qx+t*t*hx,m*m*ey+2*m*t*qy+t*t*hy]);}
+  const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const L=cum[cum.length-1];
+  const at=d=>{d=clamp(d,0,L);let lo=0,hi=cum.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(cum[m]<d)lo=m;else hi=m;}const f=(d-cum[lo])/((cum[hi]-cum[lo])||1);return [pts[lo][0]+(pts[hi][0]-pts[lo][0])*f,pts[lo][1]+(pts[hi][1]-pts[lo][1])*f];};
+  const line='#06301b',ol=2.6*k,sp=9.75*k,n=Math.floor(L/sp),ha=Math.atan2(hy-qy,hx-qx),R=j=>(2.5+5*(1-j/n))*k;
+  const band=(w,c)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.stroke();};
+  const beads=(f,dr)=>{for(let j=n;j>=0;j--){const q=at(L-j*sp-4*k);g.fillStyle=f(j);g.beginPath();g.arc(q[0],q[1],R(j)+dr,0,TAU);g.fill();}};
+  const snake=()=>{g.lineJoin='round';g.lineCap='round';band(12*k+2*ol,line);beads(()=>line,ol);band(12*k,'hsla(142,90%,70%,0.55)');band(3*k,'hsla(142,100%,92%,0.95)');
+    beads(j=>j&1?'hsl(142,88%,68%)':'hsl(142,72%,56%)',0);
+    g.save();g.translate(hx,hy);g.rotate(ha);g.fillStyle=line;g.beginPath();g.ellipse(0,0,15*k+ol,11*k+ol,0,0,TAU);g.fill();g.restore(); // a sticker edge round the head; the face is the game's
+    drawHead(hx,hy,ha,k,1,142,false,sk);};
+  snake();
+  const sw=10*u,ow=sw+16*u,grad=g.createLinearGradient(0,base-fs*0.8,0,base+fs*0.085);
+  grad.addColorStop(0,'#e6fff0');grad.addColorStop(0.52,'#b6ffd2');grad.addColorStop(0.52,'#4fdc8e');grad.addColorStop(1,'#2fbf72');
+  const each=(dy,c,lw)=>{g.fillStyle=c;g.strokeStyle=c;g.lineWidth=lw;g.lineJoin='round';str.forEach((ch,i)=>{g.strokeText(ch,xs[i],base+dy);g.fillText(ch,xs[i],base+dy);});};
+  each(9*u,'#010a05',ow);each(0,line,ow);each(0,grad,sw); // a drop shadow, the dark outline, then the two-tone letter fattened by a round stroke of itself
+  g.fillStyle='rgba(255,255,255,0.8)';
+  str.forEach((ch,i)=>{const w=ws[i],top=base-fs*(/[a-z]/.test(ch)&&!'lidtbfhk'.includes(ch)?0.55:0.73)-sw*0.5,gx=xs[i]+Math.max(w*0.3,9*u),gy=top+fs*0.07; // the gloss
+    g.save();g.translate(gx,gy);g.rotate(-0.38);g.beginPath();g.ellipse(0,0,Math.max(5*u,Math.min(w*0.16,fs*0.11)),fs*0.045,0,0,TAU);g.fill();g.restore();
+    g.beginPath();g.arc(gx+Math.max(w*0.24,9*u),gy-fs*0.01,fs*0.022,0,TAU);g.fill();});
+  g.save();g.beginPath();g.rect(cx-4000,c0y+6*u,8000,4000);g.rect(c0x+rx-10*u,c0y-3*fs,1.7*fs,3*fs-ry+30*u);g.clip();snake();g.restore(); // the coil again, in front, where it wraps the C
+  g.restore();}
 function titleLayout(W,H){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,bw=Math.min(300,W-60),fs=Math.min(17,(W-30)/19),step=fs*1.7,tight=H<560,lw=152;
   // keep the title clear of the language switch: on a short, wide screen shrink the title to sit beside it; otherwise start lower
   const side=W-2*(lw+28),beside=tight&&side>=260,tw=beside?Math.min(W-30,side):W-30,clash=!beside&&Math.min(W-30,520)>side;
   // menu buttons: a column left of the skin panel when the screen is short and wide, otherwise a row under the records
   const col=tight&&px-26>=92,mb=[],mw=col?Math.min(132,px-26):(pw-8)/2;
-  const gap=tight?64:Math.round(92+step*1.5),top=Math.max(clash?54:10,(H-gap-(col?290:436))*0.42),ty=Math.round(top+30),py=ty+gap;
+  const gap=tight?64:Math.round(104+step*1.5),top=Math.max(clash?54:24,(H-gap-(col?290:436))*0.42),ty=Math.round(top+30),py=ty+gap;
   for(let i=0;i<4;i++)mb.push(col?{x:px-12-mw,y:py+i*40,w:mw,h:34}:{x:px+(i%2)*(mw+8),y:py+ph+188+(i>>1)*44,w:mw,h:38});
   return{ty,tw,fs,step,tight,panel:{x:px,y:py,w:pw,h:ph},left:{x:px,y:py,w:58,h:ph},right:{x:px+pw-58,y:py,w:58,h:ph},buy:{x:W/2-95,y:py+ph-42,w:190,h:32},
     stg:col?{x:px+pw+12,y:py,w:Math.max(96,Math.min(132,W-px-pw-22)),h:ph}:{x:px,y:py+ph+12,w:pw,h:40}, // the stage chooser: a row under the skins, or a box to their right on a short, wide screen
@@ -2468,9 +2500,9 @@ function titleScreen(W,H){
   ctx.fillStyle='rgba(3,14,34,0.88)';ctx.strokeStyle='rgba(100,200,255,0.3)';ctx.lineWidth=1;rrect(g.x,g.y,g.w,g.h,g.h/2);ctx.fill();ctx.stroke();
   ['日本語','English'].forEach((s,i)=>{const x=g.x+i*g.w/2;if(i===LI){ctx.fillStyle='rgba(36,140,80,0.92)';rrect(x+3,g.y+3,g.w/2-6,g.h-6,(g.h-6)/2);ctx.fill();}
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
-  fitFont(TX('title'),56,900,L.tw);ctx.fillStyle='#7dffb0';ctx.fillText(TX('title'),W/2,ty);
-  fitFont(TX('tagline',VER),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',VER),W/2,ty+40);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,ty+82+i*L.step);});}
+  const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
+  fitFont(TX('tagline',VER),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',VER),W/2,tg);
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
