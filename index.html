@@ -35,10 +35,6 @@ function resize(){
 }
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));resize();
 const Q=new URLSearchParams(location.search),DEMO=Q.has('demo');
-// v31 (trial): a new look for the squeeze, on only with ?fx (all three) or ?fx=1 / 2 / 3 / 13 ... (each on its own), to set it beside the old one before it becomes the default.
-// 1: what was caught stays on screen through the stop, white and pressed in, and bursts when it ends. 2: a flash, then each one bursts in its own colour and leaves darker bits that drift and fade.
-// 3: one big number at a squeeze (the rest on one line under it), the coil's count goes when it squeezes, and hints wait while a banner is up.
-const FXQ=Q.has('fx')?(/^[123]+$/.test(Q.get('fx'))?Q.get('fx'):'123'):'',FX1=FXQ.includes('1'),FX2=FXQ.includes('2'),FX3=FXQ.includes('3');
 // Site lock (v29.5): the game runs only where it is published (and from a file or this machine, while it is being made). A copy put up on another site,
 // or a page of another site that frames it, shows where the real one is instead of the game. It is a speed bump, not a vault: it stops a copy being put up
 // as it is. Before publishing anywhere new (another domain, a game portal), add its host here.
@@ -434,7 +430,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v31',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v31.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -523,7 +519,7 @@ const STR={
  more_n:['ほか{0}','+{0} more'],
  dash_xp:['ダッシュ締め ×2 XP','Dash squeeze ×2 XP'],
  bonus:['{0}重 BONUS','{0}x BONUS'],
- sq_both:['{0}重 BONUS・ダッシュ ×2 XP','{0}x BONUS · Dash ×2 XP'], // v31 ?fx=3: both on the one line under the number
+ sq_both:['{0}重 BONUS・ダッシュ ×2 XP','{0}x BONUS · Dash ×2 XP'], // v31: both on the one line under the number
  shell_held:['殻が残った','Shell held'],
  miss:['空振り…','Missed…'],
  // first-play tips (see tip())
@@ -1074,13 +1070,12 @@ function inPoly(x,y,p){let c=false;for(let i=0,j=p.length-1;i<p.length;j=i++){co
 function bbox(p){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of p){if(q.x<x0)x0=q.x;if(q.x>x1)x1=q.x;if(q.y<y0)y0=q.y;if(q.y>y1)y1=q.y;}return{x0,y0,x1,y1};}
 function burst(x,y,n,col,sp,life,size){const S=P.S,cap=PCAP[QL];for(let i=0;i<n&&parts.length<cap;i++){const a=Math.random()*TAU,v=rand(0.2,1)*sp*S;
   parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(0.5,1)*life,max:life,col,size:size*S*rand(0.6,1.2)});}}
-// v31: what a squeeze caught bursts as the stop ends. ?fx=2: in its own colour, with darker bits left to drift and fade; otherwise as before
+// v31: what a squeeze caught bursts as the stop ends, in its own colour, with darker bits left to drift and fade (the look the owner chose in v31.1)
 const GOO_CAP=[60,120,200,280],_cc=document.createElement('canvas').getContext('2d');
 function darkCol(t){if(t.dcol)return t.dcol;_cc.fillStyle='#7dffb0';_cc.fillStyle=t.col||'#7dffb0';const s=_cc.fillStyle;let r=125,g=255,b=176;
   if(s[0]==='#'){r=parseInt(s.slice(1,3),16);g=parseInt(s.slice(3,5),16);b=parseInt(s.slice(5,7),16);}else{const m=s.match(/[\d.]+/g);if(m){r=+m[0];g=+m[1];b=+m[2];}}
   const k=0.55;return t.dcol=`rgb(${r*k+4*(1-k)|0},${g*k+16*(1-k)|0},${b*k+42*(1-k)|0})`;}
 function huskPop(h){h.done=true;const e=h.e,t=e.t,S=P.S;
-  if(!FX2){burst(h.x,h.y,6,t.col,140,0.45,3);burst(h.x,h.y,4,h.dsh?'#d8ffe6':'#7dffb0',260,0.6,3);return;}
   const rr=Math.max(3,e.r*(e.sc||1)/S*0.32);burst(h.x,h.y,7,t.col,h.dsh?300:230,0.5,rr);burst(h.x,h.y,2,'#ffffff',200,0.22,3);
   if(goo.length<GOO_CAP[QL]){const col=darkCol(t),r0=e.r*(e.sc||1);for(let i=0;i<3;i++){const a=Math.random()*TAU,v=rand(25,80)*S,l=rand(0.8,1.3);
     goo.push({x:h.x+Math.cos(a)*r0*0.4,y:h.y+Math.sin(a)*r0*0.4,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:rand(0.22,0.4)*r0+2*S,life:l,max:l,col});}}}
@@ -1196,7 +1191,7 @@ function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip
 // They use the event line but never cut off a wave event, and a newer tip may replace an older one after 1.2 s.
 let tipQ=[],tipSeen={};
 function tip(id){if(tipSeen[id])return;tipSeen[id]=1;if(((META.tips||{})[id]||0)<2)tipQ.push(id);}
-function tipTick(){if(!tipQ.length||state!=='play'||(FX3&&banner)||(evtMsg&&(!evtMsg.tip||evtMsg.max-evtMsg.t<1.2)))return; // (v31 ?fx=3: a hint waits while a banner is up; they sat in the same place)
+function tipTick(){if(!tipQ.length||state!=='play'||banner||(evtMsg&&(!evtMsg.tip||evtMsg.max-evtMsg.t<1.2)))return; // (v31: a hint waits while a banner is up; they sat in the same place)
   const id=tipQ.shift();if(!META.tips||typeof META.tips!=='object')META.tips={};META.tips[id]=(META.tips[id]||0)+1;saveMeta();
   evt(TX('tip_'+id),TX('tip_'+id+'_s'+(id==='dash'?(TOUCH?'t':'m'):'')),3.6,true);}
 function waveEvent(k){
@@ -1512,7 +1507,7 @@ function cinch(c,dsh){
   const live=T<P.chainAt+1.3,at=live?Math.max(T,P.chainAt+0.14):T;
   c.link=live?P.chainN+1:0;P.chainN=c.link;P.chainAt=at;c.dash=dsh;if(!live)P.chainId++;c.chain=P.chainId;
   if(at>T)c.hold=at-T;else c.cinchT=0;
-  if(FX3&&c.ctxt)c.ctxt.life=Math.min(c.ctxt.life,0.12); // v31: "2x coil!" goes as it squeezes
+  if(c.ctxt)c.ctxt.life=Math.min(c.ctxt.life,0.12); // v31: "2x coil!" goes as it squeezes
 }
 // a figure eight (two loops side by side, drawn in opposite directions, meeting at one crossing): the two squeeze at once, one after the other, and a small
 // blast goes off where they meet. v28.2: it gives no dash strength any more, the blast only hurts (it does not kill what it covers outright), and the eight
@@ -1556,14 +1551,14 @@ function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
   const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
   const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
-  if(FX1)HUSK={x:c.x,y:c.y,R:cap.rad*1.3+60*S,dsh}; // v31: what this squeeze kills is held for the stop (kill() reads this)
+  HUSK={x:c.x,y:c.y,R:cap.rad*1.3+60*S,dsh}; // v31: what this squeeze kills is held for the stop (kill() reads this)
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(!cap.inf&&!(e.freeT>T)&&e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){ // (the blast of a figure eight holds nothing: it only hurts; nor does a coil hold what has just slipped it)
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
-      kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;if(!FX1)burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
+      kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;}}
   const R=((55+26*ch)*P.blast*(dsh?DASH_R:1)*S+cap.rad*0.6)*(1+LINK_R*lk),dmg=(1+ch)*(dsh?DASH_D:1)*P.blast*(1+P.stage)*(1+LINK_D*lk);
   for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
@@ -1577,25 +1572,22 @@ function explode(cap){
   if(P.absz){const D=Math.hypot(W,H)*0.6*S;for(const e of enemies)if(!e.dead&&Math.abs(e.x-P.x)<D&&Math.abs(e.y-P.y)<D)freeze(e,2);rings.push({x:c.x,y:c.y,r:R*0.5,R:D,life:0.6,max:0.6,col:'#d6f4ff',w:5*S});} // Absolute Zero
   rings.push({x:c.x,y:c.y,r:cap.rad*0.2,R,life:0.5,max:0.5,col:dsh?'#eafff2':'#7dffb0',w:(dsh?10:6)*S});
   if(dsh)rings.push({x:c.x,y:c.y,r:0,R:R*1.1,life:0.7,max:0.7,col:'#62ff9c',w:4*S});
-  burst(c.x,c.y,FX2?16+n*0.6:30+n*2,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,FX2?10+ch*5:20+ch*10,'#4fb8ff',300,0.9,3);
-  if(FX2&&n>0)cores.push({x:c.x,y:c.y,r0:R*0.15,r1:R*(dsh?0.5:0.42),life:0.05,max:0.05}); // v31: the flash, a white core with a dark rim, for three frames
+  burst(c.x,c.y,16+n*0.6,dsh?'#ffffff':'#9dffc4',dsh?520:340,0.8,4);burst(c.x,c.y,10+ch*5,'#4fb8ff',300,0.9,3);
+  if(n>0)cores.push({x:c.x,y:c.y,r0:R*0.15,r1:R*(dsh?0.5:0.42),life:0.05,max:0.05}); // v31: the flash, a white core with a dark rim, for three frames
   HUSK=null;
   for(const e of enemies)if(e.cap===cap)e.cap=null;
   if(cap.inf){text(c.x,c.y-74*S,TX('inf_sq'),34,'#ffd86a',1.5);rings.push({x:c.x,y:c.y,r:0,R:R*1.05,life:0.7,max:0.7,col:'#ffd86a',w:5*S});sfx('chain',6);mission('inf');shake=Math.max(shake,10);}
-  else if(lk>0&&n>0&&!cap.inf2){text(c.x,FX3?c.y-Math.max(40*S,cap.rad*0.62)-64*S:c.y-74*S,lk===1?TX('ch2'):lk===2?TX('ch3'):TX('chn',cap.link+1),20+4*lk,'#ffd86a',1.3);sfx('chain',lk);tip('chain');if(cap.link>=2)mission('multi3');}
+  else if(lk>0&&n>0&&!cap.inf2){text(c.x,c.y-Math.max(40*S,cap.rad*0.62)-64*S,lk===1?TX('ch2'):lk===2?TX('ch3'):TX('chn',cap.link+1),20+4*lk,'#ffd86a',1.3);sfx('chain',lk);tip('chain');if(cap.link>=2)mission('multi3');}
   // a chain is one squeeze in several beats: the number shown, the best combo and the missions count the total so far
   if(!P.chainSum||cap.chain===undefined||P.chainSum.id!==cap.chain)P.chainSum={id:cap.chain,n:0};P.chainSum.n+=n;const tot=P.chainSum.n;
-  const ny=FX3?c.y-Math.max(40*S,cap.rad*0.62):c.y; // v31 ?fx=3: the number sits above the coil, so what it caught can be seen
+  const ny=c.y-Math.max(40*S,cap.rad*0.62); // v31: the number sits above the coil, so what it caught can be seen
   if(n>0){const big=Math.min(1,tot/40);
-    if(FX3){const cs=P.chainSum,sub=ch>1&&dsh?TX('sq_both',ch):ch>1?TX('bonus',ch):dsh?TX('dash_xp'):''; // v31: one big number, the rest on one line under it; a later link of the chain takes the place of the one before
+    {const cs=P.chainSum,sub=ch>1&&dsh?TX('sq_both',ch):ch>1?TX('bonus',ch):dsh?TX('dash_xp'):''; // v31: one big number, the rest on one line under it; a later link of the chain takes the place of the one before
       if(cs.txt)cs.txt.life=0;if(cs.sub)cs.sub.life=0;cs.txt=text(c.x,ny,'x'+tot+'!',30+big*46+(dsh?10:0),dsh?'#ffffff':'#c8ffd9',1.2);cs.sub=sub?text(c.x,ny+(34+big*20)*S,sub,17,dsh?'#7dffb0':'#7fc9ff',1.1):null;}
-    else{text(c.x,c.y,'x'+tot+'!',30+big*46+(dsh?10:0),dsh?'#ffffff':'#c8ffd9',1.2);
-    if(dsh)text(c.x,c.y+44*S,TX('dash_xp'),18,'#7dffb0',1.1);
-    if(ch>1)text(c.x,c.y-44*S,TX('bonus',ch),18,'#7fc9ff',1.1);}
     bestCombo=Math.max(bestCombo,tot);tip('charge');sfx('boom',n);vib(dsh?35:18);
     if(tot>=20)mission('c20');if(tot>=50)mission('c50');if(dsh){META.stats.dashKills+=n;if(META.stats.dashKills>=300)mission('dash');}
     hitstop=Math.max(hitstop,0.05+Math.min(0.13,n*0.004)+(dsh?0.03:0));
-    shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));if(!FX2)flashT=Math.min(0.25,0.06+n*0.004); // (v31 ?fx=2: the flash is the core at the squeeze, not the whole screen)
+    shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0))); // (v31: no whole-screen flash at a squeeze: the flash is the core at the squeeze, see cores)
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
   else if(!lk&&!cap.inf){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
@@ -2262,7 +2254,7 @@ function render(){
   for(let y=Math.floor(vy0/G)*G;y<vy1;y+=G){ctx.moveTo(vx0,y);ctx.lineTo(vx1,y);}ctx.stroke();
   drawBubbles(vx0,vx1,vy0,vy1);
   drawGas(vx0,vx1,vy0,vy1);drawChests();drawItems();
-  if(goo.length){for(const g of goo){const k=g.life/g.max;ctx.globalAlpha=Math.min(1,k*1.8)*0.9;ctx.fillStyle=g.col;circ(ctx,g.x,g.y,g.r*(0.45+0.55*k));ctx.fill();}ctx.globalAlpha=1;} // v31 ?fx=2: what is left of what burst
+  if(goo.length){for(const g of goo){const k=g.life/g.max;ctx.globalAlpha=Math.min(1,k*1.8)*0.9;ctx.fillStyle=g.col;circ(ctx,g.x,g.y,g.r*(0.45+0.55*k));ctx.fill();}ctx.globalAlpha=1;} // v31: what is left of what burst
   // captures
   for(const c of captures){
     const k=c.cinchT<0?1:1-0.85*Math.pow(c.cinchT/0.2,2);
@@ -2336,7 +2328,7 @@ function render(){
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
-  // v31 ?fx=1: what the squeeze caught, held through the stop: white, pulled in toward the middle, trembling
+  // v31: what the squeeze caught, held through the stop: white, pulled in toward the middle, trembling
   for(const h of husks){const e=h.e,t=e.t,dx=h.cx-h.x,dy=h.cy-h.y,d=Math.hypot(dx,dy)+1,m=Math.min(0.16*d,20*S),q=hitstop>0?1.6*S:0,
     x=h.x+dx/d*m+(Math.random()-0.5)*q,y=h.y+dy/d*m+(Math.random()-0.5)*q,sp=t.spr,sc=(e.sc||1)*0.86,w=sp.width*sc,hh=sp.height*sc;
     if(t.kin){ctx.fillStyle='#ffffff';circ(ctx,x,y,e.r*0.9);ctx.fill();continue;}
@@ -2390,7 +2382,7 @@ function render(){
   ctx.globalCompositeOperation='lighter';
   for(const p of parts){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.col;const s=p.size*(0.4+0.6*p.life/p.max);ctx.fillRect(p.x-s/2,p.y-s/2,s,s);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-  for(const q of cores){const f=1-q.life/q.max,r=q.r0+(q.r1-q.r0)*Math.sqrt(f); // v31 ?fx=2: the flash: a white core with a dark rim (it shows on dark and on light)
+  for(const q of cores){const f=1-q.life/q.max,r=q.r0+(q.r1-q.r0)*Math.sqrt(f); // v31: the flash: a white core with a dark rim (it shows on dark and on light)
     ctx.strokeStyle='rgba(0,24,14,0.8)';ctx.lineWidth=Math.max(4*S,r*0.16);circ(ctx,q.x,q.y,r);ctx.stroke();ctx.fillStyle=f<0.5?'#ffffff':'rgba(225,255,236,0.85)';circ(ctx,q.x,q.y,r*0.94);ctx.fill();}
   // ---- screen space ----
   ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;
@@ -2938,7 +2930,7 @@ function lockScreen(){ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;ctx.fillSty
     const bw=Math.min(280,W-60);hotBtn({x:W/2-bw/2,y:y+lf*0.62+108,w:bw,h:54},TX('lock_btn'),1,()=>{location.href=HOME_URL;},false,true);copyright(W,H);});}
 requestAnimationFrame(frame);
 //#DEV
-window.__g={get splash(){return SPL;},get fx(){return FXQ;},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
+window.__g={get splash(){return SPL;},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
