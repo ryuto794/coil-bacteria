@@ -1027,7 +1027,7 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0];let husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0];let husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
@@ -2131,7 +2131,7 @@ function updateFx(dt){
   if(banner){banner.t-=dt;if(banner.t<=0)banner=null;}
   for(let i=0;i<toasts.length&&i<2;i++)toasts[i].life-=dt;toasts=toasts.filter(t=>t.life>0); // two on screen at a time, the rest wait
   if(evtMsg){evtMsg.t-=dt;if(evtMsg.t<=0)evtMsg=null;}
-  shake=FX6?(shake<0.4?0:shake*Math.pow(0.012,dt)):Math.max(0,shake-dt*40);if(flashT>0)flashT-=dt; // (v32 ?fx=6: strong at first, then it settles)
+  shakePh+=dt;shake=FX6?(shake<0.4?0:shake*Math.pow(0.012,dt)):Math.max(0,shake-dt*40);if(flashT>0)flashT-=dt; // (v32 ?fx=6: strong at first, then it settles)
 }
 
 // ---------- render ----------
@@ -2253,7 +2253,7 @@ function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#04102a';ctx.fillRect(0,0,W,H);
   const fx=META.opts.fx;let shx,shy; // fx: shake and flash strength from the settings
-  if(FX6){if(shake>shakeLast+0.5&&!shakeDirSet)shakeA=Math.random()*TAU;shakeDirSet=false;shakeLast=shake;const t=performance.now()/1000,A=shake*fx; // v32 ?fx=6
+  if(FX6){if(shake>shakeLast+0.5&&!shakeDirSet)shakeA=Math.random()*TAU;shakeDirSet=false;shakeLast=shake;const t=shakePh,A=shake*fx; // v32 ?fx=6 (the swing runs on the effects' clock, so it keeps going through a stop)
     if(shake<7){shx=0;shy=Math.sin(t*TAU*24)*A*0.55;} // small: up and down only
     else{const o=Math.sin(t*TAU*15)*A*0.6,j=(Math.random()-0.5)*A*0.25;shx=Math.cos(shakeA)*o-Math.sin(shakeA)*j;shy=Math.sin(shakeA)*o+Math.cos(shakeA)*j;}} // big: back and forth along one line, a little off it
   else{shx=(Math.random()-0.5)*shake*fx;shy=(Math.random()-0.5)*shake*fx;}
