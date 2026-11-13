@@ -430,7 +430,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.6',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v29.7',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -898,6 +898,7 @@ const TAP_MS=200,TAP_MOVE=18;
 addEventListener('mouseup',()=>mdown=false);
 addEventListener('mousemove',e=>{mx=(e.clientX-OFF.x);my=(e.clientY-OFF.y);mouseUsed=true;});
 addEventListener('keydown',e=>{
+  if(splashSkip()){e.preventDefault();return;}
   const k=e.key.toLowerCase();keys.add(k);
   if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
   if(k==='escape'||(k==='p'&&(state==='play'||state==='pause'))){if(state==='play')pauseGame();else if(state==='pause')resumeGame();else if(state==='menu')menuBack();return;}
@@ -991,6 +992,7 @@ setInterval(()=>{
 let hot=[],upQ=[];
 function hitHot(x,y,touch){for(let i=hot.length-1;i>=0;i--){const h=hot[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){sfx('ui');if(touch&&h.up)upQ.push(h.f);else h.f();return true;}}return false;}
 function act(kind){
+  if(splashSkip())return; // the splash takes the first tap
   const k=uiK(),uw=W/k,uh=H/k,ux=mx/k,uy=my/k; // screen size and pointer in UI units, see ui()
   if(kind!=='dash'&&hitHot(ux,uy,kind==='tap'))return;
   if(state==='title'){if(kind!=='dash')titleAct(uw,uh,ux,uy);return;}
@@ -2518,6 +2520,22 @@ function titleLogo(cx,cy,fs){const g=ctx,u=fs/118,k=1.45*u,base=cy+fs*0.36,str=[
     g.beginPath();g.arc(gx+Math.max(w*0.24,9*u),gy-fs*0.01,fs*0.022,0,TAU);g.fill();});
   g.save();g.beginPath();g.rect(cx-4000,c0y+6*u,8000,4000);g.rect(c0x+rx-10*u,c0y-3*fs,1.7*fs,3*fs-ry+30*u);g.clip();snake();g.restore(); // the coil again, in front, where it wraps the C
   g.restore();}
+// The studio's splash (v29.7; the owner asked for the studio logo with no background). GAME GUYS, the owner's studio logo, traced from the owner's picture
+// into shapes (no image file: the game draws it), white on the game's own dark background as the page opens; then it melts into the title screen.
+// A tap or a key skips it and does nothing else. Automated browsers (the tests) do not get it unless ?splash. SPL: seconds since it began, -1 when over.
+// GG_LOGO: two layers, each filled with the even-odd rule: ink (every part of the logo) and fill (the inside of the letters), in a box 1000 x 829.
+const GG_LOGO={w:1000,h:829,ink:'M534 728L534 797L538 804L555 822L562 827L567 829L652 829L657 827L666 818L670 819L676 825L684 829L748 829L757 825L777 804L781 797L781 774L784 769L789 777L793 787L793 815L795 822L800 827L806 829L845 829L850 827L854 824L858 817L858 783L868 765L872 765L875 767L875 772L872 776L870 783L870 794L871 800L888 821L892 826L900 829L967 829L974 826L997 802L999 797L999 766L997 761L993 754L993 751L997 741L997 727L995 721L991 716L973 699L965 696L906 696L900 697L892 701L884 697L878 696L845 696L836 699L829 709L826 711L825 711L822 708L816 699L806 696L732 696L724 698L717 705L715 705L709 699L704 696L666 696L660 697L649 706L646 705L639 698L631 696L570 696L565 696L559 700L538 721ZM1 728L1 798L4 804L26 826L34 829L159 829L166 827L174 819L177 818L189 819L197 827L203 829L284 829L291 827L296 823L300 823L306 828L314 829L320 827L326 822L328 822L334 827L340 829L378 829L386 827L395 829L492 829L500 826L503 822L505 817L505 782L504 777L498 771L492 769L482 768L479 765L478 763L479 759L484 755L492 755L499 753L503 748L505 742L504 706L499 699L491 696L396 696L389 698L375 696L341 696L334 698L330 703L321 718L316 724L314 724L311 721L300 702L293 697L288 696L247 696L241 699L237 704L236 708L236 743L235 750L234 751L230 748L212 704L206 698L199 696L165 696L155 700L148 708L136 740L134 744L132 743L131 740L130 730L126 721L106 698L97 696L32 696L29 698L22 703L4 721ZM553 512L551 510L543 510L526 514L494 517L456 515L454 516L453 519L454 521L462 528L472 534L491 540L496 544L497 548L496 554L488 573L488 576L490 576L498 571L537 536L553 517ZM424 480L432 481L443 478L463 476L498 474L540 476L572 480L576 479L576 476L548 460L528 450L516 450L507 454L501 454L492 454L480 450L475 450L460 455L445 463L427 475ZM710 241L706 245L705 248L704 301L706 316L708 318L712 320L744 320L749 316L751 312L750 246L747 243L742 241ZM258 241L253 245L252 249L253 316L257 320L262 321L291 320L296 317L298 313L298 256L296 245L294 242L288 241ZM662 147L668 148L671 151L673 155L673 159L668 165L664 167L658 165L654 159L655 152L658 148ZM606 140L613 140L617 144L619 148L617 155L612 159L607 159L604 158L600 153L600 147L601 144ZM336 118L344 118L348 122L349 125L348 130L347 132L341 136L337 136L334 135L331 132L330 128L330 123ZM552 94L557 94L562 99L563 102L561 108L558 112L555 113L551 113L547 111L545 109L543 104L545 98ZM498 57L504 58L508 61L510 64L510 69L508 72L502 76L496 75L490 68L490 64L492 62ZM388 43L394 43L401 47L401 56L397 61L389 62L385 58L383 54L383 50L385 46ZM443 11L451 12L456 18L456 23L451 29L447 30L441 29L437 24L437 17ZM378 37L373 45L371 55L375 64L386 73L388 78L388 187L387 191L383 193L351 193L346 190L345 151L346 148L356 140L360 131L359 120L357 115L352 110L343 106L336 106L332 108L323 114L318 124L318 130L322 138L327 144L329 144L334 151L334 191L330 196L325 199L318 205L314 213L312 220L312 348L314 357L322 367L332 373L343 375L441 375L449 374L453 371L487 307L495 294L498 294L502 298L530 350L534 359L542 373L544 375L664 375L669 373L681 366L686 359L689 349L689 219L684 207L680 201L672 197L668 191L668 183L670 177L678 172L681 168L684 162L684 153L680 144L672 138L668 136L660 136L655 138L649 142L645 146L643 152L643 162L648 171L652 174L656 179L657 187L655 191L652 193L618 193L614 190L613 187L614 173L617 169L625 164L627 160L630 152L629 144L627 138L621 132L611 129L603 130L596 134L591 139L589 149L591 161L601 170L603 173L602 190L599 193L565 193L561 191L560 187L560 130L561 124L569 116L573 111L573 98L569 90L565 86L559 84L549 83L543 85L536 92L532 100L532 107L534 113L538 118L545 122L549 128L549 189L544 193L510 193L506 189L506 97L507 88L517 78L520 74L521 65L519 58L512 49L502 45L495 46L487 50L482 56L480 63L480 70L483 78L494 87L496 95L496 187L494 191L490 193L456 193L454 191L452 187L452 49L454 41L464 32L467 23L467 18L464 10L460 5L452 1L441 1L433 4L427 11L425 17L426 27L429 33L434 37L439 40L441 44L441 189L437 193L403 193L400 191L399 187L399 81L400 73L409 65L412 59L413 49L409 39L399 33L388 32Z',
+  fill:'M884 785L884 794L900 813L903 815L943 815L944 813L944 797L921 796L918 793L918 785L917 784L887 783ZM436 795L436 813L438 815L488 815L490 813L490 785L489 784L459 783L456 786L456 792L454 793L438 794ZM603 757L601 760L602 777L616 777L619 780L619 814L647 815L649 812L649 759L647 757ZM70 757L68 759L68 776L70 777L83 777L85 780L85 813L87 815L114 815L116 813L115 757ZM251 723L250 813L252 815L281 815L283 813L283 775L258 732ZM161 718L159 722L158 726L153 736L132 795L125 811L126 815L156 815L158 813L169 779L176 760L176 754L169 736L163 718ZM922 713L922 727L924 729L948 729L951 732L950 736L952 740L981 740L982 738L981 728L965 711L925 710ZM904 712L884 732L884 755L905 775L948 776L950 777L950 812L953 815L964 815L985 794L985 771L984 767L965 748L919 748L917 745L917 713L914 710L907 710ZM877 711L845 711L829 741L829 746L843 773L845 775L847 774L878 713ZM775 710L774 713L775 715L777 717L777 720L808 781L809 814L841 815L843 812L842 783L807 712L804 710ZM765 711L734 710L732 712L732 792L730 794L720 794L719 795L718 812L720 815L746 814L766 794ZM668 710L666 713L666 793L686 814L711 815L713 813L713 796L711 794L702 794L700 792L700 713L698 710ZM589 712L589 729L590 731L613 731L615 734L615 740L617 742L647 742L649 740L649 731L631 711L592 710ZM569 711L548 732L548 793L570 815L611 815L613 812L613 799L612 795L585 794L583 793L583 714L581 710ZM436 712L436 729L437 730L456 730L458 732L458 739L459 740L489 740L490 739L490 712L489 711L439 710ZM398 710L396 713L396 813L397 815L429 815L431 811L431 773L432 772L463 771L464 769L464 753L462 752L432 752L431 751L431 714L429 711ZM346 710L342 712L342 813L345 815L375 815L377 813L377 712L374 710ZM254 710L252 712L253 715L310 812L313 813L320 803L337 771L337 723L334 725L320 749L315 755L313 754L288 712L285 710ZM167 710L166 713L192 779L192 781L191 783L175 783L172 788L167 802L169 803L200 803L203 807L203 811L207 815L238 815L239 810L199 712L196 710ZM56 712L56 731L80 732L82 734L81 737L83 742L114 742L116 740L115 730L98 711L58 710ZM35 711L17 728L15 732L15 793L34 813L37 815L78 815L80 812L80 797L78 794L52 794L49 791L49 712L47 710Z'};
+const SPL_IN=0.4,SPL_HOLD=1.1,SPL_OUT=0.6;let SPL=(!navigator.webdriver||Q.has('splash'))&&!LOCKED?0:-1,ggPaths=null;
+function splashSkip(){if(SPL<0)return false;SPL=Math.max(SPL,SPL_IN+SPL_HOLD+SPL_OUT-0.25);return true;} // a tap or key: on to the end of the fade
+function splashDraw(dt){SPL+=dt;const end=SPL_IN+SPL_HOLD+SPL_OUT;if(SPL>=end){SPL=-1;return;}
+  const fade=SPL<SPL_IN+SPL_HOLD?1:1-(SPL-SPL_IN-SPL_HOLD)/SPL_OUT,show=Math.min(1,SPL/SPL_IN)*fade;
+  if(!ggPaths)ggPaths={ink:new Path2D(GG_LOGO.ink),fill:new Path2D(GG_LOGO.fill)};
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.globalAlpha=fade;ctx.fillStyle='#04102a';ctx.fillRect(0,0,W,H);
+  ui((W,H)=>{const w=Math.min(300,W*0.62,H*0.42*GG_LOGO.w/GG_LOGO.h),k=w/GG_LOGO.w*(0.96+0.04*Math.min(1,SPL/(SPL_IN+SPL_HOLD)));
+    ctx.globalAlpha=show;ctx.save();ctx.translate(W/2-GG_LOGO.w*k/2,H/2-GG_LOGO.h*k/2);ctx.scale(k,k);
+    ctx.fillStyle='#ffffff';ctx.fill(ggPaths.ink,'evenodd');ctx.fillStyle='#04102a';ctx.fill(ggPaths.fill,'evenodd');ctx.restore();});
+  ctx.globalAlpha=1;}
 function titleLayout(W,H){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,bw=Math.min(300,W-60),fs=Math.min(17,(W-30)/19),step=fs*1.7,tight=H<560,lw=152;
   // keep the title clear of the language switch: on a short, wide screen shrink the title to sit beside it; otherwise start lower
   const side=W-2*(lw+28),beside=tight&&side>=260,tw=beside?Math.min(W-30,side):W-30,clash=!beside&&Math.min(W-30,520)>side;
@@ -2862,7 +2880,7 @@ function frame(now){
   else if(state==='over'||state==='clear'){overT+=dt;updateFx(dt);}
   else if(state==='level'||state==='chest'||state==='pause'||state==='menu')updateFx(0);
   const cur=state==='play'?'none':'default';if(cv.style.cursor!==cur)cv.style.cursor=cur;
-  render();requestAnimationFrame(frame);
+  render();if(SPL>=0)splashDraw(dt);requestAnimationFrame(frame);
 }
 // what a locked copy shows: the logo, why it will not start, and a button to the real one
 function lockScreen(){ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;ctx.fillStyle='#04102a';ctx.fillRect(0,0,W,H);
@@ -2872,7 +2890,7 @@ function lockScreen(){ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;ctx.fillSty
     const bw=Math.min(280,W-60);hotBtn({x:W/2-bw/2,y:y+lf*0.62+108,w:bw,h:54},TX('lock_btn'),1,()=>{location.href=HOME_URL;},false,true);copyright(W,H);});}
 requestAnimationFrame(frame);
 //#DEV
-window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
+window.__g={get splash(){return SPL;},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
