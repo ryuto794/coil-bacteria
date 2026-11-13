@@ -33,6 +33,7 @@
 
 ## 開発メモ
 
-- 本体は `index.html` のみ（バニラ JS + Canvas）。
+- 本体は `index.html` のみ（バニラ JS + Canvas）。ビルドなしで動く。
+- 配布用のビルド（体験版 / 製品版）: `cd tools && npm install && node build.mjs demo`（または `full`）。出力は `dist/`。
 - Claude Code 向け: `CLAUDE.md` / 詳細引き継ぎ: `HANDOFF.md`
 - テスト: `?demo` / `?demo&swarm` / `?tail=1900` / `?boss` / `?shell` / `?toxin` / `?titan` / `?nosave` / `?skin=neon` / `?lang=en` / `?t=600` / `?give=…`
