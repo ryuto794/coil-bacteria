@@ -151,7 +151,7 @@ const RUSH_SEC=20,BODY_RUSH=[
  {k:'rush',look:'nema',st:1,L:30,w:4.4,r:6,hp:2,spd:0,dmg:10,xp:2,col:'#ff6a5a',core:'#7a140a',glow:'rgba(255,100,80,0.5)',name:['イトミミズの群れ','Sludge Worm Swarm'],rot:1,fr:8}];
 let RUSH_T=BODY_RUSH;
 // stage 3: the boss is a giant of the player's own kind, and the rush is its young
-const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#ff3a4a',core:'#3a0508',glow:'rgba(255,60,80,0.55)',name:['蠱毒の王','King of the Jar'],sh:5,kin:1,kb:'boss',tl:1700,kc:3,thru:1}],
+const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#ff3a4a',core:'#3a0508',glow:'rgba(255,60,80,0.55)',name:['蠱毒の王','King of the Jar'],sh:0,lives:2,kin:1,kb:'boss',tl:1700,kc:3,thru:1}],
  JAR_RUSH=[{k:'rush',look:'nema',st:0,L:17,w:2.8,r:4,hp:1,spd:0,dmg:7,xp:1,col:'#c98cff',core:'#3a1a7a',glow:'rgba(190,130,255,0.5)',name:['幼体の群れ','Hatchling Swarm'],rot:1,fr:8}],
  KIN_SK=[{id:'kin0',h:350,angry:1},{id:'kin1',h:280,angry:1,eye:'cat'},{id:'kin2',h:28,angry:1},
   {id:'kin3',h:352,angry:1,eye:'big',cols:[[352,85,48],[0,0,12],[45,95,58],[0,0,12]],runs:[3,1,2,1],head:[352,85,45]}]; // how each kind of kin is coloured (read as skins are)
@@ -408,7 +408,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.1';
+const LANGS=['ja','en'],VER='v29.2';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -438,6 +438,7 @@ const STR={
  combo:['最大コンボ x{0}','Best combo x{0}'],
  scale:['スケール:','Scale:'],
  boss_hud:['ボス {0}　殻 {1}/{2}','Boss: {0}   Shell {1}/{2}'],
+ boss_hud_k:['ボス {0}　あと {1} 回締める','Boss: {0}   Squeezes to go: {1}'],
  gate:['尾が伸びるとボスが出る','Grow your tail to call the boss'],
  key_dash:['SPACE / クリック','SPACE / Click'],
  charge:['巻きチャージ','Coil charge'],
@@ -473,6 +474,8 @@ const STR={
  ev_toxin_s:['倒すと毒の霧が残る。頭で入るとダメージ','They leave poison fog when killed. Keep your head out of it'],
  poison:['毒','Poison'],
  boss_in:['ボス出現！','BOSS INCOMING!'],
+ boss_in_k:['{0}：頭を囲んで {1} 回締める','{0}: ring its head and squeeze it, {1} times'],
+ king_left:['あと {0} 回','{0} to go'],
  boss_in_s:['{0}：殻{1}枚。尾で{1}回巻いて割る','{0}: {1} shells. Coil around it {1} times to crack them'],
  regen:['殻が再生','Shell regrown'],
  boss_down:['{0} 撃破！','{0} defeated!'],
@@ -632,7 +635,7 @@ const STR={
  bk_kinc:['同族。その場でぐるぐる回る。輪の中に入ると締められる','Your kind. Circles on the spot. Step in its ring: squeezed'],
  bk_kind:['同族。狙いを定めて、ダッシュで突っ込んでくる','Your kind. Lines you up and dashes through'],
  bk_kinh:['同族。まわりを回って囲んでくる。赤い輪ができたら外へ','Your kind. Rings you. When the red ring closes, get out'],
- bk_kinb:['ボス。囲んで、突っ込む。息切れの間に巻く。殻が減ると怒る','Boss. Rings, then dashes. Coil it while winded. It will rage'],
+ bk_kinb:['ボス。囲んで、突っ込む。息切れの間に頭を囲んで、2 回締める','Boss. Rings, then dashes. Ring its head while winded: twice'],
  tip_spring:['ツリガネムシ','Vorticella'],
  tip_spring_s:['動かないが、近づくと伸びて噛みつく','It stays put, but lunges out when you come near'],
  bk_hop:['跳ねて近づく。動きが読みにくい','Comes in hops. Hard to read'],
@@ -1232,11 +1235,11 @@ function maybeShell(e){const t=e.t;
   if(e.sh)tip('shell');}
 function spawnBoss(){
   const t=BOSS_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=Math.min(8,t.sh+P.bossN); // endless: each return has one more shell and more HP
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
-  enemies.push(e);P.boss=e;
-  banner={t:3,max:3,title:TX('boss_in'),sub:TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
+  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -1253,13 +1256,18 @@ function armsTick(e,dt){const S=P.S,n=e.t.arms,R0=e.r*2.2,R1=e.r*4.6;
     else{k=3.5;if(m.qT<=0){m.q=0;m.qT=rand(0.9,1.8);}}
     m.x+=(gx-m.x)*Math.min(1,k*dt);m.y+=(gy-m.y)*Math.min(1,k*dt);
     if((m.q===2||(m.q===3&&m.qT>0.65))&&!(e.bite>0)){const qx=P.x-m.x,qy=P.y-m.y,hr=e.r*0.2+12*S;if(qx*qx+qy*qy<hr*hr&&hitHead(e.t.dmg,e.t))e.bite=0.6;}}}
+// The King of the Jar has no shell on its head (v29.2: the owner found the guarded head too hard; cracking it meant lap after lap right beside a big head
+// that bites). It has lives instead (t.lives; one more for each return in endless): a squeeze with its head in the coil takes one, and so does each share
+// (1 / lives) of its HP lost to plain damage. With a life gone and more left it tears itself free in a rage: it dashes clear and cannot be coiled for 1.6 s,
+// and from then on it is faster (e.rage, see kinMove). The squeeze that takes the last life kills it as it would anything.
+function kingHit(e){const c=e.cap,S=P.S,a=Math.atan2(e.y-P.y,e.x-P.x);e.lives--;e.hp=Math.min(e.hp,e.hp0*e.lives/e.livesMax);
+  if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;for(let i=0;i<c.poly.length;i+=2)burst(c.poly[i].x,c.poly[i].y,2,'#ff8a8a',160,0.5,3);} // (a life lost to plain damage while it was held in a standing coil: the coil is torn)
+  e.cap=null;e.freeT=T+1.6;e.ha=a;e.cdx=Math.cos(a);e.cdy=Math.sin(a);e.kq=2;e.kT=0.6;e.kn=1;e.k2=1;e.wp=undefined;e.wa=0;e.flash=0.3;
+  if(!e.rage)text(e.x,e.y-e.r-44*S,TX('kin_rage'),30,'#ff8a8a',1.8);text(e.x,e.y-e.r-12*S,TX('king_left',e.lives),22,'#ffd9a8',1.8);e.rage=1;
+  burst(e.x,e.y,40,'#ff8a8a',380,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*5,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});shake=Math.max(shake,14);hitstop=Math.max(hitstop,0.08);sfx('boss');}
 function bossTick(e,dt){
   if(e.t.arms)armsTick(e,dt);
-  if(e.t.kb==='boss'&&!e.rage&&e.sh<=2){ // the King of the Jar, down to its last shells: it tears the coil that holds it, its shell grows back to three, and it comes on harder
-    const c=e.cap,S=P.S,a=Math.atan2(e.y-P.y,e.x-P.x);e.rage=1;e.sh=e.shMax=3;e.lastCrack=T;e.regenT=0;
-    if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;for(let i=0;i<c.poly.length;i+=2)burst(c.poly[i].x,c.poly[i].y,2,'#ff8a8a',160,0.5,3);}
-    e.cap=null;e.freeT=T+1.6;e.ha=a;e.cdx=Math.cos(a);e.cdy=Math.sin(a);e.kq=2;e.kT=0.6;e.kn=1;e.k2=1;e.wp=undefined; // it dashes clear, and cannot be coiled again for a moment
-    text(e.x,e.y-e.r-14*S,TX('kin_rage'),30,'#ff8a8a',1.8);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*5,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});shake=Math.max(shake,14);sfx('boss');}
+  if(e.lives>1&&e.hp<=e.hp0*(e.lives-1)/e.livesMax)kingHit(e); // plain damage takes its lives too: one for each share of its HP
   if(e.t.pull&&!e.cap){const S=P.S,dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.01;if(d<330*S&&P.dashT<=0){P.x-=dx/d*70*S*dt;P.y-=dy/d*70*S*dt;e.pl=0.2;}} // Stentor: a strong whirlpool
   if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}}
   e.minT-=dt;if(e.minT<=0){e.minT=9;spawnCluster(P.stage===0?6:5,{x:e.x,y:e.y,r:e.r});}
@@ -1488,6 +1496,7 @@ function explode(cap){
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
+      if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
       kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;burst(e.x,e.y,6,dsh?'#d8ffe6':'#7dffb0',260,0.6,3);}}
   const R=((55+26*ch)*P.blast*(dsh?DASH_R:1)*S+cap.rad*0.6)*(1+LINK_R*lk),dmg=(1+ch)*(dsh?DASH_D:1)*P.blast*(1+P.stage)*(1+LINK_D*lk);
   for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
@@ -2382,7 +2391,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
-  if(P.boss){const b=P.boss,t=TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  if(P.boss){const b=P.boss,t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
