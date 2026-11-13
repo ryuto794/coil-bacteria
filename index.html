@@ -39,6 +39,7 @@ const Q=new URLSearchParams(location.search),DEMO=Q.has('demo');
 // 4: a bite stops the game for a moment and reddens the edge; the last bite slows the end down for half a second before the results. 5: the squeeze's sound gets a crack and a body a phone speaker can play.
 // 6: small shakes go up and down only; big ones go back and forth along one line and settle. 7: a dash pressed just before it is ready is kept and goes when it is; pressed too early, the button shakes.
 // 8: a level-up waits until the squeeze has burst (at most 1.5 s), and says how many more are to come. 9: a background of its own for each stage (and a shade for each scale).
+const OLDB=Q.has('oldboss'); // v33: ?oldboss = the bosses as they were before v33 (to compare)
 const FXQ=Q.has('fx')?(/^[456789]+$/.test(Q.get('fx'))?Q.get('fx'):'456789'):'',FX4=FXQ.includes('4'),FX5=FXQ.includes('5'),FX6=FXQ.includes('6'),FX7=FXQ.includes('7'),FX8=FXQ.includes('8'),FX9=FXQ.includes('9');
 // Site lock (v29.5): the game runs only where it is published (and from a file or this machine, while it is being made). A copy put up on another site,
 // or a page of another site that frames it, shows where the real one is instead of the game. It is a speed bump, not a vault: it stops a copy being put up
@@ -435,7 +436,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v32.2',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v33',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -577,6 +578,7 @@ const STR={
  rare:['レア','RARE'],
  srare:['Sレア','S-RARE'],
  lvup:['LEVEL UP！ 強化をえらぶ','LEVEL UP! Pick an upgrade'],
+ boss_ate:['食べて殻が戻った！','It ate, and a shell grew back!'],
  lv_more:['このあと、さらに {0} 回えらべる','{0} more to pick after this'],
  pick_touch:['タップでえらぶ','Tap to pick'],
  pick_mouse:['クリック または 1 / 2 / 3 キー（R：引き直す）','Click, or press 1 / 2 / 3 (R: reroll)'],
@@ -1311,7 +1313,7 @@ function armsTick(e,dt){const S=P.S,n=e.t.arms,R0=e.r*2.2,R1=e.r*4.6;
   let busy=0;for(const m of e.arms)if(m.q)busy++;
   const pd=Math.hypot(P.x-e.x,P.y-e.y);if(e.bite>0)e.bite-=dt;
   for(const m of e.arms){m.qT-=dt;const ra=m.a+Math.sin(T*0.9+m.a*3)*0.25;let gx=e.x+Math.cos(ra)*R0,gy=e.y+Math.sin(ra)*R0,k=6;
-    if(m.q===0){if(m.qT<=0&&busy<2&&pd<R1+40*S&&!e.cap&&P.freezeT<=0){ // it aims ahead of the head
+    if(m.q===0){if(m.qT<=0&&busy<(!OLDB&&e.sh<=e.shMax/2?3:2)&&pd<R1+40*S&&!e.cap&&!e.bq&&P.freezeT<=0){ // it aims ahead of the head (v33: three at once when half its shells are gone; none while it tumbles)
         const px=P.x+Math.cos(P.a)*P.spd*S*0.55,py=P.y+Math.sin(P.a)*P.spd*S*0.55,ax=px-e.x,ay=py-e.y,ad=Math.hypot(ax,ay)+0.01;
         if(Math.abs(angDiff(ra,Math.atan2(ay,ax)))<0.9){const rr=Math.min(R1,ad+30*S);m.tx=e.x+ax/ad*rr;m.ty=e.y+ay/ad*rr;m.q=1;m.qT=0.5;busy++;tip('arms');}}}
     else if(m.q===1){gx=e.x+Math.cos(ra)*R0*0.6;gy=e.y+Math.sin(ra)*R0*0.6;k=8;if(m.qT<=0){m.q=2;m.qT=0.2;}}
@@ -1335,6 +1337,48 @@ function bossTick(e,dt){
   if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}}
   e.minT-=dt;if(e.minT<=0){e.minT=9;spawnCluster(P.stage===0?6:5,{x:e.x,y:e.y,r:e.r});}
 }
+// v33: what each boss does besides coming at you (the owner: "the mid bosses are weak (Hydra)", "the round ones are monotonous, little to get excited about").
+// Each move is shown before it comes (a red line, a swelling ring, a red disc, a dotted arc) and leaves an opening after it. None of it while it is held in a coil:
+// catching it is the answer. e.bq: 0 coming / 1 getting ready / 2 the move / 3 the opening; e.bT: time left in that.
+function bossRing(e,n,spd,dmg){const a0=Math.random()*TAU,v=spd*P.S;for(let i=0;i<n;i++){const a=a0+i/n*TAU;shots.push({x:e.x+Math.cos(a)*e.r,y:e.y+Math.sin(a)*e.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:3.4,dmg,by:e.t});}}
+function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;if(e.cap||e.frz>0||P.freezeT>0)return false;
+  e.bT=(e.bT===undefined?2.2:e.bT)-dt;const half=e.sh<=e.shMax/2;
+  if(k==='blob'){ // Giant Germ: winds up (a red line), charges along it, then is dizzy. The tail stops it
+    if(!e.bq){if(e.bT<=0&&d<520*S){e.bq=1;e.bT=0.75;e.cdx=dx/d;e.cdy=dy/d;sfx('latch');}return false;}
+    if(e.bq===1){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=2;e.bT=0.6;sfx('dash');}return true;}
+    if(e.bq===2){const v=P.spd*S*1.4;MV[0]=e.cdx*v;MV[1]=e.cdy*v;if(e.bT<=0){e.bq=3;e.bT=half?1.0:1.4;}return true;}
+    MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(2.6,3.8)*(half?0.75:1);}return true;}
+  if(k==='bigcell'||k==='hydra'&&half){ // Giant Cell: swells, then lets go a ring of shots (the tail stops them); twice when half its shells are gone. Hydra, at half: stinging darts
+    if(!e.bq){if(e.bT<=0&&d<640*S){e.bq=4;e.bT=0.8;e.rn=half?2:1;}else if(k==='hydra')return hydraHop(e,dx,dy,d,dt,S,half);return false;}
+    if(e.bq===4){MV[0]=dx/d*s*0.15;MV[1]=dy/d*s*0.15;if(e.bT<=0){bossRing(e,k==='hydra'?10:14,k==='hydra'?170:150,Math.round(e.t.dmg*0.6));sfx('brood');e.rn--;if(e.rn>0)e.bT=0.45;else{e.bq=0;e.bT=rand(5,6.5)*(half?0.8:1);}}return true;}
+    if(k==='hydra')return hydraHop(e,dx,dy,d,dt,S,half);return false;}
+  if(k==='giant'){ // Macrophage: marks where it will close (a red disc), lunges there and closes; whatever small is in it is eaten, and a shell grows back
+    if(!e.bq){if(e.bT<=0&&d<700*S){e.bq=1;e.bT=0.9;const L=Math.min(d,e.r*2.4);e.tx=e.x+dx/d*L;e.ty=e.y+dy/d*L;e.tR=e.r*1.5;}return false;}
+    if(e.bq===1){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=2;e.bT=0.35;sfx('dash');}return true;}
+    if(e.bq===2){const r=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/r;MV[1]=(e.ty-e.y)/r;e.vx=e.vy=0;
+      if(e.bT<=0){e.bq=3;e.bT=1.6;shake=Math.max(shake,10);rings.push({x:e.tx,y:e.ty,r:e.tR*1.1,R:e.tR*0.3,life:0.3,max:0.3,col:'#ff5a6a',w:8*S});sfx('crack');
+        if(Math.hypot(P.x-e.tx,P.y-e.ty)<e.tR)hitHead(Math.round(e.t.dmg*1.6),e.t);
+        let ate=0;for(const o of enemies){if(o===e||o.dead||o.boss||o.hunter||o.titan)continue;if(Math.hypot(o.x-e.tx,o.y-e.ty)<e.tR){o.dead=true;burst(o.x,o.y,4,o.t.col,120,0.4,3);ate++;}}
+        if(ate>=3&&e.sh<e.shMax){e.sh++;text(e.x,e.y-e.r-14*S,TX('boss_ate'),18,'#ffb0b8',1.1);}}return true;}
+    MV[0]=dx/d*s*0.25;MV[1]=dy/d*s*0.25;if(e.bT<=0){e.bq=0;e.bT=rand(4.5,6)*(half?0.75:1);}return true;}
+  if(k==='hydra')return hydraHop(e,dx,dy,d,dt,S,half);
+  return false;}
+// Hydra: tumbles head over heels (as real ones do) to a spot near the player (a dotted arc shows where), then rests a moment. Arms rest while it tumbles
+function hydraHop(e,dx,dy,d,dt,S,half){
+  if(!e.bq){e.hT=(e.hT===undefined?3:e.hT)-dt;if(e.hT<=0&&d>e.r*2.5){e.bq=1;e.bT=0.6;const L=Math.min(d-e.r*1.6,e.r*5),sd=(Math.random()<0.5?-1:1)*0.35;const a=Math.atan2(dy,dx)+sd;e.tx=e.x+Math.cos(a)*L;e.ty=e.y+Math.sin(a)*L;e.lx=e.x;e.ly=e.y;}return false;}
+  if(e.bq===1){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=2;e.bT=0.5;e.freeT=T+0.6;for(const m of e.arms||[]){m.q=0;m.qT=0.8;}sfx('dash');}return true;}
+  if(e.bq===2){const r=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/r;MV[1]=(e.ty-e.y)/r;e.vx=e.vy=0;if(e.bT<=0){e.bq=3;e.bT=0.8;shake=Math.max(shake,8);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.4,life:0.35,max:0.35,col:'#e0b070',w:5*S});}return true;}
+  MV[0]=MV[1]=0;if(e.bT<=0){e.bq=0;e.hT=rand(5,7)*(half?0.7:1);}return true;}
+// how each move is shown before it comes, and the opening after it
+function drawBossFx(e){const S=P.S,q=e.bq;if(!q||OLDB)return;const k=e.t.k;
+  if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(255,90,100,0.8)';ctx.lineWidth=3*S;circ(ctx,e.x,e.y,e.r*(1.05+0.25*f));ctx.stroke();}
+  if((k==='blob'&&q===3)||(k==='giant'&&q===3)){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.7,e.y-e.r*1.05+Math.sin(a)*e.r*0.2,7*S,'#ffe680');}} // dizzy / full: an opening
+  if(q===4){const f=1-e.bT/0.8;ctx.strokeStyle=`rgba(255,120,140,${0.5+0.4*f})`;ctx.lineWidth=4*S;circ(ctx,e.x,e.y,e.r*(1.1+0.35*f));ctx.stroke();}
+  if(k==='giant'&&q===1){const f=1-e.bT/0.9;ctx.fillStyle=`rgba(255,40,60,${0.12+0.14*f})`;circ(ctx,e.tx,e.ty,e.tR);ctx.fill();ctx.strokeStyle='rgba(255,80,95,0.85)';ctx.lineWidth=4*S;circ(ctx,e.tx,e.ty,e.tR);ctx.stroke();ctx.lineWidth=2.5*S;circ(ctx,e.tx,e.ty,e.tR*(1-f)+4*S);ctx.stroke();}
+  if(k==='hydra'&&q===1){const mx=(e.x+e.tx)/2,my=(e.y+e.ty)/2,lx=e.tx-e.x,ly=e.ty-e.y,ll=Math.hypot(lx,ly)+1,hx=mx-ly/ll*ll*0.35,hy=my+lx/ll*ll*0.35;
+    ctx.strokeStyle='rgba(255,90,100,0.75)';ctx.lineWidth=3*S;ctx.setLineDash([10*S,9*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.quadraticCurveTo(hx,hy,e.tx,e.ty);ctx.stroke();ctx.setLineDash([]);circ(ctx,e.tx,e.ty,e.r*0.9);ctx.stroke();}}
+function star4(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.quadraticCurveTo(x,y,x,y+r);ctx.quadraticCurveTo(x,y,x-r,y);ctx.quadraticCurveTo(x,y,x,y-r);ctx.fill();}
 function bossDown(e){
   P.boss=null;bossKills++;banner=null;hitstop=Math.max(hitstop,0.18);shake=Math.max(shake,24);flashT=0.4;P.inv=Math.max(P.inv,2);sfx('bossdown');vib([80,40,120]);
   text(e.x,e.y,TX('boss_down',e.t.name),40,'#ffe680',1.6);
@@ -1817,6 +1861,7 @@ function update(dt){
     else if(e.t.kin&&!e.pr){if(!e.cap){kinMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}else{ax=0;ay=0;}}
     else if(e.lead){if(!e.cap){follow(e,s);ax=MV[0];ay=MV[1];}}
     else if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
+    else if(e.boss&&!OLDB&&bossMove(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];} // v33: each boss's moves
     else if(e.t.mv&&!e.cap&&mover(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
     else if((e.t.charge||e.t.shoot)&&!e.cap&&special(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
     if(e.t.esc&&e.cap&&!e.pr){const c=e.cap; // a copepod does not wait to be squeezed: in a coil that is only standing, it jumps clear
@@ -2379,6 +2424,7 @@ function render(){
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
     if(e.cap){ctx.strokeStyle='rgba(160,255,200,0.9)';ctx.lineWidth=1.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+(4+3*Math.sin(T*20+e.ph))*S,0,TAU);ctx.stroke();}}
   ctx.globalAlpha=1;
+  if(P.boss&&!P.boss.dead)drawBossFx(P.boss); // v33: what the boss is about to do
   // v31: what the squeeze caught, held through the stop: white, pulled in toward the middle, trembling
   for(const h of husks){const e=h.e,t=e.t,dx=h.cx-h.x,dy=h.cy-h.y,d=Math.hypot(dx,dy)+1,m=Math.min(0.16*d,20*S),q=hitstop>0?1.6*S:0,
     x=h.x+dx/d*m+(Math.random()-0.5)*q,y=h.y+dy/d*m+(Math.random()-0.5)*q,sp=t.spr,sc=(e.sc||1)*0.86,w=sp.width*sc,hh=sp.height*sc;
