@@ -435,7 +435,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v32',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v32.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1027,7 +1027,7 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0];let husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0];let DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
@@ -1052,7 +1052,7 @@ function reset(start){
      vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0,rushT:0,rushSp:0,rushDue:false};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
+  calmUntil=0;bossKills=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;DEATH=null;runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   resetBubbles();
@@ -1368,7 +1368,7 @@ function die(by){
     rings.push({x:P.x,y:P.y,r:20*S,R:420*S,life:0.7,max:0.7,col:'#ffe680',w:8*S});
     for(const e of enemies){const dx=e.x-P.x,dy=e.y-P.y,d=Math.hypot(dx,dy)+1;if(d<420*S){e.vx+=dx/d*600*S;e.vy+=dy/d*600*S;}}
     sfx('chest');vib(80);return;}
-  P.hp=0;P.killer=by;state='over';overT=0;burst(P.x,P.y,80,'#7dffb0',380,1.2,4);if(FX4){P.hurtT=0;rings.push({x:P.x,y:P.y,r:10*P.S,R:190*P.S,life:0.6,max:0.6,col:'#ff6070',w:7*P.S});}endRun(false);sfx('over');vib(200);}
+  P.hp=0;P.killer=by;state='over';overT=0;burst(P.x,P.y,80,'#7dffb0',380,1.2,4);if(FX4){P.hurtT=0;rings.push({x:P.x,y:P.y,r:10*P.S,R:190*P.S,life:0.6,max:0.6,col:'#ff6070',w:7*P.S});DEATH={n:P.trail.length,cut:P.trail.length,hu:hueAt(),pop:false};}endRun(false);sfx('over');vib(200);}
 // keep playing after the clear: the last boss returns every 75 s, stronger each time, and the waves keep growing
 // The stage after the one just cleared (v29.9, the owner: "let it go on to the next stage"). Its index if it can be played, -2 if there is one but only
 // in the full game (the demo: the button says so and cannot be pressed), -1 if there is none (the last stage, or one still being made).
@@ -2249,7 +2249,7 @@ function drawShell(e,S){const B=e.boss||e.hunter,gap=B?9:5.5;ctx.lineWidth=(B?3.
   ctx.setLineDash([]);ctx.lineDashOffset=0;
   if(B&&e.regenT>0){const R=e.r+(5+e.sh*gap)*S;ctx.strokeStyle=`rgba(160,200,230,${0.6*e.regenT/3.5})`;ctx.setLineDash([6*S,6*S]);ctx.beginPath();ctx.arc(e.x,e.y,R,0,TAU);ctx.stroke();ctx.setLineDash([]);}}
 function render(){
-  const S=P.S,Z=1/S;
+  const S=P.S,Z=DEATH&&state==='over'?(1+0.14*Math.min(1,overT/0.3))/S:1/S; // (v32 ?fx=4: the camera closes in a little on the end)
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#04102a';ctx.fillRect(0,0,W,H);
   const fx=META.opts.fx;let shx,shy; // fx: shake and flash strength from the settings
@@ -2357,10 +2357,10 @@ function render(){
     for(const e of enemies){if(!(e.burn>0)||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const r=Math.max(e.r,9*S);ctx.drawImage(FIREGLOW,e.x-r*1.7,e.y-r*1.7,r*3.4,r*3.4);flame(e.x-r*0.3,e.y+r*0.5,r*2.1,e.ph);if(QL>=1)flame(e.x+r*0.35,e.y+r*0.35,r*1.6,e.ph*2);}
     ctx.globalCompositeOperation='source-over';}
   // tail
-  const tr=P.trail,hu=hueAt(),prism=skin().h<0;
+  const tr=DEATH?P.trail.slice(0,DEATH.cut):P.trail,hu=DEATH?DEATH.hu:hueAt(),prism=skin().h<0; // (v32 ?fx=4: while it comes apart, only what is left of the body)
   if(tr.length>1){
     ctx.lineCap='round';ctx.lineJoin='round';ctx.globalCompositeOperation='lighter';
-    ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=1;i<tr.length;i++)ctx.lineTo(tr[i].x,tr[i].y);ctx.lineTo(P.x,P.y);
+    ctx.beginPath();ctx.moveTo(tr[0].x,tr[0].y);for(let i=1;i<tr.length;i++)ctx.lineTo(tr[i].x,tr[i].y);if(!DEATH)ctx.lineTo(P.x,P.y);
     const dsh=P.dashT>0||P.str>0;
     if(QL>=2){ctx.strokeStyle=`hsla(${hu},100%,62%,0.12)`;ctx.lineWidth=26*S;ctx.stroke();}
     ctx.strokeStyle=dsh?`hsla(${hu},100%,82%,0.5)`:`hsla(${hu},100%,62%,0.35)`;ctx.lineWidth=12*S;ctx.stroke();
@@ -2390,6 +2390,9 @@ function render(){
   for(const g of ghosts){ctx.globalAlpha=g.life/0.32*0.5;ctx.drawImage(HG,g.x-36*S,g.y-36*S,72*S,72*S);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const g of ghosts)drawHead(g.x,g.y,g.a,S*1.05,g.life/0.32*0.55,hu,false);
+  if(DEATH&&!DEATH.pop){const k=Math.min(1,overT/DIE_HOLD),sw=1+0.3*k,j=(Math.random()-0.5)*4*S; // v32 ?fx=4: the head, bitten for the last time: it swells, trembles, lights up, until it bursts
+    ctx.globalCompositeOperation='lighter';ctx.drawImage(HG,P.x-70*S*sw,P.y-70*S*sw,140*S*sw,140*S*sw);ctx.globalCompositeOperation='source-over';
+    drawHead(P.x+j,P.y-j*0.6,P.a,S*sw,1,hu,true);ctx.globalAlpha=0.35+0.4*Math.abs(Math.sin(overT*40));ctx.fillStyle='#ffffff';circ(ctx,P.x+j,P.y-j*0.6,14*S*sw);ctx.fill();ctx.globalAlpha=1;}
   if(state!=='over'&&state!=='title'){
     ctx.globalCompositeOperation='lighter';const hg=(P.dashT>0?1.7:1)*S;ctx.drawImage(HG,P.x-60*hg,P.y-60*hg,120*hg,120*hg);ctx.globalCompositeOperation='source-over';
     const hj=P.hurtT>0&&hitstop>0?(Math.random()-0.5)*5*S:0; // v32 ?fx=4: bitten: the head trembles through the stop (only the picture moves)
@@ -2929,8 +2932,12 @@ function endScreen(W,H,clear){
     else hotBtn({x:r.x+r.w/2-hw/2,y:r.y,w:hw,h:r.h},TX('share'),0,shareRun,false,true);}
   if(!tight){const s=TX(TOUCH?'end_touch':clear?(L.nx&&nextStage()>=0?'end_mouse_n':'end_mouse_c'):'end_mouse');ctx.textAlign='center';fitFont(s,12,'normal',W-24);ctx.fillStyle='#7f9db8';ctx.fillText(s,W/2,L.row2.y+L.row2.h+22);}
 }
-const DIE_T=0.5;
-function overScreen(W,H){if(FX4&&overT<DIE_T+0.3){if(overT<DIE_T)return;ctx.globalAlpha=(overT-DIE_T)/0.3;endScreen(W,H,false);ctx.globalAlpha=1;return;}endScreen(W,H,false);} // v32 ?fx=4: half a second of the end, slowed, then the results come in
+const DIE_T=0.75,DIE_HOLD=0.12,DIE_WAVE=0.5; // v32 ?fx=4: the stop, the wave from the neck to the tip of the tail, then the head bursts; the results come in after DIE_T
+function deathTick(){if(!DEATH)return;const S=P.S,tr=P.trail,k=Math.max(0,Math.min(1,(overT-DIE_HOLD)/DIE_WAVE)),c=Math.floor(DEATH.n*(1-k)); // beads from the head end down to c are gone
+  for(let i=Math.min(DEATH.cut,tr.length)-1;i>=c;i--){if(i%3)continue;const q=tr[i];if(!q)continue;const f=i/DEATH.n;burst(q.x,q.y,3,`hsl(${DEATH.hu},100%,${60+f*15}%)`,150+f*120,0.5,2.5+f*2);if(i%12===0){sfx('pop');rings.push({x:q.x,y:q.y,r:2*S,R:(10+f*14)*S,life:0.25,max:0.25,col:`hsl(${DEATH.hu},100%,80%)`,w:2.5*S});}}
+  DEATH.cut=Math.min(DEATH.cut,c);
+  if(k>=1&&!DEATH.pop){DEATH.pop=true;burst(P.x,P.y,60,'#ffffff',420,0.9,4.5);burst(P.x,P.y,40,`hsl(${DEATH.hu},100%,70%)`,320,1,4);rings.push({x:P.x,y:P.y,r:14*S,R:150*S,life:0.5,max:0.5,col:'#ffffff',w:9*S});shake=Math.max(shake,16);sfx('boom',20);}}
+function overScreen(W,H){if(FX4&&overT<DIE_T+0.25){if(overT<DIE_T)return;ctx.globalAlpha=(overT-DIE_T)/0.25;endScreen(W,H,false);ctx.globalAlpha=1;return;}endScreen(W,H,false);} // v32 ?fx=4: the end, slowed, then the results come in
 function clearScreen(W,H){endScreen(W,H,true);}
 
 // ---------- loop ----------
@@ -2944,7 +2951,7 @@ function frame(now){
     else if(perfEma>24){perfBad+=raw/1000;if(perfBad>1.5&&QL>0){QL--;resize();perfBad=0;perfCool=3;perfEma=16;}}
     else perfBad=Math.max(0,perfBad-raw/2000);}
   if(state==='play'){if(hitstop>0)hitstop-=dt;else update(dt);updateFx(dt);}
-  else if(state==='over'||state==='clear'){overT+=dt;updateFx(FX4&&state==='over'&&overT<DIE_T?dt*0.3:dt);} // (v32 ?fx=4: the end in slow motion)
+  else if(state==='over'||state==='clear'){overT+=dt;if(state==='over')deathTick();updateFx(FX4&&state==='over'&&overT<DIE_T?dt*0.45:dt);} // (v32 ?fx=4: the end in slow motion, the body coming apart)
   else if(state==='level'||state==='chest'||state==='pause'||state==='menu')updateFx(0);
   const cur=state==='play'?'none':'default';if(cv.style.cursor!==cur)cv.style.cursor=cur;
   render();if(SPL>=0)splashDraw(dt);requestAnimationFrame(frame);
@@ -2968,7 +2975,7 @@ function renderSfx(name,a,sec){const sr=44100,oac=new OfflineAudioContext(1,Math
     w(0,'RIFF');d.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,sr,true);d.setUint32(28,sr*2,true);d.setUint16(32,2,true);d.setUint16(34,16,true);w(36,'data');d.setUint32(40,n*2,true);
     for(let i=0;i<n;i++)d.setInt16(44+i*2,Math.max(-1,Math.min(1,x[i]))*32767,true);let bin='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
     return{wav:btoa(bin),peak:pk,rms:Math.sqrt(s2/n),rmsHi:Math.sqrt(h2/n)};});}
-window.__g={get splash(){return SPL;},get fx(){return FXQ;},renderSfx,get shk(){return{x:SHK[0],y:SHK[1],a:shake,dir:shakeA};},setShake(a,dir){shake=a;if(dir!==undefined){shakeA=dir;shakeDirSet=true;}},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
+window.__g={get splash(){return SPL;},get fx(){return FXQ;},renderSfx,get death(){return DEATH?{n:DEATH.n,cut:DEATH.cut,pop:DEATH.pop}:null;},get shk(){return{x:SHK[0],y:SHK[1],a:shake,dir:shakeA};},setShake(a,dir){shake=a;if(dir!==undefined){shakeA=dir;shakeDirSet=true;}},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
