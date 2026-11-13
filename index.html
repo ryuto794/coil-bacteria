@@ -111,6 +111,8 @@ const ETYPES=[
  {k:'ostr', n:['カイミジンコ','Seed Shrimp'],st:1,sh:2,r:25,hp:10,spd:78,dmg:13,xp:16,col:'#c9b27a',core:'#4a3a12',glow:'rgba(215,190,130,0.5)',rot:1,brittle:1},
  {k:'volv', n:['ボルボックス','Volvox'],st:1,sh:1,r:34,hp:14,spd:64,dmg:14,xp:14,col:'#57d86a',core:'#0f5a20',glow:'rgba(90,220,110,0.5)',spin:0.8,split:['volvd',4]},
  {k:'volvd',look:'volvd',n:['娘群体','Daughter Colony'],st:1,r:14,hp:3,spd:120,dmg:8,xp:3,col:'#8cf08a',core:'#0f5a20',glow:'rgba(130,240,130,0.5)',spin:1.6},
+ // v35: a Hydra's bud. They grow round the Hydra on stalks; while any is on, the Hydra's shells will not crack. Coiled and squeezed, one comes off (see spawnBoss, budOff)
+ {k:'hbud',look:'hydra',n:['子ヒドラ','Hydra Bud'],st:1,sh:1,r:30,hp:16,spd:0,dmg:16,xp:40,col:'#e8bd80',core:'#6a3a10',glow:'rgba(235,190,120,0.5)',arms:2,reach:7,bud:1},
  // stage 2, scale 3 (tardigrades, v34). tun: held in a coil that is only standing for this many seconds, it curls up into a hard tun (tardt: two more shells,
  // brittle, so a dash squeeze breaks it) and uncurls 5 s after it is free. zig: lashes along in a zigzag. slime: leaves a trail that slows the player (not in a dash)
  {k:'plan', n:['プラナリア','Planarian'],st:2,L:62,w:23,r:29,hp:9,spd:72,dmg:14,xp:8,col:'#c9a37a',core:'#4a2a10',glow:'rgba(215,170,120,0.45)',rot:1,split:['planh',2]},
@@ -486,7 +488,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v34.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v35',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -517,6 +519,9 @@ const STR={
  combo:['最大コンボ x{0}','Best combo x{0}'],
  scale:['スケール:','Scale:'],
  boss_hud:['ボス {0}　殻 {1}/{2}','Boss: {0}   Shell {1}/{2}'],
+//#FULL // (v35: words of the full game only: the demo build leaves them out)
+ boss_hud_b:['ボス {0}　子ヒドラ あと {1} 匹','Boss: {0}   Buds left: {1}'],
+//#/FULL
  boss_hud_k:['ボス {0}　あと {1} 回締める','Boss: {0}   Squeezes to go: {1}'],
  gate:['尾が伸びるとボスが出る','Grow your tail to call the boss'],
  key_dash:['SPACE / クリック','SPACE / Click'],
@@ -553,6 +558,15 @@ const STR={
  ev_toxin_s:['倒すと毒の霧が残る。頭で入るとダメージ','They leave poison fog when killed. Keep your head out of it'],
  poison:['毒','Poison'],
  boss_in:['ボス出現！','BOSS INCOMING!'],
+//#FULL // (v35: words of the full game only: the demo build leaves them out)
+ boss_in_h:['{0}：子ヒドラ {1} 匹を剥がしてから殻を割る','{0}: peel off its {1} buds, then crack its shells'],
+ bud_off:['剥がした！ あと {0} 匹','Peeled off! {0} to go'],
+ hydra_bare:['むき出しになった！ 今だ','Bare! Now!'],
+ bud_grow:['子ヒドラがまた生えた','A new bud grew'],
+ guarded:['子ヒドラに守られている','Guarded by its buds'],
+ tip_buds:['子ヒドラから剥がせ','Peel off the buds first'],
+ tip_buds_s:['子がついている間、本体の殻は割れない','While they cling on, its shells will not crack'],
+//#/FULL
  boss_in_k:['{0}：頭を囲んで {1} 回締める','{0}: ring its head and squeeze it, {1} times'],
  king_left:['あと {0} 回','{0} to go'],
  boss_in_s:['{0}：殻{1}枚。尾で{1}回巻いて割る','{0}: {1} shells. Coil around it {1} times to crack them'],
@@ -628,6 +642,7 @@ const STR={
  rare:['レア','RARE'],
  srare:['Sレア','S-RARE'],
  lvup:['LEVEL UP！ 強化をえらぶ','LEVEL UP! Pick an upgrade'],
+//#FULL // (v35: words of the full game only: the demo build leaves them out)
  tun:['乾眠！','Tun!'],
  tip_tun:['クマムシは丸まって固くなる','Tardigrades curl up hard'],
  tip_tun_s:['巻いたまま待つと乾眠する。ダッシュ締めなら一度で割れる','Left in a coil it curls up. A dash squeeze breaks it at once'],
@@ -642,6 +657,7 @@ const STR={
  bk_mosqs:['止まっては体をくねらせて跳ぶ','Hangs still, then wriggles off in a jump'],
  bk_ontard:['このスケールのボス。丸まって転がってくる。尾で跳ね返る','The boss of this scale. Curls up and rolls at you. Your tail bounces it'],
  bk_tadp:['巨大。ここでは巻けない。次の世界の住人','Huge. Cannot be coiled here. One of the next world'],
+//#/FULL
  boss_ate:['食べて殻が戻った！','It ate, and a shell grew back!'],
  lv_more:['このあと、さらに {0} 回えらべる','{0} more to pick after this'],
  pick_touch:['タップでえらぶ','Tap to pick'],
@@ -720,7 +736,9 @@ const STR={
  tip_esc_s:['囲んだら、すぐダッシュで締めろ','Squeeze with a dash before they jump'],
  tip_brittle:['カイミジンコの殻','Seed Shrimp shells'],
  tip_brittle_s:['ダッシュ締めなら、殻ごと一度で割れる','A dash squeeze smashes the whole shell at once'],
+//#FULL // (the Hydra is in the full game only)
  tip_arms:['ヒドラの腕','Hydra arms'],
+//#/FULL
  tip_arms_s:['赤い線の先へ伸びてくる。向きを変えてかわせ','They shoot out along the red line. Turn away'],
  escaped:['逃げた！','Got away!'],
  snapped:['殻ごと割れた！','Shell smashed!'],
@@ -731,7 +749,10 @@ const STR={
  bk_brittle:['殻 2 枚。ダッシュ締めなら殻ごと一度で割れる','Two shells. A dash squeeze smashes them both at once'],
  bk_volv:['倒すと 4 つの娘群体に分かれる','Breaks into four daughter colonies'],
  bk_volvd:['ボルボックスから出てくる。小さくて速い','Comes out of a Volvox. Small and quick'],
- bk_hydra:['このスケールのボス。腕を伸ばし、でんぐり返しで寄ってくる','The boss of this scale. Shoots out its arms, and tumbles toward you'],
+//#FULL // (v35: words of the full game only: the demo build leaves them out)
+ bk_hydra:['このスケールのボス。子ヒドラを全部剥がしてから倒す','The boss of this scale. Peel off all its buds, then beat it'],
+ bk_hbud:['ヒドラから生えた子。殻 1 枚。巻いて剥がす','Budded off the Hydra. One shell. Coil it to peel it off'],
+//#/FULL
  tip_ecoil:['同族に囲まれた','One of your own kind has ringed you'],
  tip_ecoil_s:['赤い輪の中にいると締められる。外へ出ろ','Stay inside the red ring and it squeezes. Get out'],
  ecoil:['囲まれた！','Ringed!'],
@@ -1227,7 +1248,7 @@ const STAGES=[
          [['plan',0,5,0],['chiro',8,2.4,40],['tard',14,2.2,40],['asel',22,1.8,40],['snail',34,1.2,50],['mosqs',46,1.4,60]]],
   waves:WAVES,boss:POND_BOSS,hunt:POND_HUNT,titan:POND_TITAN,toxin:[TOXIN_T[0],TOXIN_T[1],TOXIN_T[2]],gas:[8,10,12],realK:[1,0.7,0.6],rush:POND_RUSH,
   book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'daph'],
-        [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,POND_TITAN[1],'titan'],
+        [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,'hbud','hbud'],[1,POND_TITAN[1],'titan'],
         [2,'plan','plan'],[2,'planh','planh'],[2,'chiro','chiro'],[2,'tard','tard'],[2,'asel','asel'],[2,'snail','snail'],[2,'mosqs','mosqs'],[2,TOXIN_T[2],'toxin'],[2,POND_RUSH[2],'rush'],[2,POND_HUNT[2],'wbc'],[2,POND_BOSS[2],'ontard'],[2,POND_TITAN[2],'tadp']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'jar',n:['蠱毒','Kodoku'],wip:1,names:[['壺の底','The Jar']], // v29: the player's own kind, many of them, among other creatures; the boss is a giant one
   tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
@@ -1378,11 +1399,12 @@ function spawnBoss(){
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
-  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  if(t.k==='hydra'&&!OLDB){const n=Math.min(6,4+P.bossN);e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
+  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
-function armsTick(e,dt){const S=P.S,n=e.t.arms,R0=e.r*2.2,R1=e.r*4.6;
+function armsTick(e,dt){const S=P.S,n=e.t.arms,R0=e.r*2.2,R1=e.r*(e.t.reach||4.6);
   if(!e.arms){e.arms=[];for(let i=0;i<n;i++)e.arms.push({a:i/n*TAU,q:0,qT:rand(1,2.5),x:e.x,y:e.y,tx:0,ty:0});}
   let busy=0;for(const m of e.arms)if(m.q)busy++;
   const pd=Math.hypot(P.x-e.x,P.y-e.y);if(e.bite>0)e.bite-=dt;
@@ -1406,6 +1428,7 @@ function kingHit(e){const c=e.cap,S=P.S,a=Math.atan2(e.y-P.y,e.x-P.x);e.lives--;
   burst(e.x,e.y,40,'#ff8a8a',380,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*5,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});shake=Math.max(shake,14);hitstop=Math.max(hitstop,0.08);sfx('boss');}
 function bossTick(e,dt){
   if(e.t.arms)armsTick(e,dt);
+  if(e.buds)budVolley(e,dt);
   if(e.lives>1&&e.hp<=e.hp0*(e.lives-1)/e.livesMax)kingHit(e); // plain damage takes its lives too: one for each share of its HP
   if(e.t.pull&&!e.cap){const S=P.S,dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.01;if(d<330*S&&P.dashT<=0){P.x-=dx/d*70*S*dt;P.y-=dy/d*70*S*dt;e.pl=0.2;}} // Stentor: a strong whirlpool
   if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}}
@@ -1450,7 +1473,8 @@ function hydraHop(e,dx,dy,d,dt,S,half){
   if(e.bq===2){const r=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/r;MV[1]=(e.ty-e.y)/r;e.vx=e.vy=0;if(e.bT<=0){e.bq=3;e.bT=0.8;shake=Math.max(shake,8);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.4,life:0.35,max:0.35,col:'#e0b070',w:5*S});}return true;}
   MV[0]=MV[1]=0;if(e.bT<=0){e.bq=0;e.hT=rand(5,7)*(half?0.7:1);}return true;}
 // how each move is shown before it comes, and the opening after it
-function drawBossFx(e){const S=P.S,q=e.bq;if(!q||OLDB)return;const k=e.t.k;
+function drawBossFx(e){const S=P.S,q=e.bq;if(budsOn(e)){ctx.strokeStyle=`rgba(255,220,150,${0.35+0.2*Math.sin(T*4)})`;ctx.lineWidth=4*S;ctx.setLineDash([12*S,10*S]);ctx.lineDashOffset=-T*30*S;circ(ctx,e.x,e.y,e.r*1.25);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // v35: guarded by its buds
+  if(!q||OLDB)return;const k=e.t.k;
   if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
     ctx.strokeStyle='rgba(255,90,100,0.8)';ctx.lineWidth=3*S;circ(ctx,e.x,e.y,e.r*(1.05+0.25*f));ctx.stroke();}
   if(k==='ontard'&&q===1){const L=P.spd*S*1.5*1.2+e.r;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.7;ctx.lineCap='round';ctx.setLineDash([18*S,14*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);}
@@ -1460,7 +1484,24 @@ function drawBossFx(e){const S=P.S,q=e.bq;if(!q||OLDB)return;const k=e.t.k;
   if(k==='hydra'&&q===1){const mx=(e.x+e.tx)/2,my=(e.y+e.ty)/2,lx=e.tx-e.x,ly=e.ty-e.y,ll=Math.hypot(lx,ly)+1,hx=mx-ly/ll*ll*0.35,hy=my+lx/ll*ll*0.35;
     ctx.strokeStyle='rgba(255,90,100,0.75)';ctx.lineWidth=3*S;ctx.setLineDash([10*S,9*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.quadraticCurveTo(hx,hy,e.tx,e.ty);ctx.stroke();ctx.setLineDash([]);circ(ctx,e.tx,e.ty,e.r*0.9);ctx.stroke();}}
 function star4(x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.quadraticCurveTo(x,y,x,y+r);ctx.quadraticCurveTo(x,y,x-r,y);ctx.quadraticCurveTo(x,y,x,y-r);ctx.fill();}
+// v35: the Hydra and its buds (the owner: "the Hydra working together with others; peel the big one's pieces off one by one").
+// Buds sit round it on stalks and go where it goes; each has two short arms of its own, and every 6 s the Hydra has them all reach for where the head is going at once.
+// While any bud is on, its shells will not crack. Each bud has one shell: coil it, squeeze it, and it comes off. Bare, the Hydra can be beaten; left bare 15 s, it grows one back (twice at most).
+function hydraBud(m,a){const b=mkEnemy(ET.hbud,m.x+Math.cos(a)*m.r*1.9,m.y+Math.sin(a)*m.r*1.9,true);b.bud=m;b.ba=a;b.hp=Math.ceil(b.hp*(1+0.5*P.bossN));enemies.push(b);m.buds.push(b);return b;}
+function budsOn(m){let n=0;if(m&&m.buds)for(const b of m.buds)if(!b.dead)n++;return n;}
+function budOff(b){const m=b.bud;b.bud=null;if(!m||m.dead)return;const S=P.S,left=budsOn(m)-(b.dead?0:1); // (it is not yet marked dead when this runs)
+  for(let i=1;i<=6;i++){const f=i/7;burst(m.x+(b.x-m.x)*f,m.y+(b.y-m.y)*f,3,'#f0d0a0',150,0.5,3);} // the stalk snaps
+  m.flash=0.25;hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,12);sfx('crack');
+  if(left>0)text(m.x,m.y-m.r-16*S,TX('bud_off',left),22,'#ffe6b0',1.1);else{m.bareAt=T;m.regenT=0;text(m.x,m.y-m.r-16*S,TX('hydra_bare'),28,'#fff3c4',1.4);rings.push({x:m.x,y:m.y,r:m.r,R:m.r*2.6,life:0.5,max:0.5,col:'#ffe6b0',w:6*S});}}
+function budTick(){const m=P.boss;if(!m||m.dead||!m.buds||m.t.k!=='hydra')return; // (outside the loop over the living: a new bud is added here)
+  if(!budsOn(m)&&m.regrown<2&&m.bareAt!==undefined&&T-m.bareAt>15&&!m.cap){m.regrown++;m.bareAt=undefined;const b=hydraBud(m,Math.random()*TAU);b.flash=0.4;text(m.x,m.y-m.r-16*P.S,TX('bud_grow'),20,'#ffb0a0',1.1);sfx('brood');}}
+function budVolley(m,dt){ // every 6 s the buds reach out all together, each with the arm that faces the head's way
+  m.vT=(m.vT===undefined?4:m.vT)-dt;if(m.vT>0||budsOn(m)<2||Math.hypot(P.x-m.x,P.y-m.y)>m.r*8)return;m.vT=6;const S=P.S,px=P.x+Math.cos(P.a)*P.spd*S*0.6,py=P.y+Math.sin(P.a)*P.spd*S*0.6;
+  for(const b of m.buds){if(b.dead||!b.arms||b.cap)continue;const ax=px-b.x,ay=py-b.y,ad=Math.hypot(ax,ay)+0.01,R1=b.r*(b.t.reach||4.6);if(ad>R1+40*S)continue;
+    let best=null,bd=9;for(const q of b.arms){if(q.q)continue;const dd=Math.abs(angDiff(q.a,Math.atan2(ay,ax)));if(dd<bd){bd=dd;best=q;}}
+    if(best){const rr=Math.min(R1,ad+30*S);best.tx=b.x+ax/ad*rr;best.ty=b.y+ay/ad*rr;best.q=1;best.qT=0.65;}}}
 function bossDown(e){
+  if(e.buds)for(const b of e.buds)if(!b.dead){b.dead=true;b.bud=null;burst(b.x,b.y,10,b.t.col,200,0.6,3);}
   P.boss=null;bossKills++;banner=null;hitstop=Math.max(hitstop,0.18);shake=Math.max(shake,24);flashT=0.4;P.inv=Math.max(P.inv,2);sfx('bossdown');vib([80,40,120]);
   text(e.x,e.y,TX('boss_down',e.t.name),40,'#ffe680',1.6);
   if(CS===0)mission(['boss1','boss2','clear'][P.stage]);
@@ -1575,6 +1616,7 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
 // ---------- combat ----------
 function hurt(e,d,xpMul,grp){if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
 function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
+  if(e.bud)budOff(e); // v35
   e.dead=true;if(HUSK&&!e.boss&&!e.titan&&husks.length<160){const d=Math.hypot(e.x-HUSK.x,e.y-HUSK.y);husks.push({e,x:e.x,y:e.y,cx:HUSK.x,cy:HUSK.y,d:Math.min(0.1,0.1*d/HUSK.R),age:0,dsh:HUSK.dsh});}
   else burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);if(e.tr)for(let i=0;i<e.tr.length;i+=3)burst(e.tr[i].x,e.tr[i].y,1,e.t.col,90,0.45,2.5);kills++;sfx('pop');dropTick(e);
   const v=e.pr?PREY_XP*xpMul:e.t.xp*xpMul*(e.xpB||1);
@@ -1612,7 +1654,8 @@ function boomTick(dt){
       bestCombo=Math.max(bestCombo,tot);if(tot>=20)mission('c20');if(tot>=50)mission('c50');vib(25);}}
   compact(booms,b=>!b.done);
 }
-function crackShell(e,n){const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
+function crackShell(e,n){if(budsOn(e)){if(!(e.gT>T)){e.gT=T+1.2;text(e.x,e.y-e.r-12*P.S,TX('guarded'),18,'#ffe6b0',0.9);tip('buds');}return;} // v35: its buds guard the Hydra
+  const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
   burst(e.x,e.y,10+k*6,'#d8f4ff',220*(e.boss?1.6:1),0.55,3);shake=Math.max(shake,e.boss?6:3);sfx('crack');
   if(e.sh===0&&e.t.rage&&!e.rage){enrage(e);return;}
   if(e.sh===0&&(e.boss||e.hunter||e.titan||e.elite))text(e.x,e.y-e.r-10*P.S,TX('cracked'),e.boss||e.hunter||e.titan?26:16,'#d8f4ff',0.9); // common shelled enemies: the ring vanishing is enough
@@ -1930,7 +1973,7 @@ function update(dt){
   for(const e of enemies){
     if(e.dead)continue;
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
-    if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
+    if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter||e.bud){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.frz>0?0:e.chill>0?(e.boss||e.hunter?0.8:0.75-0.1*P.frost):1);let ax=dx/d*s,ay=dy/d*s;
     if(e.pl>0)e.pl-=dt;if(e.chill>0)e.chill-=dt;if(e.frz>0){e.frz-=dt;if(e.frz<0.7&&QL>=1&&Math.random()<dt*14)burst(e.x+rand(-1,1)*e.r,e.y+e.r*0.5,1,'#bfeaff',50,0.4,2);}if(P.frost&&!e.titan&&d<(90+30*P.frost)*S+e.r){e.chill=0.4;if(P.iceage&&!(e.frzCd>T)){freeze(e,1.5);e.frzCd=T+5;}} // Frost Aura (Ice Age: it freezes what comes in, once every 5 s each)
@@ -1942,6 +1985,7 @@ function update(dt){
     else if(e.t.kin&&!e.pr){if(!e.cap){kinMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}else{ax=0;ay=0;}}
     else if(e.lead){if(!e.cap){follow(e,s);ax=MV[0];ay=MV[1];}}
     else if(e.pr){e.dir=(e.dir===undefined?e.ph:e.dir)+(Math.random()-0.5)*dt*2;ax=(dx/d*0.4+Math.cos(e.dir)*0.25)*s;ay=(dy/d*0.4+Math.sin(e.dir)*0.25)*s;} // outgrown: it only drifts in, slowly and not straight
+    else if(e.bud&&!e.bud.dead){if(!e.cap){const m=e.bud,a=e.ba+Math.sin(T*0.7+e.ph)*0.12,R=m.r*1.9;ax=(m.x+Math.cos(a)*R-e.x)*7;ay=(m.y+Math.sin(a)*R-e.y)*7;}else{ax=0;ay=0;}armsTick(e,dt);} // v35: a bud stays on its stalk
     else if(e.boss&&!OLDB&&bossMove(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];} // v33: each boss's moves
     else if(e.t.mv&&!e.cap&&mover(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
     else if((e.t.charge||e.t.shoot)&&!e.cap&&special(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
@@ -1989,7 +2033,7 @@ function update(dt){
     else{c.cinchT+=dt;if(c.cinchT>=0.2){explode(c);c.done=true;}}}
   boomTick(dt);
   compact(captures,c=>!c.done);
-  shotTick(dt,S);splitTick();fireTick(dt);
+  shotTick(dt,S);splitTick();budTick();fireTick(dt);
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
   for(const o of orbs){const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
@@ -2483,6 +2527,7 @@ function render(){
     if(e.cap)ctx.drawImage(CAPGLOW,e.x-e.r*2.4,e.y-e.r*2.4,e.r*4.8,e.r*4.8);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const e of enemies){
+    if(e.bud&&!e.bud.dead){const m=e.bud,mx=(m.x+e.x)/2+(e.y-m.y)*0.12,my=(m.y+e.y)/2-(e.x-m.x)*0.12;ctx.strokeStyle='rgba(230,190,130,0.9)';ctx.lineWidth=e.r*0.45;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.quadraticCurveTo(mx,my,e.x,e.y);ctx.stroke();} // v35: the stalk of a bud
     if(e.arms){ctx.lineCap='round';for(const m of e.arms){const bx=e.x+Math.cos(m.a)*e.r*0.8,by=e.y+Math.sin(m.a)*e.r*0.8; // the hydra's arms: a line from the body to each tip
         ctx.strokeStyle=m.q===2?'#fff3d6':'rgba(240,205,150,0.92)';ctx.lineWidth=e.r*0.17;ctx.beginPath();ctx.moveTo(bx,by);ctx.quadraticCurveTo((bx+m.x)/2+(m.y-by)*0.2,(by+m.y)/2-(m.x-bx)*0.2,m.x,m.y);ctx.stroke();
         ctx.fillStyle=m.q>=2?'#ff8a70':'#ffe2b0';circ(ctx,m.x,m.y,e.r*0.21);ctx.fill();
@@ -2664,7 +2709,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
-  if(P.boss){const b=P.boss,t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
