@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>コイル・バクテリア（試作 v23）</title>
+<title>コイリオ（試作）</title>
 <style>
 /* The game world is a dark microscope field in both themes; tokens kept so the page frame follows the viewer. */
 :root{--bg:#020615;color-scheme:dark;box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg)}
@@ -408,7 +408,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.2';
+const LANGS=['ja','en'],VER='v29.3';
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -417,8 +417,8 @@ function fmtT(t){const m=Math.floor(t/60),s=Math.floor(t%60);return m+':'+(s<10?
 function setLang(i,save){LI=i?1:0;FONT=FONTS[LI];document.documentElement.lang=LANGS[LI];document.title=TX('doc',VER);if(save){META.lang=LANGS[LI];saveMeta();}}
 const STR={
  // title
- doc:['コイル・バクテリア（試作 {0}）','Coil Bacteria (prototype {0})'],
- title:['コイル・バクテリア','Coil Bacteria'],
+ doc:['コイリオ（試作 {0}）','Coilio (prototype {0})'],
+ title:['コイリオ','Coilio'],
  tagline:['らせんで囲って、ダッシュで締める（試作 {0}）','Coil around them, dash to squeeze (prototype {0})'],
  how_touch:['指でなぞって移動 ／ 短くタップでダッシュ','Drag to steer / Quick tap to dash'],
  how_mouse:['マウスか WASD で移動 ／ クリックかスペースでダッシュ','Mouse or WASD to steer / Click or Space to dash'],
@@ -587,8 +587,8 @@ const STR={
  end_mouse_c:['R：もう一度　T：タイトルへ　E：エンドレス','R: Retry   T: Title   E: Endless'],
  endless_btn:['エンドレスで続ける','Keep going (endless)'],
  share:['結果を共有','Share result'],
- share_over:['コイル・バクテリアで {0} 生き残った！ 撃破 {1} / 最大コンボ x{2} / {3}まで到達','I survived {0} in Coil Bacteria! Kills {1} / best combo x{2} / reached {3} scale'],
- share_clear:['コイル・バクテリアをクリア！ {0} / 撃破 {1} / 最大コンボ x{2}','I cleared Coil Bacteria! {0} / kills {1} / best combo x{2}'],
+ share_over:['コイリオで {0} 生き残った！ 撃破 {1} / 最大コンボ x{2} / {3}まで到達','I survived {0} in Coilio! Kills {1} / best combo x{2} / reached {3} scale'],
+ share_clear:['コイリオをクリア！ {0} / 撃破 {1} / 最大コンボ x{2}','I cleared Coilio! {0} / kills {1} / best combo x{2}'],
  copied:['結果をコピーした','Result copied'],
  // records and missions
  mis_n:['ミッション {0} / {1}','Missions {0} / {1}'],
