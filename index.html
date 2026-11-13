@@ -430,7 +430,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.8',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v29.9',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -608,6 +608,9 @@ const STR={
  rec_c:['最大コンボ','best combo'],
  end_mis:['ミッション達成 {0}件','Missions complete: {0}'],
  end_mouse_c:['R：もう一度　T：タイトルへ　E：エンドレス','R: Retry   T: Title   E: Endless'],
+ end_mouse_n:['N：次のステージ　R：もう一度　T：タイトルへ　E：エンドレス','N: Next stage   R: Retry   T: Title   E: Endless'],
+ next_go:['次のステージへ（{0}）','Next stage: {0}'],
+ next_full:['次のステージは製品版で','Next stage: in the full game'],
  endless_btn:['エンドレスで続ける','Keep going (endless)'],
  share:['結果を共有','Share result'],
  share_over:['コイリオで {0} 生き残った！ 撃破 {1} / 最大コンボ x{2} / {3}まで到達','I survived {0} in Coilio! Kills {1} / best combo x{2} / reached {3} scale'],
@@ -908,6 +911,7 @@ addEventListener('keydown',e=>{
   if(state==='level'&&['1','2','3'].includes(k))pick(+k-1);
   else if(state==='level'&&k==='r')reroll();else if(state==='level'&&k==='x')skipCard();
   if(state==='clear'&&k==='e')goEndless();
+  if(state==='clear'&&(k==='n'||k==='enter'))goNext();
   if(state==='chest'&&k==='enter')closeChest();
   if(state==='title'){if(k==='enter')reset(true);else if(k==='arrowleft')cycleSkin(-1);else if(k==='arrowright')cycleSkin(1);else if(k==='b')buySkin();else if(k==='l')setLang(1-LI,true);}
 });
@@ -1346,6 +1350,10 @@ function die(by){
     sfx('chest');vib(80);return;}
   P.hp=0;P.killer=by;state='over';overT=0;burst(P.x,P.y,80,'#7dffb0',380,1.2,4);endRun(false);sfx('over');vib(200);}
 // keep playing after the clear: the last boss returns every 75 s, stronger each time, and the waves keep growing
+// The stage after the one just cleared (v29.9, the owner: "let it go on to the next stage"). Its index if it can be played, -2 if there is one but only
+// in the full game (the demo: the button says so and cannot be pressed), -1 if there is none (the last stage, or one still being made).
+function nextStage(){const i=CS+1;if(i>=STAGES.length)return -1;const d=STAGES[i];return d.full?-2:d.soon?-1:i;}
+function goNext(){const i=nextStage();if(state!=='clear'||overT<0.6||i<0||!stageOpen(i))return;stgIdx=i;META.stg=STAGES[i].id;saveMeta();reset(true);} // it becomes the stage chosen on the title screen too
 function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('endless'),sub:TX('endless_s')};}
 function endRun(clear){if(runRes)return;
@@ -2827,8 +2835,10 @@ function chestScreen(W,H){
 // ----- end of run -----
 // One column: title, cause of death (or the boss beaten), two stat lines, new records, DNA, missions + unlocks, the cards taken,
 // then Retry / Title and a second row (Share, plus Endless after a clear). Short screens (tight) keep only the essentials.
-function endLayout(W,H){const tight=H<520,y0=tight?Math.max(34,H/2-150):H/2-200,bw=Math.min(170,(W-50)/2),by=y0+(tight?124:316);
-  return{tight,y0,retry:{x:W/2-bw-8,y:by,w:bw,h:52},title:{x:W/2+8,y:by,w:bw,h:52},row2:{x:W/2-bw-8,y:by+(tight?58:62),w:bw*2+16,h:tight?36:40}};}
+function endLayout(W,H){const tight=H<520,y0=tight?Math.max(34,H/2-150):H/2-200,bw=Math.min(170,(W-50)/2),by=y0+(tight?124:316),nx=state==='clear'&&nextStage()!==-1;
+  // a clear with a stage after it: "next stage" across the top, then retry / title (a little lower), then share / endless
+  const nh=tight?44:52,dy=nx?nh+(tight?6:8):0,rh=nx?(tight?40:46):52;
+  return{tight,y0,nx,next:{x:W/2-bw-8,y:by,w:bw*2+16,h:nh},retry:{x:W/2-bw-8,y:by+dy,w:bw,h:rh},title:{x:W/2+8,y:by+dy,w:bw,h:rh},row2:{x:W/2-bw-8,y:by+dy+rh+(tight?6:10),w:bw*2+16,h:tight?36:40}};}
 // the cards taken this run as chips, evolutions first
 function cardChips(W,y,maxRows){
   const list=[...EVO.filter(e=>e.has()).map(e=>({s:e.n,q:2})),...[...UPG,...RARE].filter(u=>P.lv[u.id]).map(u=>({s:u.n+' '+(P.lv[u.id]>=u.max?'MAX':'Lv'+P.lv[u.id]),q:u.r||0}))];
@@ -2858,11 +2868,12 @@ function endScreen(W,H,clear){
       if(s){fitFont(s,13,'bold',W-24);ctx.fillStyle='#ffd86a';ctx.fillText(s,W/2,y0+198);}
       cardChips(W,y0+224,3);}
   }
-  btn(L.retry,TX('retry'),1);btn(L.title,TX('to_title'),0);
+  if(L.nx){const n=nextStage(),lab=n>=0?TX('next_go',STAGES[n].n):TX('next_full');if(n>=0&&overT>=0.6)hotBtn(L.next,lab,1,goNext);else btn(L.next,lab,1,n<0);}
+  btn(L.retry,TX('retry'),L.nx?0:1);btn(L.title,TX('to_title'),0);
   if(overT>=0.6){const r=L.row2,hw=(r.w-10)/2;
     if(clear){hotBtn({x:r.x,y:r.y,w:hw,h:r.h},TX('share'),0,shareRun,false,true);hotBtn({x:r.x+hw+10,y:r.y,w:hw,h:r.h},TX('endless_btn'),0,goEndless);}
     else hotBtn({x:r.x+r.w/2-hw/2,y:r.y,w:hw,h:r.h},TX('share'),0,shareRun,false,true);}
-  if(!tight){const s=TX(TOUCH?'end_touch':clear?'end_mouse_c':'end_mouse');ctx.textAlign='center';fitFont(s,12,'normal',W-24);ctx.fillStyle='#7f9db8';ctx.fillText(s,W/2,L.row2.y+L.row2.h+22);}
+  if(!tight){const s=TX(TOUCH?'end_touch':clear?(L.nx&&nextStage()>=0?'end_mouse_n':'end_mouse_c'):'end_mouse');ctx.textAlign='center';fitFont(s,12,'normal',W-24);ctx.fillStyle='#7f9db8';ctx.fillText(s,W/2,L.row2.y+L.row2.h+22);}
 }
 function overScreen(W,H){endScreen(W,H,false);}
 function clearScreen(W,H){endScreen(W,H,true);}
@@ -2898,7 +2909,7 @@ window.__g={get splash(){return SPL;},get s(){return{state,T,kills,bestCombo,ene
   get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
-    return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title)}};},
+    return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO,SUPER};},applyCard,
   spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,cycleStage,get INF(){return INF;},get choices(){return choices?choices.map(c=>(c&&c.id)||''):null;},get stage(){return{cur:CS,sel:stgIdx,list:STAGES.map((s,i)=>({id:s.id,name:s.n,open:stageOpen(i),soon:!!s.soon}))};},spawnTitan,enrage,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
