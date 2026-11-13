@@ -31,7 +31,7 @@ src = src.replace("EDITION='full'", `EDITION='${ed}'`);
 
 const m = src.match(/<script>([\s\S]*)<\/script>/);
 if (!m) { console.error('no <script> found'); process.exit(1); }
-const out = await minify(m[1], { ecma: 2020, compress: { passes: 2 }, mangle: true, format: { comments: false } });
+const out = await minify(m[1], { ecma: 2020, compress: { passes: 2 }, mangle: true, format: { comments: false, preamble: '/*! Coilio (c) 2026 GAME GUYS. All rights reserved. */' } }); // the one comment kept: whose it is
 let head = src.slice(0, m.index), tail = src.slice(m.index + m[0].length);
 head = head.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\n\s*/g, '');
 tail = tail.replace(/\n\s*/g, '');

@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
+<meta name="copyright" content="© 2026 GAME GUYS">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>コイリオ（試作）</title>
@@ -429,7 +430,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.5',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v29.6',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -631,6 +632,8 @@ const STR={
  stg_soon:['（準備中）','(coming soon)'],
  stg_wip:['（試作: 作りかけ）','(prototype: unfinished)'],
  stg_full:['（製品版で遊べます）','(in the full game)'],
+ // the studio's name (the owner chose it, v29.6). No personal names here
+ copy:['© 2026 GAME GUYS','© 2026 GAME GUYS'],
  ed_demo:['体験版','demo'],
  lock_t:['ここでは遊べません','This copy cannot be played here'],
  lock_s:['公式の場所で遊んでください','Please play it at its official home'],
@@ -2561,7 +2564,10 @@ function titleScreen(W,H){
       const bw2=(s.w-18)/2;hotBtn({x:s.x+6,y:s.y+s.h-40,w:bw2,h:34},'‹',0,()=>cycleStage(-1));hotBtn({x:s.x+12+bw2,y:s.y+s.h-40,w:bw2,h:34},'›',0,()=>cycleStage(1));}
     else{const t=nm+(LI?'   ':'　')+d.n+(why?' '+why:'');fitFont(t,15,900,s.w-104);ctx.fillStyle=open?'#eafff2':'#8ea2b4';ctx.fillText(t,s.x+s.w/2,s.y+s.h/2+1);
       hotBtn({x:s.x+4,y:s.y+3,w:42,h:s.h-6},'‹',0,()=>cycleStage(-1));hotBtn({x:s.x+s.w-46,y:s.y+3,w:42,h:s.h-6},'›',0,()=>cycleStage(1));}}
+  copyright(W,H,Math.max(...L.menu.map(b=>b.y+b.h)));
 }
+// the studio's notice: bottom left, or top left when the menu buttons reach the bottom of a short screen
+function copyright(W,H,low){ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.font=`bold 11px ${FONTS[1]}`;ctx.fillStyle='rgba(170,200,228,0.55)';ctx.fillText(TX('copy'),10,low===undefined||H-low>=26?H-10:20);}
 // ----- pause -----
 function pauseScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.72)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
@@ -2863,7 +2869,7 @@ function lockScreen(){ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;ctx.fillSty
   ui((W,H)=>{const y=Math.max(90,H*0.3),lf=Math.min(64,(W-30)/3.9);titleLogo(W/2,y,lf);ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='#ffd0d0';fitFont(TX('lock_t'),22,900,W-30);ctx.fillText(TX('lock_t'),W/2,y+lf*0.62+40);
     ctx.fillStyle='#cfe7ff';fitFont(TX('lock_s'),16,'bold',W-30);ctx.fillText(TX('lock_s'),W/2,y+lf*0.62+74);
-    const bw=Math.min(280,W-60);hotBtn({x:W/2-bw/2,y:y+lf*0.62+108,w:bw,h:54},TX('lock_btn'),1,()=>{location.href=HOME_URL;},false,true);});}
+    const bw=Math.min(280,W-60);hotBtn({x:W/2-bw/2,y:y+lf*0.62+108,w:bw,h:54},TX('lock_btn'),1,()=>{location.href=HOME_URL;},false,true);copyright(W,H);});}
 requestAnimationFrame(frame);
 //#DEV
 window.__g={get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
