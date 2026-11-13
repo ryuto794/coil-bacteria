@@ -419,7 +419,7 @@ if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
 META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick'},META.opts&&typeof META.opts==='object'?META.opts:{});
-if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;
+if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![0,0.35,0.7,1].includes(META.opts.bgm))META.opts.bgm=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;
 META.stats=Object.assign({kills:0,dashKills:0,toxins:0},META.stats&&typeof META.stats==='object'?META.stats:{});
 if(!META.done||typeof META.done!=='object')META.done={};
 META.time=+META.time||0;
@@ -430,7 +430,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v29.9',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v30',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -732,7 +732,8 @@ const STR={
  restart:['やり直す','Restart'],
  quit:['タイトルへ','Quit to title'],
  o_lang:['言語','Language'],
- o_vol:['音量','Sound'],
+ o_vol:['効果音','Sound effects'],
+ o_bgm:['音楽','Music'],
  o_fx:['揺れとフラッシュ','Shake & flash'],
  o_vib:['振動','Vibration'],
  o_ctl:['操作','Controls'],
@@ -888,6 +889,109 @@ const SFX={
 };
 function sfx(name,a){if(!AC||AC.state!=='running'||META.opts.vol<=0)return;const now=performance.now(),gap=SFX_GAP[name];if(gap&&now-(sfxAt[name]||0)<gap)return;sfxAt[name]=now;SFX[name](a);}
 function setVol(v){META.opts.vol=v;if(master)master.gain.value=v*0.6;saveMeta();}
+
+// ---------- music (v30): several tracks made in code (no sound files) ----------
+// A small sequencer and a few voices. Each track: bpm, the chords bar by bar ([bass root, chord notes]), a melody (8 notes a bar, '-' holds the one
+// before, '.' rests), and 16-step patterns (x / X: a hit / an accent; bass: R root, O an octave up, F the fifth; arp: which note of the chord, 0..).
+// A pattern may be a list, one per bar. lv: each voice's level; vol: the whole track's (set so that all are about as loud, and none clips). Which track plays follows the game (musWant): the title, each stage's own, the boss,
+// the rush. A change fades over 0.6 s. Paused, choosing a card, in a capsule: muffled. Game over: silence. Levels are set in Settings (Music).
+const MUS_T={
+ title:{vol:1.15,bpm:88,inst:{lead:'bell',bass:'sine',arp:'bell',pad:1},arpOct:1,
+  bars:[['D2','D3 F3 A3 C4 E4'],['Bb1','Bb2 D3 F3 A3'],['G1','G2 Bb2 D3 F3 A3'],['A1','A2 D3 E3 G3'],['D2','D3 F3 A3 C4 E4'],['Bb1','Bb2 D3 F3 A3'],['G1','G2 Bb2 D3 F3 A3'],['A1','A2 C#3 E3 G3']],
+  mel:'A4 - - - D5 - E5 - | F5 - - - - - D5 - | D5 - C5 - Bb4 - A4 - | A4 - - - - - - - | A4 - - - D5 - F5 - | A5 - - - G5 - F5 - | G5 - F5 - D5 - Bb4 - | C#5 - - - E5 - - -',
+  pat:{bass:'R.......F.......',arp:'..2...3...4...3.',hat:'........x.......'},
+  lv:{lead:0.30,bass:0.30,pad:0.10,arp:0.09,hat:0.03}},
+ body:{vol:0.56,bpm:120,inst:{lead:'lead',bass:'saw',arp:'arp',pad:1},arpOct:1,
+  bars:[['A1','A3 C4 E4'],['F1','F3 A3 C4'],['C2','C3 E3 G3'],['G1','G3 B3 D4'],['A1','A3 C4 E4'],['F1','F3 A3 C4'],['C2','C3 E3 G3'],['E1','E3 G#3 B3']],
+  mel:'A4 - C5 - E5 - D5 C5 | A4 - - - . . G4 A4 | C5 - E5 - G5 - E5 D5 | D5 - - - B4 - G4 - | A4 - C5 - E5 - A5 - | G5 - F5 - E5 - C5 - | E5 - D5 - C5 - D5 - | B4 - - - G#4 - B4 -',
+  pat:{kick:'x...x...x...x...',snare:'....x.......x...',hat:'..x...x...x...x.',bass:'R.R.O.R.R.R.O.RF',arp:'0120120120120120'},
+  lv:{lead:0.20,bass:0.40,pad:0.06,arp:0.05,kick:0.75,snare:0.30,hat:0.10}},
+//#FULL
+ pond:{vol:0.92,bpm:104,inst:{lead:'pluck',bass:'tri',arp:'bubble',pad:1},arpOct:2,
+  bars:[['F2','F3 A3 C4'],['D2','D3 F3 A3'],['Bb1','Bb2 D3 F3'],['C2','C3 E3 G3'],['F2','F3 A3 C4'],['A1','A2 C3 E3'],['Bb1','Bb2 D3 F3'],['C2','C3 E3 G3 Bb3']],
+  mel:'C5 A4 C5 F5 - E5 C5 - | D5 - F5 - A5 - F5 - | D5 C5 Bb4 - D5 - F5 - | E5 - G5 - C5 - - - | F5 A5 G5 F5 - C5 - A4 | E5 - C5 - A4 - C5 E5 | F5 - D5 - Bb4 - D5 - | E5 - G5 - - - C6 -',
+  pat:{kick:'x.......x.......',snare:'....x.......x...',hat:'x.xxx.xxx.xxx.xx',bass:'R...F...O.R.F...',arp:['......2.....1...','..0.......2.....']},
+  lv:{lead:0.34,bass:0.40,pad:0.07,arp:0.08,kick:0.5,snare:0.10,hat:0.035}},
+ jar:{vol:0.9,bpm:96,inst:{lead:'koto',bass:'sine',arp:'koto',pad:1,dark:1},arpOct:1,
+  bars:[['E1','E2 B2 E3'],['E1','E2 B2 E3'],['F1','F2 C3 F3'],['E1','E2 B2 E3'],['E1','E2 B2 E3'],['E1','E2 B2 E3'],['A1','A2 E3 A3'],['B1','B2 F3 B3']],
+  mel:'E5 - F5 - E5 - B4 - | C5 - B4 - A4 - - - | F5 - E5 - C5 - B4 - | E5 - - - - - . . | B4 C5 E5 - F5 - E5 - | C5 - B4 - A4 - B4 - | A4 - C5 - E5 - F5 - | E5 - - - B4 - - -',
+  pat:{taiko:['X.....x.x.......','X.....x...x.x...'],shime:'....x.......x.x.',bass:'R...............'},
+  lv:{lead:0.36,bass:0.42,pad:0.10,taiko:0.5,shime:0.12}},
+//#/FULL
+ boss:{vol:0.48,bpm:138,inst:{lead:'lead',bass:'grit',arp:'arp',pad:0},arpOct:1,
+  bars:[['E2','E3 G3 B3'],['F2','F3 A3 C4'],['E2','E3 G3 B3'],['D2','D3 F#3 A3'],['C2','C3 E3 G3'],['B1','B2 D#3 F#3'],['E2','E3 G3 B3'],['F2','F3 A3 C4']],
+  mel:'E5 - - E5 G5 - F5 - | F5 - - F5 A5 - G5 - | E5 - B4 - E5 - G5 - | F#5 - - - A5 - - - | G5 - E5 - C5 - E5 - | F#5 - D#5 - B4 - D#5 - | E5 - G5 - B5 - G5 - | A5 - G5 - F5 - E5 -',
+  pat:{kick:'x...x...x.x.x...',snare:['....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x...x.x.XXXX'],hat:'xxxxxxxxxxxxxxxx',bass:'RRORRRORRRORRFOR'},
+  lv:{lead:0.19,bass:0.30,kick:0.8,snare:0.32,hat:0.05}},
+ rush:{vol:0.46,bpm:152,inst:{lead:'lead',bass:'grit',arp:'arp',pad:0},arpOct:1,
+  bars:[['G1','G3 Bb3 D4'],['G1','G3 Bb3 D4'],['Eb2','Eb3 G3 Bb3'],['F2','F3 A3 C4']],
+  mel:'G5 - D5 - G5 - Bb5 - | A5 - F5 - D5 - F5 - | G5 - Eb5 - Bb4 - Eb5 - | F5 - A5 - C6 - A5 -',
+  pat:{kick:'x.x.x.x.x.x.x.x.',snare:'....x.......x...',hat:'xxxxxxxxxxxxxxxx',bass:'ROROROROROROROFO',arp:'0123012301230123'},
+  lv:{lead:0.17,bass:0.30,arp:0.05,kick:0.7,snare:0.30,hat:0.05}}};
+const NOTE=s=>{const m=/^([A-G])(#|b)?(-?\d)$/.exec(s);return 12*(+m[3]+1)+'C D EF G A B'.indexOf(m[1])+(m[2]==='#'?1:m[2]==='b'?-1:0);},MHZ=m=>440*Math.pow(2,(m-69)/12);
+function musPrep(tr){if(tr.ok)return tr;for(const k in tr.lv)tr.lv[k]*=tr.vol||1;tr.bars=tr.bars.map(([b,c])=>[NOTE(b),c.split(' ').map(NOTE)]);tr.mel=tr.mel.replace(/\|/g,' ').trim().split(/\s+/).map(t=>t==='.'||t==='-'?t:NOTE(t));tr.ok=1;return tr;}
+// the voices, on any audio context: the game's, or an offline one (to render a track to listen to). nb: a buffer of noise
+function musRig(ac,dest,nb){
+  const out=ac.createDynamicsCompressor(),trim=ac.createGain();out.threshold.value=-16;out.ratio.value=4;out.attack.value=0.005;out.release.value=0.2;trim.gain.value=0.8;out.connect(trim);trim.connect(dest); // (the compressor adds its own make-up gain: trimmed back, so nothing clips)
+  const rv=ac.createConvolver(),rl=ac.sampleRate*1.6|0,ir=ac.createBuffer(2,rl,ac.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<rl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/rl,2.6);}
+  rv.buffer=ir;const rg=ac.createGain();rg.gain.value=0.35;rv.connect(rg);rg.connect(out);
+  const dl=ac.createDelay(1.5),fb=ac.createGain(),dw=ac.createGain();fb.gain.value=0.3;dw.gain.value=0.25;dl.connect(fb);fb.connect(dl);dl.connect(dw);dw.connect(out);
+  const osc=(type,f,t,t1)=>{const x=ac.createOscillator();x.type=type;x.frequency.setValueAtTime(f,t);x.start(t);x.stop(t1);return x;};
+  const env=(t,a,v,hold,rel)=>{const g=ac.createGain(),q=g.gain;q.setValueAtTime(0.0001,t);q.linearRampToValueAtTime(v,t+a);q.setValueAtTime(v,t+a+hold);q.exponentialRampToValueAtTime(0.0001,t+a+hold+rel);return g;};
+  const filt=(type,f,q)=>{const x=ac.createBiquadFilter();x.type=type;x.frequency.value=f;x.Q.value=q||0.7;return x;};
+  const send=(n,r,d)=>{n.connect(out);if(r){const s=ac.createGain();s.gain.value=r;n.connect(s);s.connect(rv);}if(d){const s=ac.createGain();s.gain.value=d;n.connect(s);s.connect(dl);}};
+  const noise=(t,t1)=>{const s=ac.createBufferSource();s.buffer=nb;s.loop=true;s.start(t,Math.random()*0.3);s.stop(t1);return s;};
+  const mix=(src,v)=>{const g=ac.createGain();g.gain.value=v;src.connect(g);return g;};
+  return{
+    tempo(bpm){dl.delayTime.value=60/bpm*0.75;},
+    bass(t,m,d,v,kind){const f=MHZ(m),e=t+d+0.3,g=env(t,0.006,v,d*0.6,0.14),lp=filt('lowpass',kind==='sine'||kind==='tri'?2200:1200,kind==='saw'?5:1);
+      if(kind==='saw'||kind==='grit'){lp.frequency.setValueAtTime(kind==='grit'?2600:1700,t);lp.frequency.exponentialRampToValueAtTime(240,t+d+0.12);}
+      osc(kind==='sine'?'sine':kind==='tri'?'triangle':'sawtooth',f,t,e).connect(lp);
+      if(kind==='saw'||kind==='grit')mix(osc('square',f*(kind==='grit'?1.006:0.5),t,e),0.4).connect(lp);else mix(osc('triangle',f*2,t,e),0.15).connect(lp);
+      lp.connect(g);send(g,0,0);},
+    lead(t,m,d,v){const f=MHZ(m),e=t+d+0.3,g=env(t,0.01,v,Math.max(0.02,d-0.06),0.16),lp=filt('lowpass',3000,1);
+      osc('square',f,t,e).connect(lp);mix(osc('sawtooth',f*1.004,t,e),0.6).connect(lp);lp.connect(g);send(g,0.18,0.28);},
+    bell(t,m,d,v){const f=MHZ(m),s=ac.createGain();[[1,1,1.8],[2.756,0.32,0.9],[5.4,0.1,0.35]].forEach(([k,a,r])=>{const g=env(t,0.003,v*a,0,r);osc('sine',f*k,t,t+r+0.05).connect(g);g.connect(s);});send(s,0.45,0.15);},
+    pluck(t,m,d,v){const f=MHZ(m),s=ac.createGain(),g=env(t,0.003,v,0,0.42),g2=env(t,0.002,v*0.18,0,0.1);osc('sine',f,t,t+0.5).connect(g);osc('sine',f*4,t,t+0.15).connect(g2);g.connect(s);g2.connect(s);send(s,0.25,0.12);},
+    bubble(t,m,d,v){const f=MHZ(m),g=env(t,0.003,v,0,0.12),o=osc('sine',f,t,t+0.16);o.frequency.exponentialRampToValueAtTime(f*1.6,t+0.07);o.connect(g);send(g,0.3,0);},
+    koto(t,m,d,v){const f=MHZ(m),e=t+1.1,g=env(t,0.002,v,0,0.95),lp=filt('lowpass',2800,1.2);lp.frequency.setValueAtTime(3200,t);lp.frequency.exponentialRampToValueAtTime(900,t+0.6);
+      const a=osc('triangle',f*1.012,t,e);a.frequency.exponentialRampToValueAtTime(f,t+0.05);a.connect(lp);mix(osc('sawtooth',f*1.002,t,e),0.35).connect(lp);lp.connect(g);send(g,0.35,0);},
+    arp(t,m,d,v){const g=env(t,0.003,v,0,0.11),lp=filt('lowpass',2600);osc('square',MHZ(m),t,t+0.16).connect(lp);lp.connect(g);send(g,0.1,0.15);},
+    pad(t,ns,d,v,dark){const lp=filt('lowpass',dark?520:900),g=env(t,0.35,v,Math.max(0.05,d-0.35),0.7);for(const m of ns)for(const k of[0.996,1.004])mix(osc('sawtooth',MHZ(m)*k,t,t+d+0.8),0.5).connect(lp);lp.connect(g);send(g,0.45,0);},
+    kick(t,v){const g=env(t,0.002,v,0.02,0.26),o=osc('sine',150,t,t+0.32);o.frequency.exponentialRampToValueAtTime(42,t+0.12);o.connect(g);send(g,0,0);},
+    snare(t,v){const g=env(t,0.002,v,0,0.15),bp=filt('bandpass',1900,0.8);noise(t,t+0.2).connect(bp);bp.connect(g);send(g,0.12,0);const g2=env(t,0.002,v*0.5,0,0.07);osc('triangle',190,t,t+0.1).connect(g2);send(g2,0,0);},
+    hat(t,v){const g=env(t,0.001,v,0,0.045),hp=filt('highpass',7500);noise(t,t+0.07).connect(hp);hp.connect(g);send(g,0,0);},
+    taiko(t,v){const g=env(t,0.003,v,0.02,0.5),o=osc('sine',115,t,t+0.6);o.frequency.exponentialRampToValueAtTime(58,t+0.22);o.connect(g);send(g,0.3,0);
+      const g2=env(t,0.002,v*0.45,0,0.09),lp=filt('lowpass',520);noise(t,t+0.12).connect(lp);lp.connect(g2);send(g2,0.2,0);},
+    shime(t,v){const g=env(t,0.002,v,0,0.12),o=osc('triangle',420,t,t+0.15);o.frequency.exponentialRampToValueAtTime(300,t+0.06);o.connect(g);send(g,0.2,0);
+      const g2=env(t,0.001,v*0.6,0,0.04),bp=filt('bandpass',3200,1.2);noise(t,t+0.06).connect(bp);bp.connect(g2);send(g2,0,0);}};}
+// one 16th of a track, at time t
+function musStep(R,tr,step,t){const sp=60/tr.bpm/4,bar=(step>>4)%tr.bars.length,s=step&15,[root,ch]=tr.bars[bar],p=tr.pat,lv=tr.lv,ins=tr.inst;
+  const at=x=>{const q=Array.isArray(x)?x[bar%x.length]:x;return q&&q[s]!=='.'?q[s]:null;};let c;
+  for(const k of['kick','snare','hat','taiko','shime'])if((c=at(p[k]))&&lv[k])R[k](t,lv[k]*(c==='X'?1.35:1));
+  if((c=at(p.bass))&&lv.bass)R.bass(t,root+(c==='O'?12:c==='F'?7:0),sp*1.6,lv.bass,ins.bass);
+  if((c=at(p.arp))&&lv.arp){const i=+c;R[ins.arp](t,ch[i%ch.length]+12*((i/ch.length|0)+(tr.arpOct||0)),sp,lv.arp);}
+  if(s===0&&ins.pad&&lv.pad)R.pad(t,ch,sp*16,lv.pad,ins.dark);
+  if(s%2===0){const n=tr.mel.length,i=(step>>1)%n,m=tr.mel[i];if(m!=='.'&&m!=='-'){let k=1;while(k<16&&tr.mel[(i+k)%n]==='-')k++;R[ins.lead](t,m,sp*2*k*0.95,lv.lead);}}}
+// which track the game wants now (null: silence)
+function musWant(){if(LOCKED||SPL>=0)return null;if(state==='title')return 'title';if(state==='menu')return mus.want;if(state==='over')return null;if(state==='clear')return 'title';
+  if(P.rushT>0)return 'rush';if(P.boss&&!P.boss.dead)return 'boss';return ['body','pond','jar'][CS]||'body';}
+const mus={cur:null,want:null,step:0,next:0,sw:0,R:null,bus:null,duck:null,out:null};
+function musTick(){if(!AC||AC.state!=='running')return;const now=AC.currentTime;
+  if(!mus.R){mus.out=AC.createGain();mus.out.gain.value=0;mus.out.connect(AC.destination); // not through master: Music has its own setting
+    mus.duck=AC.createBiquadFilter();mus.duck.type='lowpass';mus.duck.frequency.value=18000;mus.duck.connect(mus.out);
+    mus.bus=AC.createGain();mus.bus.gain.value=0;mus.bus.connect(mus.duck);mus.R=musRig(AC,mus.bus,noiseBuf);}
+  const lvl=META.opts.bgm,want=lvl>0?musWant():null,ducked=state==='pause'||state==='level'||state==='chest'||(state==='menu'&&mus.want!=='title');
+  mus.out.gain.setTargetAtTime(lvl*0.23*(ducked?0.6:1),now,0.1); // 0.23 = 0.55 x the effects' 0.42 at their default (Medium)
+  mus.duck.frequency.setTargetAtTime(ducked?700:18000,now,0.12);
+  if(want!==mus.want){mus.want=want;const q=mus.bus.gain;q.cancelScheduledValues(now);q.setValueAtTime(q.value,now);q.linearRampToValueAtTime(0,now+0.6);mus.sw=now+0.6;} // fade the old one out
+  if(mus.sw&&now>=mus.sw){mus.sw=0;mus.cur=mus.want;mus.step=0;mus.next=now+0.05;
+    if(mus.cur){mus.R.tempo(MUS_T[mus.cur].bpm);const q=mus.bus.gain;q.cancelScheduledValues(now);q.setValueAtTime(0,now);q.linearRampToValueAtTime(1,now+0.3);}}
+  if(!mus.cur)return;const tr=musPrep(MUS_T[mus.cur]),sp=60/tr.bpm/4;
+  if(mus.next<now-0.2)mus.next=now+0.05; // it fell behind (the tab was away): pick up from now
+  while(mus.next<now+0.15){musStep(mus.R,tr,mus.step,mus.next);mus.next+=sp;mus.step++;}}
+setInterval(musTick,40);
+function setBgm(v){META.opts.bgm=v;saveMeta();}
 function vib(p){if(META.opts.vib&&navigator.vibrate&&!DEMO)try{navigator.vibrate(p);}catch(e){}}
 const FS_OK=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
 function isFS(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
@@ -2619,6 +2723,7 @@ function optsBody(W,top,bot){
   const o=META.opts,cyc=(arr,v)=>arr[(arr.indexOf(v)+1)%arr.length],set=(k,v)=>{o[k]=v;saveMeta();};
   const rows=[[TX('o_lang'),LI?'English':'日本語',()=>setLang(1-LI,true)],
     [TX('o_vol'),TX('vol_'+[0,0.35,0.7,1].indexOf(o.vol)),()=>setVol(cyc([0,0.35,0.7,1],o.vol))],
+    [TX('o_bgm'),TX('vol_'+[0,0.35,0.7,1].indexOf(o.bgm)),()=>setBgm(cyc([0,0.35,0.7,1],o.bgm))],
     [TX('o_fx'),TX('fx_'+[1,0.4,0].indexOf(o.fx)),()=>set('fx',cyc([1,0.4,0],o.fx))]];
   if(TOUCH)rows.push([TX('o_ctl'),TX('ctl_'+(o.ctl==='point'?1:0)),()=>set('ctl',o.ctl==='point'?'stick':'point')]);
   if(navigator.vibrate)rows.push([TX('o_vib'),TX(o.vib?'on':'off'),()=>{set('vib',!o.vib);vib(30);}]);
@@ -2902,7 +3007,14 @@ function lockScreen(){ctx.setTransform(DPR,0,0,DPR,0,0);hot.length=0;ctx.fillSty
     const bw=Math.min(280,W-60);hotBtn({x:W/2-bw/2,y:y+lf*0.62+108,w:bw,h:54},TX('lock_btn'),1,()=>{location.href=HOME_URL;},false,true);copyright(W,H);});}
 requestAnimationFrame(frame);
 //#DEV
-window.__g={get splash(){return SPL;},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
+window.__g={get bgm(){return{cur:mus.cur,want:mus.want,step:mus.step};},
+  renderMusic(id,sec){const sr=22050,ac=new OfflineAudioContext(1,sr*sec,sr),nb=ac.createBuffer(1,sr/2|0,sr),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const R=musRig(ac,ac.destination,nb),tr=musPrep(MUS_T[id]);R.tempo(tr.bpm);for(let t=0.05,s=0;t<sec-0.3;t+=60/tr.bpm/4,s++)musStep(R,tr,s,t);
+    return ac.startRendering().then(b=>{const x=b.getChannelData(0),n=x.length,v=new DataView(new ArrayBuffer(44+n*2)),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+      w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+      let pk=0,ss=0;for(let i=0;i<n;i++){const y=Math.max(-1,Math.min(1,x[i]));pk=Math.max(pk,Math.abs(y));ss+=y*y;v.setInt16(44+i*2,y*32767,true);}
+      let s='';const u=new Uint8Array(v.buffer);for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return{wav:btoa(s),peak:pk,rms:Math.sqrt(ss/n)};});},
+  get splash(){return SPL;},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
