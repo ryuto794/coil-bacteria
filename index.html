@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.2',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.3',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1441,7 +1441,7 @@ function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, 
     if(t.chain){i+=Math.max(1,spawnChain(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.wedge&&!prey){i+=Math.max(1,spawnWedge(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.mv==='spring'&&!prey&&!at){const a2=P.a+rand(-1.2,1.2),d2=rand(250,400)*Sx,e=mkEnemy(t,P.x+Math.cos(a2)*d2,P.y+Math.sin(a2)*d2);burst(e.x,e.y,8,t.col,120,0.5,3);enemies.push(e);continue;} // rooted: it sprouts ahead of the player, in sight
-    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(prey&&!e.pr){e.pr=e.pf=true;e.hp=1;e.sh=e.shMax=0;}if(PIT&&!at&&t.mv!=='roll')e.scr=1; /* v38.2 it tries to climb out of the pit */ if(!at&&!prey)maybeShell(e);if(!e.pr){if(t.boom)tip('bomb');else if(t.charge)tip('rush');else if(t.shoot)tip('shot');else if(t.split)tip('split');}enemies.push(e);
+    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(prey&&!e.pr){if(PREY_L){e.fd=1;e.sh=e.shMax=0;e.xpB=PREY_XP_S;}else{e.pr=e.pf=true;e.hp=1;e.sh=e.shMax=0;}} /* (v38.3: a stage's small fry (fd) are real, weak enemies that come in swarms and drop XP; they do not count against the giants) */if(PIT&&!at&&t.mv!=='roll')e.scr=1; /* v38.2 it tries to climb out of the pit */ if(!at&&!prey)maybeShell(e);if(!e.pr){if(t.boom)tip('bomb');else if(t.charge)tip('rush');else if(t.shoot)tip('shot');else if(t.split)tip('split');}enemies.push(e);
   }
 }
 // A chain: beads in a line, each one following the one in front (e.lead). The first has no lead and snakes its way in; when it dies the next takes over.
@@ -1486,7 +1486,7 @@ const STAGES=[
          [['centi',0,1.2,0],['mantis',8,2.4,40]]],
   waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.85,0.75],rush:[null,null,null],
   book:[[0,'ant','ant'],[0,'antl','antl'],[0,'sprg','sprg'],[0,'pill','pill'],[1,'grass','grass'],[1,'spid','spid'],[1,'beet','beet'],[2,'centi','centi'],[2,'mantis','mantis'],[2,PIT_BOSS[0],'alion']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:900,gate:1600,apart:1,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
+ {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:900,gate:1800,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
   tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
   waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
   book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
@@ -1494,8 +1494,8 @@ const STAGES=[
 //#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1}, // in the demo: names only, shown as in the full game
 ];
 loc(STAGES,'n');
-let CS=0,stgIdx=0,APART=false,PREY_L=null; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
-function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;PREY_L=d.prey||null;return true;}
+let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
+function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;PREY_L=d.prey||null;PREY_XP_S=d.preyXp||PREY_XP;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i){if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
 function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&((bestOf(i-1).clears||0)>0||FORCE_STG===i));} // a stage opens when the one before it has been cleared
@@ -1516,13 +1516,13 @@ function waveTick(dt){
   if(P.titanDue&&!P.boss&&spawnTitan())P.titanDue=false; // a titan that was held back by a boss comes once the boss is gone
   P.kT=(P.kT||0)+dt;if(P.kT>=1){P.kps=(P.kps||0)*0.6+(kills-(P.kL||0))*0.4;P.kL=kills;P.kT=0;} // kills per second, smoothed
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
-  let real=0,prey=0;for(const e of enemies){if(e.boss||e.hunter||e.titan||e.dead)continue;if(e.pr)prey++;else real++;}
+  let real=0,prey=0;for(const e of enemies){if(e.boss||e.hunter||e.titan||e.dead)continue;if(e.pr||e.fd)prey++;else real++;}
   if(real+prey>=CAP)return;
   const def=Math.round(w[1]*mul*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real;
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));
     if(P.kps>6&&def>(def+real)*0.4)P.waveT=Math.min(P.waveT,0.3);} // v23: the screen is being emptied faster than it fills: the next group comes at once
   else if(!APART&&Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle (v38: not giants: a few at a time is the point)
-  if(P.stage||PREY_L){const pd=(PREY_L?Math.min(QL<2?16:22,12+(T/20|0)):Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9)))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
+  if(P.stage||PREY_L){const pd=(PREY_L?Math.min(QL<2?40:60,30+(T/6|0)):Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9)))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
 // first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
@@ -1648,7 +1648,8 @@ function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: ho
     if(PIT.fq===0&&PIT.fT<=0&&g<half*1.3){PIT.fq=1;PIT.fw=0.7;sfx('latch');}
     if(PIT.fq===1){PIT.fw-=dt;if(PIT.fw<=0){PIT.fq=0;PIT.fT=Math.max(3.5,rand(6,8.5)-T/120);const x0=PIT.jx,y0=PIT.y-B.r*0.95,a=Math.atan2(P.y-y0,P.x-x0),n=T>180?7:5,v=250*S;
       for(let i=0;i<n;i++){const b=a+(i/(n-1)-0.5)*0.9;shots.push({x:x0,y:y0,vx:Math.cos(b)*v,vy:Math.sin(b)*v,life:3,dmg:8,by:B});}burst(x0,y0,18,'#d8b47a',260,0.6,3);sfx('brood');}}}
-  for(const it of items)if(it.y>PIT.y-30*S)it.y=PIT.y-30*S; // what can be picked up is not lost: it rides up in front of the edge
+  PIT.mT=(PIT.mT===undefined?2.5:PIT.mT)-dt;if(PIT.mT<=0&&!P.clearAt){PIT.mT=5;items.push({x:P.x+rand(-0.38,0.38)*W*S,y:P.y-H*(0.5-CAMY)*S-24*S,k:'mag',life:40,ph:Math.random()*TAU,fall:1});} // v38.3 an XP magnet falls in from the top every 5 s
+  for(const it of items){if(it.fall){it.y+=80*S*dt;it.x+=Math.sin(T*1.6+it.ph)*24*S*dt;if(it.y>PIT.y)it.life=0;}else if(it.y>PIT.y-30*S)it.y=PIT.y-30*S;} // what falls slides down with the sand (missed, it is lost); the rest rides up in front of the edge
   for(const c of chests)if(c.y>PIT.y-40*S)c.y=PIT.y-40*S;}
 function pitJaw(x,y){const R=PIT_BOSS[0].r,qx=(x-PIT.jx)/(R*0.48),qy=(y-PIT.y+R*0.42)/(R*0.55);return qx*qx+qy*qy<1;} // v37.1 inside the antlion's open jaws (they stand up out of the sand, as tall as it is big)
 function pitEat(e){e.dead=true;burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;} // over the edge: eaten
@@ -1674,22 +1675,34 @@ function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,
 function alionMove(e,dx,dy,d,s,dt,S,half){const t=e.t;
   if(e.bq===8){MV[0]=0;MV[1]=-t.r*0.8;e.ang=-Math.PI/2;if(QL>=1&&Math.random()<0.5)burst(e.x+rand(-1,1)*t.r,e.y+t.r*0.5,1,'#d8b47a',120,0.5,3);if(e.bT<=0){e.bq=0;e.bT=1.6;}return true;}
   if(!e.bq){const want=Math.max(300*S,t.r*2.2),k=d<want*0.8?-0.7:d>want*1.3?0.8:0,sd=e.ph<Math.PI?1:-1;MV[0]=(dx/d*k-dy/d*0.35*sd)*s;MV[1]=(dy/d*k+dx/d*0.35*sd)*s;e.ang+=angDiff(e.ang,Math.atan2(dy,dx))*Math.min(1,dt*4);
-    if(e.bT<=0){e.cyc=(e.cyc||0)+1;if(e.cyc%2&&d<720*S){e.bq=1;e.bT=0.7;e.rn=half?2:1;sfx('latch');}else{e.bq=5;e.bT=0.45;e.freeT=T+1.75;sfx('crack');}}
+    if(e.bT<=0){e.cyc=(e.cyc||0)+1;if(e.cyc%2&&d<720*S){e.bq=1;e.bT=0.7;e.rn=half?2:1;sfx('latch');}else{e.bq=5;e.bT=0.6;e.hide=1;e.freeT=T+1.9;e.trl=[];sfx('crack');}}
     return true;}
   if(e.bq===1){MV[0]=MV[1]=0;e.ang+=angDiff(e.ang,Math.atan2(dy,dx))*Math.min(1,dt*6);
     if(e.bT<=0){const n=half?13:9,v=220*S,a=e.ang,mx=e.x+Math.cos(a)*t.r*1.4,my=e.y+Math.sin(a)*t.r*1.4;for(let i=0;i<n;i++){const b=a+(i/(n-1)-0.5)*1.25;shots.push({x:mx,y:my,vx:Math.cos(b)*v,vy:Math.sin(b)*v,life:3.2,dmg:Math.round(t.dmg*0.45),by:t});}
       burst(mx,my,20,'#d8b47a',280,0.6,3);sfx('brood');shake=Math.max(shake,6);e.rn--;if(e.rn>0)e.bT=0.45;else{e.bq=3;e.bT=1.3;}}return true;}
-  if(e.bq===5){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=6;e.bT=1.2;e.hide=1;e.tx=P.x;e.ty=P.y;e.tR=Math.max(t.r*1.05,90*S);burst(e.x,e.y,26,'#d8b47a',240,0.6,4);}return true;} // it digs in
-  if(e.bq===6){if(e.bT>0.7){const k=Math.min(1,dt*2.5);e.tx+=(P.x-e.tx)*k;e.ty+=(P.y-e.ty)*k;}const q=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/q;MV[1]=(e.ty-e.y)/q;e.vx=e.vy=0;
+  if(e.bq===5){MV[0]=MV[1]=0;if(QL>=1)burst(e.x+rand(-0.6,0.6)*t.r,e.y+rand(-0.6,0.6)*t.r,2,'#d8b47a',260,0.6,3.5);if(e.bT<=0){e.bq=6;e.bT=1.2;e.tx=P.x;e.ty=P.y;e.tR=Math.max(t.r*1.05,90*S);burst(e.x,e.y,26,'#d8b47a',240,0.6,4);}return true;} // it digs in (v38.3: drawn sinking, sand flying up round it)
+  if(e.bq===6){e.tlT=(e.tlT||0)-dt;if(e.tlT<=0){e.tlT=0.04;e.trl.push([e.x,e.y]);if(e.trl.length>16)e.trl.shift();} // (v38.3: the furrow it leaves)
+    if(e.bT>0.7){const k=Math.min(1,dt*2.5);e.tx+=(P.x-e.tx)*k;e.ty+=(P.y-e.ty)*k;}const q=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/q;MV[1]=(e.ty-e.y)/q;e.vx=e.vy=0;
     if(QL>=1&&Math.random()<0.7)burst(e.x+rand(-0.5,0.5)*t.r,e.y+rand(-0.5,0.5)*t.r,1,'#d8b47a',100,0.5,3);
-    if(e.bT<=0){e.hide=0;e.bq=3;e.bT=1.6;e.ang=Math.atan2(dy,dx);shake=Math.max(shake,14);sfx('crack');burst(e.x,e.y,34,'#d8b47a',340,0.7,4);rings.push({x:e.x,y:e.y,r:e.tR*0.4,R:e.tR*1.2,life:0.35,max:0.35,col:'#ff7060',w:7*S});
+    if(e.bT<=0){e.hide=0;e.bq=3;e.bT=1.6;e.pop=0.35;e.trl=[];e.ang=Math.atan2(dy,dx);shake=Math.max(shake,14);sfx('crack');burst(e.x,e.y,34,'#d8b47a',340,0.7,4);rings.push({x:e.x,y:e.y,r:e.tR*0.4,R:e.tR*1.2,life:0.35,max:0.35,col:'#ff7060',w:7*S});
       if(Math.hypot(P.x-e.x,P.y-e.y)<e.tR+10*S)hitHead(Math.round(t.dmg*1.5),t);}return true;}
-  MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(2,3)*(half?0.7:1);}return true;}
+  MV[0]=MV[1]=0;e.lastCrack=T;if(e.pop>0)e.pop=Math.max(0,e.pop-dt*1.6);if(e.bT<=0){e.bq=0;e.bT=rand(2,3)*(half?0.7:1);}return true;}
 function alionFx(e){const S=P.S,q=e.bq,t=e.t;
   if(q===1){const a=e.ang,x0=e.x+Math.cos(a)*t.r*1.4,y0=e.y+Math.sin(a)*t.r*1.4,L=340*S;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);
     for(const k of[-0.62,-0.31,0,0.31,0.62]){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+Math.cos(a+k)*L,y0+Math.sin(a+k)*L);ctx.stroke();}ctx.setLineDash([]);}
-  if(q===6){const f=e.bT<=0.7?1:0;ctx.fillStyle='rgba(200,160,100,0.8)';ctx.beginPath();ctx.ellipse(e.x,e.y,t.r*0.7,t.r*0.45,0,0,TAU);ctx.fill();ctx.fillStyle='rgba(120,85,45,0.8)';ctx.beginPath();ctx.ellipse(e.x,e.y+t.r*0.12,t.r*0.45,t.r*0.18,0,0,TAU);ctx.fill();
-    ctx.fillStyle=`rgba(255,40,60,${0.1+0.16*f+0.05*Math.sin(T*20)})`;circ(ctx,e.tx,e.ty,e.tR);ctx.fill();ctx.strokeStyle=`rgba(255,80,95,${0.55+0.35*f})`;ctx.lineWidth=4*S;circ(ctx,e.tx,e.ty,e.tR);ctx.stroke();}
+  const R=t.r,heap=(x,y,r,a)=>{ctx.lineWidth=r*0.2;ctx.strokeStyle=`rgba(205,165,105,${a.toFixed(3)})`;circ(ctx,x,y,r);ctx.stroke();ctx.lineWidth=r*0.06;ctx.strokeStyle=`rgba(85,55,25,${a.toFixed(3)})`;circ(ctx,x,y,r*0.88);ctx.stroke();};
+  if(q===5){const f=Math.min(1,1-Math.max(0,e.bT)/0.6),sp=t.spr,k=(1-0.5*f)/(t.res||1),w=sp.width*k,h=sp.height*k; // v38.3 sinking: it shakes and goes down backwards, sand heaping up round it
+    ctx.save();ctx.globalAlpha=Math.max(0,1-f*1.15);ctx.translate(e.x,e.y);ctx.rotate(e.ang+Math.sin(T*42)*0.06*(1-f));ctx.drawImage(sp,-w/2,-h/2,w,h);ctx.restore();ctx.globalAlpha=1;heap(e.x,e.y,R*(0.55+0.55*f),0.75);}
+  if(q===6){const lock=e.bT<=0.7,L=e.trl,a=L&&L.length>1?Math.atan2(e.y-L[0][1],e.x-L[0][0]):e.ang,fr=e.tR; // v38.3 under the sand (the owner: "the digging looks really lame")
+    // where it will come up: a little pit opening under the player, the sand turning in toward a dark middle; its rim goes red as it locks
+    const gr=ctx.createRadialGradient(e.tx,e.ty,0,e.tx,e.ty,fr);gr.addColorStop(0,'rgba(18,9,3,0.85)');gr.addColorStop(0.55,'rgba(85,55,25,0.5)');gr.addColorStop(1,'rgba(160,120,70,0)');ctx.fillStyle=gr;circ(ctx,e.tx,e.ty,fr);ctx.fill();
+    ctx.lineWidth=2.4*S;ctx.strokeStyle='rgba(230,195,135,0.55)';for(let i=0;i<9;i++){const a0=T*(lock?3.4:1.8)+i/9*TAU;ctx.beginPath();for(let j=0;j<=12;j++){const u=j/12,rr=fr*(1-u*0.85),aa=a0+u*2.4,x=e.tx+Math.cos(aa)*rr,y=e.ty+Math.sin(aa)*rr;j?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
+    ctx.strokeStyle=`rgba(255,70,80,${(lock?0.55+0.4*Math.sin(T*30):0.28).toFixed(3)})`;ctx.lineWidth=(lock?5:3)*S;circ(ctx,e.tx,e.ty,fr);ctx.stroke();
+    // the furrow behind it, the sand heaving over it, and its jaw tips cutting through the top like fins
+    if(L&&L.length>1){ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();L.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.lineTo(e.x,e.y);ctx.strokeStyle='rgba(70,45,20,0.5)';ctx.lineWidth=R*0.5;ctx.stroke();ctx.strokeStyle='rgba(215,180,120,0.5)';ctx.lineWidth=R*0.28;ctx.stroke();}
+    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(a);const g2=ctx.createRadialGradient(-R*0.1,-R*0.15,R*0.05,0,0,R*0.75);g2.addColorStop(0,'#ecd4a2');g2.addColorStop(0.7,'#b48a52');g2.addColorStop(1,'rgba(120,85,45,0)');ctx.fillStyle=g2;ctx.beginPath();ctx.ellipse(0,0,R*0.75,R*0.5,0,0,TAU);ctx.fill();
+    const wob=Math.sin(T*14)*0.06;ctx.lineWidth=2*S;for(const sg of[-1,1]){ctx.fillStyle='#4a2c14';ctx.strokeStyle='rgba(240,200,140,0.85)';ctx.beginPath();ctx.moveTo(R*0.28,sg*R*0.17);ctx.quadraticCurveTo(R*0.62,sg*R*(0.27+wob),R*0.82,sg*R*0.05);ctx.quadraticCurveTo(R*0.6,sg*R*0.14,R*0.34,sg*R*0.05);ctx.closePath();ctx.fill();ctx.stroke();}
+    ctx.restore();}
   if(q===3){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.7,e.y-e.r*1.05+Math.sin(a)*e.r*0.2,7*S,'#ffe680');}}}
 //#/FULL
 //#FULL
@@ -1966,7 +1979,7 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
   if(e.bud)budOff(e); // v35
   e.dead=true;if(HUSK&&!e.boss&&!e.titan&&husks.length<160){const d=Math.hypot(e.x-HUSK.x,e.y-HUSK.y);husks.push({e,x:e.x,y:e.y,cx:HUSK.x,cy:HUSK.y,d:Math.min(0.1,0.1*d/HUSK.R),age:0,dsh:HUSK.dsh});}
   else burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);if(e.tr)for(let i=0;i<e.tr.length;i+=3)burst(e.tr[i].x,e.tr[i].y,1,e.t.col,90,0.45,2.5);kills++;sfx('pop');dropTick(e);
-  const v=e.pr?PREY_XP*xpMul:e.t.xp*xpMul*(e.xpB||1);
+  const v=e.pr?(e.pf?PREY_XP_S:PREY_XP)*xpMul:e.t.xp*xpMul*(e.xpB||1); // (v38.3: a stage's own small fry may be worth more)
   if(e.boss||e.titan){for(let k=0;k<14;k++)orbs.push({x:e.x+rand(-0.6,0.6)*e.r,y:e.y+rand(-0.6,0.6)*e.r,v:v/14,ph:Math.random()*TAU,vx:rand(-160,160),vy:rand(-160,160)});}
   else if(e.pr)addXP(v);
   else if(orbs.length<450)orbs.push({x:e.x+rand(-6,6),y:e.y+rand(-6,6),v,ph:Math.random()*TAU,vx:rand(-40,40),vy:rand(-40,40)});
@@ -2315,7 +2328,7 @@ function update(dt){
       c.sort((a,b)=>(b.sh||0)-(a.sh||0)||b.r-a.r);for(let i=0;i<6&&i<c.length;i++){const e=c[i];bolt(e.x+rand(-40,40)*S,e.y-520*S,e.x,e.y);if(e.sh>0)crackShell(e,1);else shock(e,8*(1+P.stage),e.x,e.y-60*S);}
       if(c.length){flashT=Math.max(flashT,0.08);sfx('zap');}}}
   if(P.freezeT>0)P.freezeT-=dt;
-  if((PIT||T>150)&&(P.magT-=dt)<=0){P.magT=PIT?10:Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s (v38.1: in the pit from the start, every 10 s: XP left behind is lost there)
+  if(!PIT&&T>150&&(P.magT-=dt)<=0){P.magT=Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s (v38.1: in the pit from the start, every 10 s: XP left behind is lost there)
   if(DEMO&&captures.some(c=>c.cinchT<0&&c.charge>=2))dash();
   advanceTrail(dt);
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
@@ -2935,7 +2948,7 @@ function render(){
     if(any){ctx.strokeStyle=any.t.col;ctx.globalAlpha=pr?0.45:0.8;ctx.lineWidth=any.r*0.7;ctx.stroke();}}
   ctx.globalAlpha=1;
   for(const e of enemies){const m=e.boss?e.r*2:0;if(e.titan||e.hide||e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue;const t=e.t;
-    const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=(e.alt?e.r/e.alt.r:e.sc)/((e.alt||t).res||1),w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
+    const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=(e.alt?e.r/e.alt.r:e.sc)/((e.alt||t).res||1)*(e.pop>0?1-e.pop:1),w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
     ctx.globalAlpha=e.pr?0.72:1;
     if(t.kin&&e.tr){if(e.rage){ctx.fillStyle=`rgba(255,40,50,${(0.2+0.1*Math.sin(T*9)).toFixed(3)})`;circ(ctx,e.x,e.y,e.r*1.9);ctx.fill();}drawHead(e.x,e.y,e.ha,e.r/11,1,KIN_SK[t.kc].h,false,KIN_SK[t.kc]);if(e.flash>0){ctx.fillStyle='rgba(255,255,255,0.65)';circ(ctx,e.x,e.y,e.r);ctx.fill();}} // one of the player's own kind: a real head
     else if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
