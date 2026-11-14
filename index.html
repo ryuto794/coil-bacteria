@@ -144,12 +144,12 @@ const ETYPES=[
   {k:'centh',n:['ムカデの頭','Centipede (head)'],st:2,r:30,hp:6,spd:100,dmg:16,xp:4,col:'#e04a2a',core:'#300a05',glow:'rgba(240,90,60,0.45)',rot:1,fr:4},
   // stage 5 (Land of Giants, v38): the giants of the stages before (drawn as they were), here the ones to coil. Long bodies (L, w) hurt anywhere along them,
   // so a coil has to go wide round the middle. Small creatures drift about among them as prey (the stage's prey list), for XP
-  {k:'gpara',look:'para',n:['ゾウリムシ','Paramecium'],st:0,L:110,w:44,r:44,sh:2,hp:30,spd:52,dmg:14,xp:16,col:'#9aeede',core:'#126b5e',glow:'rgba(130,235,215,0.35)',rot:1,mv:'dart'},
-  {k:'geugl',look:'eugl',n:['ミドリムシ','Euglena'],st:0,L:140,w:42,r:42,sh:2,hp:32,spd:62,dmg:15,xp:18,col:'#6fdc4a',core:'#1f6a10',glow:'rgba(110,230,80,0.35)',rot:1,mv:'run'},
-  {k:'gdaph',look:'daph',n:['ミジンコ','Water Flea'],st:0,L:105,w:52,r:52,sh:3,hp:40,spd:70,dmg:17,xp:24,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',rot:1,mv:'kick'},
-  {k:'gmosq',look:'mosq',n:['ボウフラ','Mosquito Larva'],st:0,L:150,w:20,r:24,sh:2,hp:30,spd:80,dmg:15,xp:20,col:'#b9c7a0',core:'#3a4a20',glow:'rgba(190,205,160,0.35)',rot:1,mv:'zig'},
-  {k:'ghelio',look:'helio',n:['タイヨウチュウ','Sun Animalcule'],st:0,r:62,sh:3,hp:44,spd:34,dmg:16,xp:28,col:'#ffd98a',core:'#7a4a08',glow:'rgba(255,215,130,0.35)',spin:0.4,mv:'spines'}, // spines: it swells, then lets go a ring of its rays
-  {k:'gtadp',look:'tadp',n:['オタマジャクシ','Tadpole'],st:0,L:170,w:54,r:54,sh:4,hp:66,spd:66,dmg:20,xp:40,col:'#5d6b4f',core:'#1a2414',glow:'rgba(150,170,130,0.3)',rot:1,mv:'dart'},
+  {k:'gpara',look:'para',n:['ゾウリムシ','Paramecium'],st:0,L:110,w:44,r:44,sh:0,hp:30,spd:52,dmg:14,xp:16,col:'#9aeede',core:'#126b5e',glow:'rgba(130,235,215,0.35)',rot:1,mv:'cruise'},
+  {k:'geugl',look:'eugl',n:['ミドリムシ','Euglena'],st:0,L:140,w:42,r:42,sh:0,hp:32,spd:62,dmg:15,xp:18,col:'#6fdc4a',core:'#1f6a10',glow:'rgba(110,230,80,0.35)',rot:1,mv:'run'},
+  {k:'gdaph',look:'daph',n:['ミジンコ','Water Flea'],st:0,L:105,w:52,r:52,sh:1,hp:40,spd:70,dmg:17,xp:24,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',rot:1,mv:'cruise',kick:1},
+  {k:'gmosq',look:'mosq',n:['ボウフラ','Mosquito Larva'],st:0,L:150,w:20,r:24,sh:0,hp:30,spd:80,dmg:15,xp:20,col:'#b9c7a0',core:'#3a4a20',glow:'rgba(190,205,160,0.35)',rot:1,mv:'cruise'},
+  {k:'ghelio',look:'helio',n:['タイヨウチュウ','Sun Animalcule'],st:0,r:62,sh:1,hp:44,spd:34,dmg:16,xp:28,col:'#ffd98a',core:'#7a4a08',glow:'rgba(255,215,130,0.35)',spin:0.4,mv:'spines'}, // spines: it swells, then lets go a ring of its rays
+  {k:'gtadp',look:'tadp',n:['オタマジャクシ','Tadpole'],st:0,L:170,w:54,r:54,sh:1,hp:66,spd:66,dmg:20,xp:40,col:'#5d6b4f',core:'#1a2414',glow:'rgba(150,170,130,0.3)',rot:1,mv:'dart'},
  //#/FULL
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
@@ -213,7 +213,7 @@ const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#
   {id:'kin3',h:352,angry:1,eye:'big',cols:[[352,85,48],[0,0,12],[45,95,58],[0,0,12]],runs:[3,1,2,1],head:[352,85,45]}]; // how each kind of kin is coloured (read as skins are)
 // stage 4 (v37): the antlion is the pit itself until the tail is long enough; then it comes out of the sand to fight (alionMove)
 // stage 5 (v38): a few giants at a time (the waves count giants), and the Dragonfly Nymph to end it (yagoMove)
-const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col:'#8a9a5a',core:'#2a3018',glow:'rgba(170,190,110,0.45)',name:['ヤゴ','Dragonfly Nymph'],sh:5,rot:1,fr:4}],
+const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col:'#8a9a5a',core:'#2a3018',glow:'rgba(170,190,110,0.45)',name:['ヤゴ','Dragonfly Nymph'],sh:2,rot:1,fr:4}],
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.4',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.5',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -859,10 +859,10 @@ const STR={
  ev_fall_s:['逃げようともがいて、落ちてくる。尾で受け止めて巻け','They scramble and slide down. Catch them in a coil'],
  tip_giant:['巨人の国','The Land of Giants'],
  tip_giant_s:['体のどこに触れても痛い。大きく回って巻く','They hurt anywhere along the body. Coil wide'],
- bk_gpara:['ここでは巻ける大きさ。ゆっくり回りこんでくる','Small enough to coil here. Turns slowly to come at you'],
+ bk_gpara:['ここでは巻ける大きさ。自分の向きでのんびり泳ぐ','Small enough to coil here. Swims its own way, unhurried'],
  bk_geugl:['まっすぐ泳ぎ抜け、向きを変えてまた来る','Swims straight past, turns, and comes again'],
- bk_gdaph:['殻 2 枚。水をかいて寄ってくる','Two shells. Comes at you in strokes'],
- bk_gmosq:['長い体で左右に跳ねながら来る','A long body that lashes from side to side'],
+ bk_gdaph:['殻 1 枚。水をかいて気ままに泳ぐ','One shell. Swims its own way, in strokes'],
+ bk_gmosq:['長い体をくねらせて、気ままに泳ぐ','A long body, wriggling its own way'],
  bk_ghelio:['ふくらんだら、まわりにとげを放つ。尾で防げる','Swells, then lets go a ring of rays. Your tail stops them'],
  bk_gtadp:['いちばん大きい。速いが、大回りでしか曲がれない','The biggest. Fast, but it can only turn wide'],
  bk_yago:['ボス。下あごを伸ばして捕まえる。水を噴いて突っ込む','Boss. Shoots out its jaw to grab you, and jets at you'],
@@ -1371,6 +1371,7 @@ function reset(start){
   if(start&&STAGES[CS].pit){PIT=pitNew();P.magT=6;} // v37 (the full game only)
 //#/FULL
   if(start&&APART)tip('giant'); // v38
+  if(start&&STAGES[CS].hp0)P.hp=P.maxHp=STAGES[CS].hp0; // v38.5 the Land of Giants: the player starts big and strong (the owner: "start us off huge and strong")
   resetBubbles();
   if(start&&!PIT)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
   if(start&&Q.has('toxin')&&TOXIN_T[0])for(let i=0;i<2;i++)spawnToxin();
@@ -1490,7 +1491,7 @@ const STAGES=[
          [['centi',0,1.2,0],['mantis',8,2.4,40]]],
   waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.85,0.75],rush:[null,null,null],
   book:[[0,'ant','ant'],[0,'antl','antl'],[0,'sprg','sprg'],[0,'pill','pill'],[1,'grass','grass'],[1,'spid','spid'],[1,'beet','beet'],[2,'centi','centi'],[2,'mantis','mantis'],[2,PIT_BOSS[0],'alion']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:900,gate:1800,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
+ {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:1500,gate:2600,hp0:200,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
   tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
   waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
   book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
@@ -2497,6 +2498,8 @@ const LATCH_SLOW=0.8; // v19: a phage on the tail no longer injects. Each one sl
 function follow(e,s){const L=e.lead;
   if(e.ox!==undefined){const c=Math.cos(L.ang),sn=Math.sin(L.ang),fx=L.x+c*e.ox-sn*e.oy-e.x,fy=L.y+sn*e.ox+c*e.oy-e.y,fd=Math.hypot(fx,fy)+0.01,fk=Math.min(s*3.4,fd*7);MV[0]=fx/fd*fk;MV[1]=fy/fd*fk;return;} // a wing of a wedge: it keeps its place beside and behind the leader
   const qx=L.x-e.x,qy=L.y-e.y,q=Math.hypot(qx,qy)+0.01,k=Math.min(s*3.2,Math.max(0,q-(e.r+L.r)*(e.t.hd?0.75:1.02))*9);MV[0]=qx/q*k;MV[1]=qy/q*k;}
+function cruise(e,dx,dy,d,s,dt,S){if(e.ha===undefined)e.ha=Math.atan2(dy,dx)+rand(-0.9,0.9);const far=d>Math.hypot(W,H)*0.55*S,want=far?Math.atan2(dy,dx):e.ha+Math.sin(T*0.4+e.ph)*0.6; // v38.5 a giant minding its own business
+  e.ha+=clamp(angDiff(e.ha,want),-0.6*dt,0.6*dt);const k=e.t.kick?0.35+1.3*Math.pow(Math.max(0,Math.sin(T*3+e.ph)),2):1;MV[0]=Math.cos(e.ha)*s*k;MV[1]=Math.sin(e.ha)*s*k;return true;}
 function mover(e,dx,dy,d,s,dt,S){
   switch(e.t.mv){
   case 'run':
@@ -2551,10 +2554,11 @@ function mover(e,dx,dy,d,s,dt,S){
     else if(e.q===2){tx=e.ax+e.qx*165*S;ty=e.ay+e.qy*165*S;if(e.qT<=0){e.q=3;e.qT=1.1;}}
     else if(e.qT<=0){e.q=0;e.qT=rand(0.7,1.5);}
     const k=e.q===2?22:e.q===3?3:8;MV[0]=(tx-e.x)*k;MV[1]=(ty-e.y)*k;return true;}
+  case 'cruise':return cruise(e,dx,dy,d,s,dt,S); // v38.5 (the owner: "in the end they all come after you")
   case 'spines':e.sT2=(e.sT2===undefined?rand(2,4):e.sT2)-dt; // v38 a sun animalcule: it swells (0.8 s, a ring shows it), then lets go a ring of its rays (the tail stops them)
     if(e.sq){MV[0]=MV[1]=0;if(e.sT2<=0){e.sq=0;e.sT2=rand(3.5,5);const n=12,a0=Math.random()*TAU,v=170*S;for(let i=0;i<n;i++){const a=a0+i/n*TAU;shots.push({x:e.x+Math.cos(a)*e.r,y:e.y+Math.sin(a)*e.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:2.6,dmg:Math.round(e.t.dmg*0.6),by:e.t});}sfx('brood');}return true;}
     if(e.sT2<=0&&d<520*S&&P.freezeT<=0){e.sq=1;e.sT2=0.8;return true;}
-    MV[0]=dx/d*s;MV[1]=dy/d*s;return true;
+    return cruise(e,dx,dy,d,s,dt,S); // (v38.5: between its rays it drifts its own way)
   case 'roll':if(e.rl===undefined){e.rl=1;e.rlT=rand(1.4,2.4);e.alt=ET.pillb;} // v37 a pill bug: down the slope rolled up, fast and straight; then it opens out and walks in
     if(e.rl){e.rlT-=dt;MV[0]=Math.sin(T*4+e.ph)*s*0.6;MV[1]=s*4;if(QL>=2&&Math.random()<dt*8)burst(e.x,e.y-e.r,1,'#d8b47a',40,0.4,2);if(e.rlT<=0||e.y>P.y+40*S){e.rl=0;e.alt=null;e.flash=0.12;}return true;}
     return false;
