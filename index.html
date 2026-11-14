@@ -151,7 +151,7 @@ const ETYPES=[
   {k:'ghelio',look:'helio',n:['タイヨウチュウ','Sun Animalcule'],st:0,r:62,sh:1,hp:44,spd:34,dmg:16,xp:28,col:'#ffd98a',core:'#7a4a08',glow:'rgba(255,215,130,0.35)',spin:0.4,mv:'spines'}, // spines: it swells, then lets go a ring of its rays
   {k:'gtadp',look:'tadp',n:['オタマジャクシ','Tadpole'],st:0,L:170,w:54,r:54,sh:1,hp:66,spd:66,dmg:20,xp:40,col:'#5d6b4f',core:'#1a2414',glow:'rgba(150,170,130,0.3)',rot:1,mv:'dart'},
   // stage 6 (v39, the Spider Web): spiders, lots of them, and flies caught in the webs (fodder)
-  {k:'spdl',n:['子グモ','Spiderling'],st:0,r:9,hp:3,spd:150,dmg:6,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',rot:1,fr:4,mv:'skip'},
+  {k:'spdl',n:['子グモ','Spiderling'],st:0,r:9,hp:3,spd:150,dmg:2,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',rot:1,fr:4,mv:'skip'}, // (v39.1: a bite of 2, was 6: so many of them, the owner found the nibbling a nuisance)
   {k:'wjump',look:'spid',n:['ハエトリグモ','Jumping Spider'],st:0,sh:1,r:24,hp:14,spd:58,dmg:14,xp:10,col:'#2e2a30',core:'#f0ece4',glow:'rgba(240,235,220,0.45)',rot:1,fr:4,charge:1},
   {k:'wsilk',n:['オニグモ','Cross Spider'],st:0,sh:1,r:22,hp:12,spd:52,dmg:5,xp:9,col:'#a86a2a',core:'#f3e2c0',glow:'rgba(230,170,90,0.45)',rot:1,fr:4,shoot:1,bind:1.4}, // bind: its silk holds the snake (P.bound)
   {k:'wdrop',n:['アシダカグモ','Huntsman Spider'],st:0,sh:1,r:30,hp:18,spd:80,dmg:16,xp:12,col:'#7a6450',core:'#2a1e14',glow:'rgba(200,170,130,0.4)',rot:1,fr:4,mv:'drop'}, // drops from above where its shadow spreads
@@ -223,7 +223,7 @@ const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col
  YAGO_FORMS=[{k:'yago',st:0,L:205,w:84,r:84,hp:320,spd:70,dmg:28,xp:900,col:'#7f9452',core:'#262c14',glow:'rgba(170,190,110,0.5)',name:['ヤゴ','Dragonfly Nymph'],sh:0,rot:1,fr:4}, // after a molt: bigger and quicker
   {k:'dfly',st:0,L:200,w:30,r:60,hp:320,spd:150,dmg:24,xp:900,col:'#46b8e8',core:'#103048',glow:'rgba(110,210,255,0.5)',name:['トンボ','Dragonfly'],sh:0,rot:1,fr:4}], // v38.10 the nymph, emerged (dflyMove)
  WEB_BOSS=[{k:'jorou',st:0,r:62,hp:300,spd:62,dmg:22,xp:900,col:'#e8c440',core:'#1a1408',glow:'rgba(240,200,80,0.45)',name:['ジョロウグモ','Joro Spider'],sh:0,hits:2,rot:1,fr:4}], // v39 squeezed twice (hits); each squeeze sets spiderlings loose (spiderHit)
- WEB_RUSH=[{k:'rush',look:'spdl',st:0,r:9,hp:1,spd:0,dmg:6,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',name:['子グモの群れ','Spiderling Swarm'],rot:1,fr:4}],
+ WEB_RUSH=[{k:'rush',look:'spdl',st:0,r:9,hp:1,spd:0,dmg:4,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',name:['子グモの群れ','Spiderling Swarm'],rot:1,fr:4}],
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -721,7 +721,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v39',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v39.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
