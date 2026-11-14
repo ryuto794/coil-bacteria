@@ -55,14 +55,14 @@ let STAGE_N=[['細菌','Bacteria'],['細胞','Cell'],['細胞核','Nucleus']];co
 const ETYPES=[
  // stage 0: bacteria
  {k:'germ',  n:['球菌','Coccus'],st:0,r:9, hp:1, spd:80, dmg:5, xp:1, col:'#ff3b4e',core:'#ffb3bb',glow:'rgba(255,50,70,0.6)'},
- {k:'virus', n:['ウイルス','Virus'],st:0,r:11,hp:3, spd:64, dmg:6, xp:2, col:'#a944ff',core:'#e6c2ff',glow:'rgba(160,60,255,0.6)'},
+ {k:'virus', n:['ウイルス','Virus'],st:0,r:11,hp:3, spd:64, dmg:6, xp:2,mv:'sentry', col:'#a944ff',core:'#e6c2ff',glow:'rgba(160,60,255,0.6)'},
  {k:'blob',  n:['ブドウ球菌','Staph Cluster'],st:0,r:18,hp:10,spd:44, dmg:14,xp:6, col:'#ff2f95',core:'#ffc4e2',glow:'rgba(255,50,150,0.55)'},
  {k:'bacil', look:'rod',n:['小桿菌','Small Bacillus'],st:0,r:9, hp:2, spd:70, dmg:5, xp:2, col:'#4ad0ff',core:'#0b3f6e',glow:'rgba(70,200,255,0.55)',rot:1,fr:6,mv:'run'}, // v14: runs straight and tumbles, like the big ones later
  {k:'vibrio',look:'spiro',n:['ビブリオ','Vibrio'],st:0,r:8, hp:2, spd:64, dmg:5, xp:2, col:'#ffd24a',core:'#fff7d6',glow:'rgba(255,210,70,0.55)',rot:1,fr:8,mv:'orbit'}, // v14: circles in, like the Spirillum later
  {k:'bomb',  n:['爆発菌','Blast Germ'],st:0,r:13,hp:5, spd:56, dmg:6, xp:5, col:'#ffb020',core:'#fff3c0',glow:'rgba(255,170,40,0.65)',boom:1}, // explodes when it dies (see boom())
  // stage 1: cells / organelles. charge: winds up and dashes at the head. shoot: keeps its distance and fires. split: [type, how many] it breaks into when killed
- {k:'mito',  n:['ミトコンドリア','Mitochondrion'],st:1,r:23,hp:4, spd:124,dmg:10,xp:5, col:'#ff8a3d',core:'#ffd8b0',glow:'rgba(255,130,50,0.55)',rot:1},
- {k:'cell',  n:['細胞','Cell'],st:1,sh:2,r:29,hp:8, spd:98, dmg:13,xp:8, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
+ {k:'mito',  n:['ミトコンドリア','Mitochondrion'],st:1,r:23,hp:4, spd:124,dmg:10,xp:5,mv:'lunge', col:'#ff8a3d',core:'#ffd8b0',glow:'rgba(255,130,50,0.55)',rot:1},
+ {k:'cell',  n:['細胞','Cell'],st:1,sh:2,r:29,hp:8, spd:98, dmg:13,xp:8,mv:'run',wedge:4, col:'#ff5e7a',core:'#7a1030',glow:'rgba(255,80,110,0.5)'},
  {k:'neutro',n:['好中球','Neutrophil'],st:1,sh:1,r:26,hp:12,spd:112,dmg:14,xp:14,col:'#dfe9ff',core:'#6b4bb8',glow:'rgba(200,215,255,0.5)',charge:1},
  {k:'divider',n:['分裂細胞','Dividing Cell'],st:1,sh:1,r:32,hp:16,spd:84,dmg:13,xp:12,col:'#5fe0c0',core:'#0c5a4a',glow:'rgba(80,220,190,0.5)',split:['mito',3]},
  {k:'bcell', n:['B細胞','B Cell'],st:1,sh:1,r:30,hp:14,spd:70, dmg:10,xp:16,col:'#ffcf5a',core:'#7a5200',glow:'rgba(255,200,80,0.5)',shoot:1},
@@ -77,14 +77,14 @@ const ETYPES=[
  // v14: arc = a boomerang (straight out through where the player was, back in a curve)
  {k:'moon',  n:['ミカヅキモ','Crescent Alga'],st:1,r:26,hp:8, spd:120,dmg:13,xp:9, col:'#3fe08a',core:'#0c5a34',glow:'rgba(60,225,140,0.5)',spin:7,mv:'arc'},
  // stage 2: nuclei / giants
- {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:176,dmg:15,xp:16,col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
+ {k:'nucleus',n:['細胞核','Nucleus'],st:2,r:50,hp:14,spd:176,dmg:15,xp:16,mv:'lunge',col:'#b86cff',core:'#3c0f6a',glow:'rgba(170,90,255,0.5)'},
  {k:'tcell', look:'neutro',n:['キラーT細胞','Killer T Cell'],st:2,sh:2,r:56,hp:30,spd:170,dmg:22,xp:40,col:'#ffd0d6',core:'#a01838',glow:'rgba(255,170,180,0.5)',charge:1},
  {k:'amoeba',n:['アメーバ','Amoeba'],st:2,sh:2,r:64,hp:32,spd:140,dmg:19,xp:30,col:'#ff4fa0',core:'#6a0f3c',glow:'rgba(255,70,160,0.45)',split:['nucleus',2]},
  {k:'giant', n:['食細胞','Phagocyte'],st:2,sh:3,r:88,hp:70,spd:108,dmg:25,xp:60,col:'#ff6a3d',core:'#5a1a08',glow:'rgba(255,110,60,0.45)',shoot:1},
  {k:'bigrod',look:'rod',n:['巨大桿菌','Giant Bacillus'],st:2,r:46,hp:20,spd:185,dmg:20,xp:28,col:'#4ad8ff',core:'#07465e',glow:'rgba(70,210,255,0.45)',rot:1,fr:6,mv:'run'},
  {k:'spiroch',look:'spiro',n:['スピロヘータ','Spirochete'],st:2,r:38,hp:12,spd:180,dmg:15,xp:18,col:'#ffe14a',core:'#fffbe0',glow:'rgba(255,220,70,0.45)',rot:1,fr:8,mv:'orbit'},
  {k:'mimi',  n:['巨大ウイルス','Giant Virus'],st:2,sh:2,r:72,hp:40,spd:95,dmg:22,xp:55,col:'#2fd89a',core:'#053f2c',glow:'rgba(50,220,160,0.45)',spin:0.35,mv:'brood',spawn:['virion',3,5]},
- {k:'virion',n:['ウイルス粒子','Virion'],st:2,r:22,hp:5, spd:190,dmg:12,xp:6, col:'#7dffcf',core:'#0a5a40',glow:'rgba(120,255,200,0.5)',spin:1.4}, // only ever comes out of a Giant Virus
+ {k:'virion',n:['ウイルス粒子','Virion'],st:2,r:22,hp:5, spd:190,dmg:12,xp:6,mv:'sentry', col:'#7dffcf',core:'#0a5a40',glow:'rgba(120,255,200,0.5)',spin:1.4}, // only ever comes out of a Giant Virus
  // v14: the Nucleus scale is where the shapes stop being round. dart = flies fast and turns wide (it overshoots and loops back).
  // L / w on an ordinary enemy = a long body (half length, half width): the head is hit anywhere along it (capD), and it comes in one build only.
  {k:'chromo',n:['染色体','Chromosome'],st:2,sh:2,r:58,hp:28,spd:120,dmg:20,xp:40,col:'#5a7dff',core:'#dfe6ff',glow:'rgba(90,125,255,0.5)',spin:1.1,split:['chroma',2]},
@@ -721,7 +721,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v40.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v41',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -979,7 +979,8 @@ const STR={
  clear_s:['{0}を倒した','You beat the {0}'],
  reroll:['引き直す（残り{0}）','Reroll ({0} left)'],
  skip:['取らずに HP +15','Skip for +15 HP'],
- it_mag:['XPを吸い寄せた','XP pulled in'],
+ it_mag:['ぜんぶ吸い寄せた','Everything pulled in'],
+ dna_pop:['+{0} DNA','+{0} DNA'],
  it_ice:['敵が止まった！','Enemies frozen!'],
  revived:['復活！','Revived!'],
  endless:['エンドレス','ENDLESS'],
@@ -1416,7 +1417,7 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,WEBS=null,KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,WEBS=null,DQ={n:0,sx:0,sy:0,c:0,t:0},KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
@@ -1441,7 +1442,7 @@ function reset(start){
      vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0,rushT:0,rushSp:0,rushDue:false};
   enemies=[];orbs=[];parts=[];texts=[];rings=[];captures=[];ghosts=[];
   T=start?Math.max(0,+Q.get('t')||0):0;kills=0;bestCombo=0;spawnT=1.0;shake=0;hitstop=0;choices=null;overT=0;pendingLv=0;flashT=0;banner=null;
-  calmUntil=0;bossKills=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;DEATH=null;slime=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
+  calmUntil=0;bossKills=0;DQ.n=0;DQ.t=0;DQ.c=0;DQ.sx=0;DQ.sy=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;DEATH=null;slime=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
   PIT=null;
@@ -1708,10 +1709,11 @@ function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never fro
   if(e.pr)return;P.dropIn-=P.hp/P.maxHp<0.35?2:1;if(P.dropIn>0||items.length>=3)return;P.dropIn=Math.round((55+Math.random()*40)*(1+0.15*P.stage)); // v20: pickups hardly thin out at the later scales, and come twice as fast while HP is low
   const low=P.hp/P.maxHp<0.5,r=Math.random(),k=r<(low?0.62:0.4)?'heal':r<(low?0.78:0.56)?'shd':r<(low?0.9:0.82)?'mag':'ice'; // shd (v16): one more barrier layer
   items.push({x:e.x,y:e.y,k,life:22,ph:Math.random()*TAU});}
-function itemTick(dt){for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
+function itemTick(dt){const vp=1100*P.S*dt;for(const q of items)if(q.pull&&q.life>0){const dx=P.x-q.x,dy=P.y-q.y,d=Math.hypot(dx,dy)+0.01,v=Math.min(d,vp);q.x+=dx/d*v;q.y+=dy/d*v;}for(const c of chests)if(c.pull){const dx=P.x-c.x,dy=P.y-c.y,d=Math.hypot(dx,dy)+0.01,v=Math.min(d,vp);c.x+=dx/d*v;c.y+=dy/d*v;} // v41 pulled in by a magnet
+  for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
 function useItem(it){const S=P.S,col=ITEM_COL[it.k];burst(it.x,it.y,24,col,260,0.6,3);rings.push({x:it.x,y:it.y,r:8*S,R:90*S,life:0.4,max:0.4,col,w:4*S});sfx('item');
   if(it.k==='heal'){const h=Math.round(Math.max(25,P.maxHp*0.25))+8*P.stage;P.hp=Math.min(P.maxHp,P.hp+h);text(P.x,P.y-40*S,'+'+h+' HP',24,'#9dffc4',1.1);} // v20: a quarter of max HP (25 at least), a little more at each scale
-  else if(it.k==='mag'){for(const o of orbs)o.pull=1;text(P.x,P.y-40*S,TX('it_mag'),20,'#9fd4ff',1);}
+  else if(it.k==='mag'){for(const o of orbs)o.pull=1;for(const q of items)if(q!==it){q.pull=1;q.fall=0;q.life=Math.max(q.life,6);}for(const c of chests)c.pull=1;text(P.x,P.y-40*S,TX('it_mag'),20,'#9fd4ff',1);} // v41: every item and capsule on the field too
   else if(it.k==='shd'){P.guard=Math.min(3,P.guard+1);text(P.x,P.y-40*S,TX('it_shd'),20,col,1);}
   else{P.freezeT=4;rings.push({x:P.x,y:P.y,r:20*S,R:700*S,life:0.6,max:0.6,col,w:6*S});text(P.x,P.y-40*S,TX('it_ice'),22,col,1.2);}}
 function drawItems(){const S=P.S;
@@ -2110,7 +2112,7 @@ function goNext(){const i=nextStage();if(state!=='clear'||overT<0.6||i<0||!stage
 function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;if(BRUSH){P.brN=0;P.nextBoss=T+10;}calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('endless'),sub:TX('endless_s')};}
 function endRun(clear){if(runRes)return;
-  const b=bestOf(CS),total=Math.floor(kills/25)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0),dna=total-P.dnaPaid,rec=[];
+  const b=bestOf(CS),total=Math.floor(kills/25)+Math.floor(P.dnaB||0)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0),dna=total-P.dnaPaid,rec=[];
   if(!P.counted){P.counted=true;META.runs=(META.runs||0)+1;}
   if(META.runs>1){if(T>b.t+1)rec.push('t');if(kills>(b.kills||0))rec.push('k');if(bestCombo>(b.combo||0))rec.push('c');} // new records (not on the very first run)
   META.dna+=dna;P.dnaPaid=total;META.time+=T-P.timePaid;P.timePaid=T;META.stats.kills+=kills-P.killsPaid;P.killsPaid=kills;
@@ -2187,6 +2189,7 @@ function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see 
   if(e.bud)budOff(e); // v35
   e.dead=true;if(HUSK&&!e.boss&&!e.titan&&husks.length<160){const d=Math.hypot(e.x-HUSK.x,e.y-HUSK.y);husks.push({e,x:e.x,y:e.y,cx:HUSK.x,cy:HUSK.y,d:Math.min(0.1,0.1*d/HUSK.R),age:0,dsh:HUSK.dsh});}
   else burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);if(e.tr)for(let i=0;i<e.tr.length;i+=3)burst(e.tr[i].x,e.tr[i].y,1,e.t.col,90,0.45,2.5);kills++;sfx('pop');dropTick(e);
+  if(!e.pr&&!e.rush&&!e.fd&&!e.boss){const g=(e.shMax||0)+(e.elite?3:0)+(e.hunter?8:0)+(e.titan?10:0);if(g>0){P.dnaB=(P.dnaB||0)+g;DQ.n+=g;DQ.sx+=e.x;DQ.sy+=e.y;DQ.c++;if(!DQ.t)DQ.t=T;}} // v41 DNA for a strong one: a shell 1 each, gold +3, a hunter +8, a giant +10 (a small one is 1 for 25)
   const v=e.pr?(e.pf?PREY_XP_S:PREY_XP)*xpMul:e.t.xp*xpMul*(e.xpB||1); // (v38.3: a stage's own small fry may be worth more)
   if(e.boss||e.titan){for(let k=0;k<14;k++)orbs.push({x:e.x+rand(-0.6,0.6)*e.r,y:e.y+rand(-0.6,0.6)*e.r,v:v/14,ph:Math.random()*TAU,vx:rand(-160,160),vy:rand(-160,160)});}
   else if(e.pr)addXP(v);
@@ -2562,6 +2565,7 @@ function update(dt){
 //#FULL
   if(WEBS)webTick(dt); // v39
 //#/FULL
+  if(DQ.n&&T-DQ.t>0.25){text(DQ.sx/DQ.c,DQ.sy/DQ.c+26*P.S,TX('dna_pop',DQ.n),20,'#ffd86a',1.3);DQ.n=DQ.t=DQ.c=DQ.sx=DQ.sy=0;} // v41 the DNA from strong ones, shown together for a squeeze, a little under the middle of them (the squeeze number is above)
   gasTick(dt);slimeTick(dt);chestTick();itemTick(dt);if(state!=='play')return;
   // pulse
   P.pulseT-=dt;
@@ -2742,6 +2746,15 @@ function mover(e,dx,dy,d,s,dt,S){
   case 'dart':{if(e.ha===undefined)e.ha=Math.atan2(dy,dx);const tr=(d>260*S?2.6:1.5)*dt;e.ha+=clamp(angDiff(e.ha,Math.atan2(dy,dx)),-tr,tr); // fast, but it turns wide: side-step it and it has to come round again
     MV[0]=Math.cos(e.ha)*s*1.45;MV[1]=Math.sin(e.ha)*s*1.45;return true;}
   case 'kick':{const k=0.2+1.7*Math.max(0,Math.sin(T*6.5+e.ph));MV[0]=dx/d*s*k;MV[1]=dy/d*s*k;return true;} // strokes: a kick, then it glides
+  case 'sentry':{const R=(e.t.sense||210)*S; // v41 a sentry (viruses): it drifts, unaware, until the snake comes inside its range; then it turns red, takes aim (0.5 s) and launches like a missile,
+    if(e.sn===undefined){e.sn=0;e.snT=rand(0,1);e.ha=Math.random()*TAU;}e.snT-=dt; // homing a little (1.5 rad/s: step aside); then it coasts to a stop and settles again
+    if(e.sn===0){e.ha+=Math.sin(T*0.7+e.ph)*dt*0.8;MV[0]=Math.cos(e.ha)*s*0.18;MV[1]=Math.sin(e.ha)*s*0.18;if(d<R&&e.snT<=0&&P.freezeT<=0){e.sn=1;e.snT=0.5;e.flash=0.1;sfx('latch');}return true;}
+    if(e.sn===1){MV[0]=MV[1]=0;e.ha=Math.atan2(dy,dx);if(e.snT<=0){e.sn=2;e.snT=0.95;}return true;}
+    if(e.sn===2){e.ha+=clamp(angDiff(e.ha,Math.atan2(dy,dx)),-1.5*dt,1.5*dt);const v=P.spd*S*1.9;MV[0]=Math.cos(e.ha)*v;MV[1]=Math.sin(e.ha)*v;if(e.snT<=0){e.sn=3;e.snT=0.9;}return true;}
+    {const v=P.spd*S*1.9*Math.max(0,e.snT/0.9);MV[0]=Math.cos(e.ha)*v;MV[1]=Math.sin(e.ha)*v;}if(e.snT<=0){e.sn=0;e.snT=1.4;}return true;}
+  case 'lunge':if(e.lq===undefined){e.lq=0;e.lqT=rand(0.3,0.9);}e.lqT-=dt; // v41 it stands still and sizes the snake up; only then it darts, straight (it does not steer while darting: step aside, or lead it on)
+    if(e.lq===0){MV[0]=MV[1]=0;if(e.t.rot)e.ang+=angDiff(e.ang,Math.atan2(dy,dx))*Math.min(1,dt*6);if(e.lqT<=0&&P.freezeT<=0){e.lq=1;e.lqT=d<500*S?0.5:0.8;e.ldx=dx/d;e.ldy=dy/d;if(e.t.rot)e.ang=Math.atan2(dy,dx);}return true;}
+    {const v=P.spd*S*(e.lqT>0.12?2.1:1.1);MV[0]=e.ldx*v;MV[1]=e.ldy*v;}if(e.lqT<=0){e.lq=0;e.lqT=rand(0.55,0.95);}return true;
   case 'skip':e.kT=(e.kT===undefined?rand(0.2,0.7):e.kT)-dt; // it hangs still, then darts a short way: to one side of the line to the player, then the other
     if(e.kd>0){e.kd-=dt;MV[0]=e.kx*s*4.4;MV[1]=e.ky*s*4.4;return true;}
     MV[0]=MV[1]=0;if(e.kT<=0&&P.freezeT<=0){e.kT=rand(0.5,0.85);e.kd=0.15;e.ks=-(e.ks||1);const a=Math.atan2(dy,dx)+e.ks*0.6;e.kx=Math.cos(a);e.ky=Math.sin(a);}
@@ -3187,13 +3200,17 @@ function render(){
   ctx.globalAlpha=1;
   for(const e of enemies){const m=e.boss?e.r*2:0;if(e.titan||e.hide||e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue;const t=e.t;
     const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=(e.alt?e.r/e.alt.r:e.sc)/((e.alt||t).res||1)*(e.pop>0?1-e.pop:1),w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
-    ctx.globalAlpha=e.pr?0.72:1;
+    ctx.globalAlpha=e.pr?0.72:e.sn===0&&t.mv==='sentry'?0.78:1;
     if(t.kin&&e.tr){if(e.rage){ctx.fillStyle=`rgba(255,40,50,${(0.2+0.1*Math.sin(T*9)).toFixed(3)})`;circ(ctx,e.x,e.y,e.r*1.9);ctx.fill();}drawHead(e.x,e.y,e.ha,e.r/11,1,KIN_SK[t.kc].h,false,KIN_SK[t.kc]);if(e.flash>0){ctx.fillStyle='rgba(255,255,255,0.65)';circ(ctx,e.x,e.y,e.r);ctx.fill();}} // one of the player's own kind: a real head
     else if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
     if(t.boom){ctx.globalAlpha=0.3+0.3*Math.sin(T*12+e.ph);ctx.fillStyle='#ffffff';circ(ctx,e.x,e.y,e.r*0.5);ctx.fill();ctx.globalAlpha=1;} // the fuse blinks
     if(e.cs===1){ctx.strokeStyle=`rgba(255,70,80,${0.4+0.4*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*300*S,e.y+e.cdy*300*S);ctx.stroke();ctx.setLineDash([]);} // aiming: where the dash will go
     else if(e.cs===2){ctx.strokeStyle='rgba(255,200,205,0.45)';ctx.lineWidth=e.r*1.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-e.cdx*e.r*3,e.y-e.cdy*e.r*3);ctx.stroke();} // dashing: a streak behind it
+    if(t.mv==='sentry'&&!e.pr){if(e.sn===1||e.sn===2){ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,40,50,${(e.sn===1?0.35+0.25*Math.sin(T*40):0.4).toFixed(3)})`;circ(ctx,e.x,e.y,e.r*1.5);ctx.fill();ctx.globalCompositeOperation='source-over'; // v41 awake: red
+        ctx.strokeStyle='rgba(255,90,100,0.9)';ctx.lineWidth=2*S;circ(ctx,e.x,e.y,e.r*1.35);ctx.stroke();if(e.sn===2){ctx.strokeStyle='rgba(255,150,150,0.5)';ctx.lineWidth=e.r*1.1;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x-Math.cos(e.ha)*e.r*3,e.y-Math.sin(e.ha)*e.r*3);ctx.stroke();}}
+      else if(e.sn===0){const R=(t.sense||210)*S,dd=Math.hypot(P.x-e.x,P.y-e.y);if(dd<R*1.7){ctx.strokeStyle=`rgba(255,120,120,${(0.28*(1-Math.max(0,dd-R)/(R*0.7))).toFixed(3)})`;ctx.lineWidth=1.5*S;ctx.setLineDash([5*S,7*S]);circ(ctx,e.x,e.y,R);ctx.stroke();ctx.setLineDash([]);}}} // unaware: its range, shown as the snake comes near
+    if(e.lq===0&&e.lqT<0.22&&t.mv==='lunge'&&!e.pr){const a=Math.atan2(P.y-e.y,P.x-e.x);ctx.strokeStyle=`rgba(255,70,80,${0.5+0.4*Math.sin(T*40)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([8*S,6*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+Math.cos(a)*e.r*5,e.y+Math.sin(a)*e.r*5);ctx.stroke();ctx.setLineDash([]);} // v41 about to dart
     if(e.frz>0){const k=Math.min(1,e.frz/(e.frzMax||e.frz)),end=e.frz<0.7; // frozen: cased in ice that shrinks as it melts, with a ring that runs down; it flickers in the last moments
       ctx.fillStyle=`rgba(170,225,255,${end?0.18+0.3*(0.5+0.5*Math.sin(T*36)):0.28+0.27*k})`;circ(ctx,e.x,e.y,e.r*(0.78+0.3*k));ctx.fill();
       ctx.strokeStyle='rgba(240,251,255,0.95)';ctx.lineWidth=2.4*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.08+3*S,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
