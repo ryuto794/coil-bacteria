@@ -213,7 +213,9 @@ const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#
   {id:'kin3',h:352,angry:1,eye:'big',cols:[[352,85,48],[0,0,12],[45,95,58],[0,0,12]],runs:[3,1,2,1],head:[352,85,45]}]; // how each kind of kin is coloured (read as skins are)
 // stage 4 (v37): the antlion is the pit itself until the tail is long enough; then it comes out of the sand to fight (alionMove)
 // stage 5 (v38): a few giants at a time (the waves count giants), and the Dragonfly Nymph to end it (yagoMove)
-const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col:'#8a9a5a',core:'#2a3018',glow:'rgba(170,190,110,0.45)',name:['ヤゴ','Dragonfly Nymph'],sh:2,rot:1,fr:4}],
+const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col:'#8a9a5a',core:'#2a3018',glow:'rgba(170,190,110,0.45)',name:['ヤゴ','Dragonfly Nymph'],sh:0,molts:2,rot:1,fr:4}], // v38.10: no shell. Each squeeze it molts and slips out bigger (bossMolt); the last time it takes wing
+ YAGO_FORMS=[{k:'yago',st:0,L:205,w:84,r:84,hp:320,spd:70,dmg:28,xp:900,col:'#7f9452',core:'#262c14',glow:'rgba(170,190,110,0.5)',name:['ヤゴ','Dragonfly Nymph'],sh:0,rot:1,fr:4}, // after a molt: bigger and quicker
+  {k:'dfly',st:0,L:200,w:30,r:60,hp:320,spd:150,dmg:24,xp:900,col:'#46b8e8',core:'#103048',glow:'rgba(110,210,255,0.5)',name:['トンボ','Dragonfly'],sh:0,rot:1,fr:4}], // v38.10 the nymph, emerged (dflyMove)
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -606,6 +608,23 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
     for(const sg of[-1,1]){g.fillStyle=fl?'#fff':'#2a2e18';circ(g,L*0.5,sg*w*0.5,w*0.26);g.fill();if(!fl){gr=g.createRadialGradient(L*0.48,sg*w*0.44,0,L*0.5,sg*w*0.5,w*0.26);gr.addColorStop(0,'rgba(220,240,170,0.7)');gr.addColorStop(0.5,'rgba(120,140,70,0.3)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;circ(g,L*0.5,sg*w*0.5,w*0.26);g.fill();
       g.fillStyle='rgba(255,255,255,0.8)';circ(g,L*0.52,sg*w*0.42,w*0.06);g.fill();}}
     break;}
+  case 'dfly':{const L=t.L,w=t.w,p=ph||0;g.lineCap='round';g.lineJoin='round'; // v38.10 an emperor dragonfly: four long clear wings, a green thorax, a long blue-and-brown abdomen, great eyes
+    for(const [x0,sw,len,ph2] of[[L*0.16,0.3,L*0.9,0],[L*0.3,0.08,L*0.98,1.6]]){for(const sg of[-1,1]){const a=sg*(Math.PI/2+sw+Math.sin(p+ph2)*0.22); // the wings (hind, then fore), beating
+      g.save();g.translate(x0,sg*w*0.3);g.rotate(a);g.fillStyle=fl?'rgba(255,255,255,0.9)':'rgba(215,238,255,0.32)';g.strokeStyle=fl?'#fff':'rgba(170,215,240,0.75)';g.lineWidth=w*0.06;
+        g.beginPath();g.moveTo(0,0);g.bezierCurveTo(len*0.25,-w*1.25,len*0.85,-w*1.05,len,-w*0.1);g.bezierCurveTo(len*0.9,w*0.55,len*0.3,w*0.7,0,0);g.fill();g.stroke();
+        if(!fl){g.lineWidth=w*0.03;g.strokeStyle='rgba(150,195,225,0.5)';for(const q of[-0.55,-0.15,0.25]){g.beginPath();g.moveTo(len*0.05,q*w*0.3);g.quadraticCurveTo(len*0.5,q*w*1.1,len*0.95,q*w*0.35-w*0.1);g.stroke();}
+          g.fillStyle='#4a3a20';g.beginPath();g.ellipse(len*0.88,-w*0.32,len*0.045,w*0.16,0.1,0,TAU);g.fill();}g.restore();}}
+    let gr=g.createLinearGradient(-L,0,L*0.1,0);gr.addColorStop(0,fl?'#fff':'#5a4422');gr.addColorStop(0.62,fl?'#fff':'#7a6a36');gr.addColorStop(0.8,fl?'#fff':'#4cc4ff');gr.addColorStop(1,fl?'#fff':'#2a9ad8');g.fillStyle=gr; // the abdomen: blue at the base, then brown
+    g.beginPath();g.moveTo(L*0.08,-w*0.42);g.bezierCurveTo(-L*0.3,-w*0.38,-L*0.8,-w*0.3,-L*0.98,-w*0.12);g.lineTo(-L*0.98,w*0.12);g.bezierCurveTo(-L*0.8,w*0.3,-L*0.3,w*0.38,L*0.08,w*0.42);g.closePath();g.fill();
+    if(!fl){g.strokeStyle='rgba(30,22,10,0.6)';g.lineWidth=w*0.06;for(let i=1;i<9;i++){const x=L*0.04-i*L*0.11;g.beginPath();g.moveTo(x,-w*0.36);g.lineTo(x,w*0.36);g.stroke();}
+      g.fillStyle='rgba(255,240,180,0.35)';for(let i=2;i<9;i++){g.fillRect(L*0.04-i*L*0.11-L*0.03,-w*0.1,L*0.025,w*0.2);}}
+    g.fillStyle=fl?'#fff':'#3a2a12';for(const sg of[-1,1]){g.beginPath();g.moveTo(-L*0.96,sg*w*0.08);g.lineTo(-L*1.08,sg*w*0.3);g.lineTo(-L*1.0,sg*w*0.04);g.fill();} // claspers
+    gr=g.createRadialGradient(L*0.26,-w*0.2,0,L*0.26,0,w*1.1);gr.addColorStop(0,fl?'#fff':'#a8f070');gr.addColorStop(1,fl?'#fff':'#3c8a24');g.fillStyle=gr;g.beginPath();g.ellipse(L*0.26,0,L*0.17,w*0.82,0,0,TAU);g.fill(); // the thorax
+    g.strokeStyle=fl?'#fff':'#2a2414';g.lineWidth=w*0.08;for(const sg of[-1,1])for(let i=0;i<3;i++){const x=L*(0.2+i*0.06);g.beginPath();g.moveTo(x,sg*w*0.5);g.lineTo(x+L*0.05,sg*w*(0.95+0.1*i));g.stroke();} // legs, tucked under
+    g.fillStyle=fl?'#fff':'#5aa830';g.beginPath();g.ellipse(L*0.45,0,L*0.07,w*0.72,0,0,TAU);g.fill(); // the head
+    for(const sg of[-1,1]){gr=g.createRadialGradient(L*0.5,sg*w*0.42,0,L*0.48,sg*w*0.55,w*0.85);gr.addColorStop(0,fl?'#fff':'#c8ffd8');gr.addColorStop(0.45,fl?'#fff':'#3ac87a');gr.addColorStop(1,fl?'#fff':'#0a4a2a');g.fillStyle=gr;circ(g,L*0.5,sg*w*0.58,w*0.72);g.fill(); // the great eyes
+      if(!fl){g.fillStyle='rgba(255,255,255,0.75)';circ(g,L*0.54,sg*w*0.42,w*0.16);g.fill();}}
+    break;}
 //#/FULL
   case 'virion':{g.strokeStyle=col;g.lineWidth=Math.max(1.5,r*.12);g.fillStyle=fl?'#fff':'#eafff6'; // a small six-sided particle with a knob on each corner
     for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);g.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);g.stroke();circ(g,Math.cos(a)*r*1.2,Math.sin(a)*r*1.2,r*.13);g.fill();}
@@ -624,10 +643,10 @@ function alionHead(g,r,open,fl){g.lineCap='round';g.lineJoin='round';
       g.fillStyle=fl?'#fff':'#1a0e06';circ(g,r*0.52,sg*r*0.3,r*0.06);g.fill();}
 }
 //#/FULL
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='yago'?t.L*1.12:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='yago'?(t.w*1.45+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='yago'?t.L*1.12:k==='dfly'?t.L*1.1:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='yago'?(t.w*1.45+8)*2:k==='dfly'?(t.L*1.02+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
 const ALLT=[...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...BODY_RUSH];
 //#FULL
-ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS);
+ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS,...YAGO_FORMS);
 //#/FULL
 for(const t of ALLT){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
@@ -667,7 +686,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.9',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.10',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -865,7 +884,12 @@ const STR={
  bk_gmosq:['長い体をくねらせて、気ままに泳ぐ','A long body, wriggling its own way'],
  bk_ghelio:['ふくらんだら、まわりにとげを放つ。尾で防げる','Swells, then lets go a ring of rays. Your tail stops them'],
  bk_gtadp:['いちばん大きい。速いが、大回りでしか曲がれない','The biggest. Fast, but it can only turn wide'],
- bk_yago:['ボス。下あごを伸ばして捕まえる。水を噴いて突っ込む','Boss. Shoots out its jaw to grab you, and jets at you'],
+ bk_yago:['ボス。下あごと水の噴射。締めると脱皮し、最後は羽化する','Boss. Jaw and water jet. Molts when squeezed, then takes wing'],
+ bk_dfly:['羽化したヤゴ。速く飛んで突っ込む。止まった隙に巻く','The nymph, emerged. Flies fast and dives; coil it as it rests'],
+ boss_in_y:['{0}：締めるたびに脱皮する（{1} 回締める）','{0}: it molts each time you squeeze ({1} squeezes)'],
+ yago_molt:['脱皮した！','It molted!'],
+ yago_up:['羽化した！','It took wing!'],
+ yago_up_s:['トンボになった。止まった隙に巻け','A dragonfly now. Coil it when it stops'],
  bk_ant:['いちばん多い。砂の坂を転がり落ちてくる','The most common. They come tumbling down the slope'],
  bk_antl:['アリの行列。先頭がうねり、後ろがついてくる','A column of ants. The leader snakes, the rest follow'],
  bk_sprg:['止まっては、尾のばねで跳ねる','Sits still, then springs off with its tail'],
@@ -1093,7 +1117,7 @@ const STR={
 };
 loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(BODY_RUSH,'name');
 //#FULL
-loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(JAR_RUSH,'name');
+loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(YAGO_FORMS,'name');loc(JAR_RUSH,'name');
 //#/FULL
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
@@ -1369,6 +1393,7 @@ function reset(start){
   PIT=null;
 //#FULL
   if(start&&STAGES[CS].pit){PIT=pitNew();P.magT=6;} // v37 (the full game only)
+  sheds=[]; // v38.10
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   if(start&&STAGES[CS].hp0)P.hp=P.maxHp=STAGES[CS].hp0; // v38.5 the Land of Giants: the player starts big and strong (the owner: "start us off huge and strong")
@@ -1494,7 +1519,7 @@ const STAGES=[
  {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:1500,gate:2600,hp0:200,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
   tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
   waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
-  book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+  book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago'],[0,YAGO_FORMS[1],'dfly']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 //#/FULL
 //#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1}, // in the demo: names only, shown as in the full game
 ];
@@ -1730,6 +1755,7 @@ function alionFx(e){const S=P.S,q=e.bq,t=e.t;
 // Far off, it gets ready to jet (0.5 s: bubbles at its tail, a red lane) and shoots along that lane. The mask hurts along its length while it is out.
 function segD(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l2=vx*vx+vy*vy||1,u=clamp(((px-ax)*vx+(py-ay)*vy)/l2,0,1);return Math.hypot(px-ax-vx*u,py-ay-vy*u);}
 function yagoMove(e,dx,dy,d,s,dt,S,half){const t=e.t,a=Math.atan2(dy,dx),hx=e.x+Math.cos(e.ang)*t.L*0.66,hy=e.y+Math.sin(e.ang)*t.L*0.66,reach=t.L*2.3;
+  if(e.moltNow)bossMolt(e); // (v38.10: a third of its HP gone to plain damage: it molts)
   if(!e.bq){e.ang+=angDiff(e.ang,a)*Math.min(1,dt*2.5);MV[0]=Math.cos(e.ang)*s*0.7;MV[1]=Math.sin(e.ang)*s*0.7;
     if(e.bT<=0){if(d<reach+t.L*0.5){e.bq=1;e.bT=0.6;e.mx=P.x;e.my=P.y;e.rn=half?2:1;sfx('latch');}else if(d>reach*1.15){e.bq=4;e.bT=0.5;e.ang=a;sfx('brood');}else e.bT=0.3;}
     return true;}
@@ -1752,7 +1778,33 @@ function yagoFx(e){const S=P.S,q=e.bq,t=e.t,hx=e.x+Math.cos(e.ang)*t.L*0.66,hy=e
     ctx.restore();}
   if(q===4){const D=P.spd*S*2.4*0.45+t.L,f=1-e.bT/0.5;ctx.fillStyle=`rgba(255,60,70,${(0.1+0.16*f).toFixed(3)})`;ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.beginPath();ctx.moveTo(0,-t.w);ctx.lineTo(D,-t.w);ctx.arc(D,0,t.w,-Math.PI/2,Math.PI/2);ctx.lineTo(0,t.w);ctx.closePath();ctx.fill();
     ctx.strokeStyle=`rgba(255,150,160,${(0.55+0.4*Math.sin(T*30)).toFixed(3)})`;ctx.lineWidth=3*S;ctx.setLineDash([14*S,10*S]);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
-  if(q===5){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*t.w*0.9,e.y-t.w*1.3+Math.sin(a)*t.w*0.25,7*S,'#ffe680');}}}
+  if(q===5){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*t.w*0.9,e.y-t.w*1.3+Math.sin(a)*t.w*0.25,7*S,'#ffe680');}}drawSheds();}
+// v38.10 (the owner: "the nymph is too weak; it goes down in seconds"). No shells back (the owner found shells a chore here): it takes its own life cycle instead.
+// Each squeeze (or each third of its HP) it sheds its skin: the empty skin stays where it was, it slips out of the coil (1.6 s it cannot be coiled) a size bigger
+// and quicker; the last time it takes wing as a dragonfly (dflyMove), fast round the player, that hovers, dives, and rests. A squeeze in the rest ends it.
+let sheds=[];
+function bossMolt(e){const S=P.S,c=e.cap;e.molts--;e.hp=Math.min(e.hp,e.hp0*(e.molts+1)/(e.moltMax+1));e.moltNow=0;
+  if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;}
+  sheds.push({x:e.x,y:e.y,ang:e.ang,t:e.t,t0:T});if(sheds.length>4)sheds.shift();
+  const nt=e.molts>0?YAGO_FORMS[0]:YAGO_FORMS[1],a=Math.atan2(e.y-P.y,e.x-P.x);e.t=nt;e.r=nt.r;e.spd=nt.spd;e.cap=null;e.freeT=T+1.6;e.bq=0;e.bT=nt.k==='dfly'?1.4:0.9;e.mk=0;e.flash=0.4;
+  e.vx+=Math.cos(a)*420*S;e.vy+=Math.sin(a)*420*S;hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,16);vib(60);
+  burst(e.x,e.y,40,nt.k==='dfly'?'#c8f0ff':'#e0eab0',360,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*3,life:0.5,max:0.5,col:nt.k==='dfly'?'#9fe0ff':'#d8e4a0',w:7*S});
+  if(nt.k==='dfly'){banner={t:2.4,max:2.4,title:TX('yago_up'),sub:TX('yago_up_s')};flashT=0.3;sfx('stage');}else{text(e.x,e.y-e.r-16*S,TX('yago_molt'),26,'#f0f6c8',1.3);sfx('boss');}}
+function drawSheds(){if(!sheds.length)return;const S=P.S;sheds=sheds.filter(h=>T-h.t0<7);
+  for(const h of sheds){const t=h.t,k=Math.min(1,(7-(T-h.t0))/1.5),sp=t.spr,w=sp.width/(t.res||1),hh=sp.height/(t.res||1);ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.ang);
+    ctx.globalAlpha=0.42*k;ctx.drawImage(sp,-w/2,-hh/2,w,hh);ctx.globalAlpha=0.6*k;ctx.strokeStyle='#f6f2d8';ctx.lineWidth=3*S;ctx.beginPath();ctx.moveTo(t.L*0.55,0);ctx.lineTo(t.L*0.05,0);ctx.stroke();ctx.restore();}ctx.globalAlpha=1;}
+function dflyMove(e,dx,dy,d,s,dt,S,half){const t=e.t,v0=P.spd*S,ux=dx/d,uy=dy/d;
+  if(!e.bq){const R=Math.max(170*S,t.L*1.4),sd=e.fs||(e.fs=Math.random()<0.5?1:-1),k=clamp((d-R)/(120*S),-1.2,1.2); // fast round the player at its range
+    MV[0]=(-uy*sd*1.25+ux*k)*v0+Math.sin(T*3+e.ph)*v0*0.2;MV[1]=(ux*sd*1.25+uy*k)*v0+Math.cos(T*2.6+e.ph)*v0*0.2;
+    if(e.bT<=0){if(d<760*S){e.bq=1;e.bT=0.7;e.mx=P.x;e.my=P.y;sfx('latch');}else e.bT=0.3;}return true;}
+  if(e.bq===1){MV[0]=Math.sin(T*9)*v0*0.06;MV[1]=Math.cos(T*11)*v0*0.06;e.ang+=angDiff(e.ang,Math.atan2(e.my-e.y,e.mx-e.x))*Math.min(1,dt*10); // it hovers and takes aim (a red line)
+    if(e.bT<=0){const q=Math.hypot(e.mx-e.x,e.my-e.y)+0.01;e.cdx=(e.mx-e.x)/q;e.cdy=(e.my-e.y)/q;e.ang=Math.atan2(e.cdy,e.cdx);e.bq=2;e.bT=0.42;sfx('dash');}return true;}
+  if(e.bq===2){const v=v0*2.8;MV[0]=e.cdx*v;MV[1]=e.cdy*v;if(QL>=1)burst(e.x-e.cdx*t.L,e.y-e.cdy*t.L,1,'#c8f0ff',80,0.4,2);if(e.bT<=0){e.bq=3;e.bT=2;}return true;} // the dive (then 2 s of rest: time to coil it)
+  MV[0]=Math.sin(T*1.7+e.ph)*v0*0.05;MV[1]=Math.cos(T*1.3+e.ph)*v0*0.05;if(e.bT<=0){e.bq=0;e.bT=rand(2.2,3.2)*(half?0.8:1);}return true;} // it rests: coil it now
+function dflyFx(e){const S=P.S,q=e.bq,t=e.t,hx=e.x+Math.cos(e.ang)*t.L*0.5,hy=e.y+Math.sin(e.ang)*t.L*0.5;drawSheds();
+  if(q===1){ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(e.mx,e.my);ctx.stroke();ctx.setLineDash([]);
+    const f=1-e.bT/0.7;ctx.lineWidth=2.5*S;circ(ctx,e.mx,e.my,(t.r*0.6)*(2-f));ctx.stroke();}
+  if(q===3){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*t.r*0.9,e.y-t.r*1.4+Math.sin(a)*t.r*0.25,7*S,'#ffe680');}}}
 //#/FULL
 function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
@@ -1760,14 +1812,15 @@ function maybeShell(e){const t=e.t;
 function spawnBoss(){
   const t=BOSS_T[P.stage];if(!t)return; // (v37.1: the pit has a boss at its last scale only)
   const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare||t.molts?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
   if(t.naps){e.naps=e.napsMax=P.endless?Math.min(5,t.naps+P.bossN):t.naps-1;} // v36 (v38.9: two crushes before the clear, three and more in endless)
+  if(t.molts){e.molts=e.moltMax=P.endless?Math.min(4,t.molts+P.bossN):t.molts;e.hp0=e.hp;} // v38.10 molts to go (one more each return in endless, 4 at most)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
   if(t.k==='hydra'&&!OLDB){const n=P.endless?Math.min(6,4+P.bossN):3; /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
-  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -1808,7 +1861,7 @@ function bossRing(e,n,spd,dmg){const a0=Math.random()*TAU,v=spd*P.S;for(let i=0;
 function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
   if(e.sleepT>0){e.sleepT-=dt;MV[0]=MV[1]=0;e.ang+=dt*1.5;if(e.sleepT<=0)bossWake(e);return true;} // v36 dormant: it lies still
   if(e.cap||e.frz>0||P.freezeT>0)return false;
-  e.bT=(e.bT===undefined?2.2:e.bT)-dt;const half=e.napsMax?e.naps<=e.napsMax/2:e.sh<=e.shMax/2;
+  e.bT=(e.bT===undefined?2.2:e.bT)-dt;const half=e.napsMax?e.naps<=e.napsMax/2:e.moltMax?e.molts<e.moltMax:e.sh<=e.shMax/2;
   if(k==='blob'){ // Giant Germ: winds up (a red line), charges along it, then is dizzy. The tail stops it
     if(!e.bq){if(e.bT<=0&&d<520*S){e.bq=1;e.bT=0.75;e.cdx=dx/d;e.cdy=dy/d;sfx('latch');}return false;}
     if(e.bq===1){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=2;e.bT=0.6;sfx('dash');}return true;}
@@ -1837,6 +1890,7 @@ function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
 //#FULL
   if(k==='alion')return alionMove(e,dx,dy,d,s,dt,S,half); // v37
   if(k==='yago')return yagoMove(e,dx,dy,d,s,dt,S,half); // v38
+  if(k==='dfly')return dflyMove(e,dx,dy,d,s,dt,S,half); // v38.10
 //#/FULL
   return false;}
 // Hydra: tumbles head over heels (as real ones do) to a spot near the player (a dotted arc shows where), then rests a moment. Arms rest while it tumbles
@@ -1849,7 +1903,7 @@ function hydraHop(e,dx,dy,d,dt,S,half){
 function drawBossFx(e){const S=P.S,q=e.bq;if(budsOn(e)){ctx.strokeStyle=`rgba(255,220,150,${0.35+0.2*Math.sin(T*4)})`;ctx.lineWidth=4*S;ctx.setLineDash([12*S,10*S]);ctx.lineDashOffset=-T*30*S;circ(ctx,e.x,e.y,e.r*1.25);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // v35: guarded by its buds
   if(!q||OLDB)return;const k=e.t.k;
 //#FULL
-  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}
+  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}if(k==='dfly'){dflyFx(e);return;}
 //#/FULL
  
   if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
@@ -1991,7 +2045,7 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
   if(dx>m||dx<-m||dy>m||dy<-m)continue;const d2=dx*dx+dy*dy;if(d2<m*m){const d=Math.sqrt(d2)||0.01;o.x=b.x+dx/d*m;o.y=b.y+dy/d*m;return b;}}return null;}
 
 // ---------- combat ----------
-function hurt(e,d,xpMul,grp){if(e.hide)return false;if(e.t.immune){immuneMark(e);return false;}if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
+function hurt(e,d,xpMul,grp){if(e.hide)return false;if(e.t.immune){immuneMark(e);return false;}if(e.sh>0){e.flash=0.06;return false;}if(e.molts>0&&e.hp-d<=e.hp0*e.molts/(e.moltMax+1)){e.hp=e.hp0*e.molts/(e.moltMax+1);e.moltNow=1;e.flash=0.1;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
 function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
   if(e.t.immune&&!KILLOK){immuneMark(e);return;} // v36: a tardigrade dies only of a squeeze or the head (see explode, tunCrush)
   if(e.bud)budOff(e); // v35
@@ -2131,6 +2185,9 @@ function explode(cap){
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
       if(e.t.revive&&!e.tun){tunOf(e);dorm++;continue;} // v36 a tardigrade: squeezed, it does not die, it goes dormant
       if(e.naps){if(!(e.sleepT>0)){bossNap(e);dorm++;}continue;} // v36 the Predatory Tardigrade: squeezed, it goes dormant (crush it with the head)
+//#FULL
+      if(e.molts>0){bossMolt(e);continue;} // v38.10 the Dragonfly Nymph: squeezed, it sheds its skin and slips out bigger (the last time it takes wing)
+//#/FULL
       if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
       KILLOK=true;kill(e,xpMul,grp);KILLOK=false;n++;if(dsh&&P.devour)heal++;}}
   const R=((55+26*ch)*P.blast*(dsh?DASH_R:1)*S+cap.rad*0.6)*(1+LINK_R*lk),dmg=(1+ch)*(dsh?DASH_D:1)*P.blast*(1+P.stage)*(1+LINK_D*lk);
@@ -3141,7 +3198,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
-  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.t.bare?TX('boss_hud_p',b.t.name):b.livesMax?TX('boss_hud_k',b.t.name,b.lives):b.napsMax?TX('boss_hud_t',b.t.name,b.naps):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.t.bare?TX('boss_hud_p',b.t.name):b.livesMax?TX('boss_hud_k',b.t.name,b.lives):b.moltMax?TX('boss_hud_k',b.t.name,b.molts+1):b.napsMax?TX('boss_hud_t',b.t.name,b.naps):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
