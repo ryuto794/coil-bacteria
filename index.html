@@ -130,6 +130,26 @@ const ETYPES=[
  {k:'kinc',look:'kin',n:['とぐろ','Coiler'],st:0,r:10,hp:4,spd:0,dmg:8,xp:6,col:'#ff5a7a',core:'#5a0a1a',glow:'rgba(255,90,120,0.5)',kin:1,kb:'circle',tl:380,kc:0},
  {k:'kind',look:'kin',n:['突き手','Lancer'],st:0,r:10,hp:5,spd:0,dmg:12,xp:8,col:'#ffa24a',core:'#6a2a05',glow:'rgba(255,160,70,0.5)',kin:1,kb:'dash',tl:260,kc:2},
  {k:'kinh',look:'kin',n:['囲い手','Encircler'],st:0,sh:1,r:11,hp:8,spd:0,dmg:10,xp:14,col:'#c98cff',core:'#3a1a7a',glow:'rgba(190,130,255,0.5)',kin:1,kb:'hunt',tl:1250,kc:1,thru:1},
+  // stage 4 (Antlion Pit, v37): insects on the slope of a sand pit. All of them slide down toward the antlion at the bottom, and are eaten if they go over the edge (pitTick)
+  {k:'ant',n:['アリ','Ant'],st:0,r:10,hp:2,spd:80,dmg:6,xp:2,col:'#d0563c',core:'#3a0e08',glow:'rgba(230,100,70,0.5)',rot:1,fr:4},
+  {k:'sprg',n:['トビムシ','Springtail'],st:0,r:9,hp:2,spd:62,dmg:5,xp:3,col:'#d9c9f2',core:'#4a3a6a',glow:'rgba(215,200,245,0.45)',rot:1,mv:'hop'},
+  {k:'antl',look:'ant',n:['アリの行列','Ant Column'],st:0,r:10,hp:2,spd:96,dmg:6,xp:2,col:'#d0563c',core:'#3a0e08',glow:'rgba(230,100,70,0.5)',rot:1,fr:4,mv:'weave',chain:7},
+  {k:'pill',n:['ダンゴムシ','Pill Bug'],st:0,sh:1,r:15,hp:6,spd:46,dmg:9,xp:8,col:'#8d98ad',core:'#2a303c',glow:'rgba(160,170,190,0.45)',rot:1,fr:4,mv:'roll'}, // roll: it comes tumbling down rolled up (drawn as pillb), then opens out and walks
+  {k:'pillb',n:['丸まったダンゴムシ','Pill Bug (rolled)'],st:0,sh:1,r:15,hp:6,spd:0,dmg:9,xp:8,col:'#8d98ad',core:'#2a303c',glow:'rgba(160,170,190,0.45)'},
+  {k:'spid',n:['ハエトリグモ','Jumping Spider'],st:1,sh:1,r:24,hp:14,spd:58,dmg:14,xp:10,col:'#2e2a30',core:'#f0ece4',glow:'rgba(240,235,220,0.45)',rot:1,fr:4,charge:1},
+  {k:'beet',n:['オサムシ','Ground Beetle'],st:1,sh:1,r:28,hp:16,spd:84,dmg:15,xp:10,col:'#7d6cf0',core:'#1a1440',glow:'rgba(150,130,255,0.45)',rot:1,fr:4,mv:'run'},
+  {k:'grass',n:['バッタ','Grasshopper'],st:1,r:28,hp:10,spd:70,dmg:12,xp:8,col:'#d4b448',core:'#5a4a10',glow:'rgba(220,190,90,0.45)',rot:1,fr:4,mv:'hop'}, // v37.1 the scales of the pit: the slope (1) and the rim (2)
+  {k:'mantis',n:['カマキリ','Praying Mantis'],st:2,sh:2,r:60,hp:34,spd:62,dmg:22,xp:26,col:'#7cc04a',core:'#2a4a18',glow:'rgba(140,210,90,0.4)',rot:1,fr:4,charge:1},
+  {k:'centi',n:['ムカデ','Centipede'],st:2,r:30,hp:6,spd:100,dmg:16,xp:4,col:'#4a5a8a',core:'#1a2240',glow:'rgba(100,120,190,0.45)',rot:1,fr:4,mv:'weave',chain:11,hd:'centh'}, // hd: the one in front is drawn as this (its head)
+  {k:'centh',n:['ムカデの頭','Centipede (head)'],st:2,r:30,hp:6,spd:100,dmg:16,xp:4,col:'#e04a2a',core:'#300a05',glow:'rgba(240,90,60,0.45)',rot:1,fr:4},
+  // stage 5 (Land of Giants, v38): the giants of the stages before (drawn as they were), here the ones to coil. Long bodies (L, w) hurt anywhere along them,
+  // so a coil has to go wide round the middle. Small creatures drift about among them as prey (the stage's prey list), for XP
+  {k:'gpara',look:'para',n:['ゾウリムシ','Paramecium'],st:0,L:110,w:44,r:44,sh:2,hp:30,spd:52,dmg:14,xp:16,col:'#9aeede',core:'#126b5e',glow:'rgba(130,235,215,0.35)',rot:1,mv:'dart'},
+  {k:'geugl',look:'eugl',n:['ミドリムシ','Euglena'],st:0,L:140,w:42,r:42,sh:2,hp:32,spd:62,dmg:15,xp:18,col:'#6fdc4a',core:'#1f6a10',glow:'rgba(110,230,80,0.35)',rot:1,mv:'run'},
+  {k:'gdaph',look:'daph',n:['ミジンコ','Water Flea'],st:0,L:105,w:52,r:52,sh:3,hp:40,spd:70,dmg:17,xp:24,col:'#e8d9b0',core:'#6a4a20',glow:'rgba(235,215,170,0.35)',rot:1,mv:'kick'},
+  {k:'gmosq',look:'mosq',n:['ボウフラ','Mosquito Larva'],st:0,L:150,w:20,r:24,sh:2,hp:30,spd:80,dmg:15,xp:20,col:'#b9c7a0',core:'#3a4a20',glow:'rgba(190,205,160,0.35)',rot:1,mv:'zig'},
+  {k:'ghelio',look:'helio',n:['タイヨウチュウ','Sun Animalcule'],st:0,r:62,sh:3,hp:44,spd:34,dmg:16,xp:28,col:'#ffd98a',core:'#7a4a08',glow:'rgba(255,215,130,0.35)',spin:0.4,mv:'spines'}, // spines: it swells, then lets go a ring of its rays
+  {k:'gtadp',look:'tadp',n:['オタマジャクシ','Tadpole'],st:0,L:170,w:54,r:54,sh:4,hp:66,spd:66,dmg:20,xp:40,col:'#5d6b4f',core:'#1a2414',glow:'rgba(150,170,130,0.3)',rot:1,mv:'dart'},
  //#/FULL
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
@@ -191,6 +211,14 @@ const JAR_BOSS=[{k:'kinb',look:'kin',st:0,r:40,hp:160,spd:0,dmg:26,xp:320,col:'#
  JAR_RUSH=[{k:'rush',look:'nema',st:0,L:17,w:2.8,r:4,hp:1,spd:0,dmg:7,xp:1,col:'#c98cff',core:'#3a1a7a',glow:'rgba(190,130,255,0.5)',name:['幼体の群れ','Hatchling Swarm'],rot:1,fr:8}],
  KIN_SK=[{id:'kin0',h:350,angry:1},{id:'kin1',h:280,angry:1,eye:'cat'},{id:'kin2',h:28,angry:1},
   {id:'kin3',h:352,angry:1,eye:'big',cols:[[352,85,48],[0,0,12],[45,95,58],[0,0,12]],runs:[3,1,2,1],head:[352,85,45]}]; // how each kind of kin is coloured (read as skins are)
+// stage 4 (v37): the antlion is the pit itself until the tail is long enough; then it comes out of the sand to fight (alionMove)
+// stage 5 (v38): a few giants at a time (the waves count giants), and the Dragonfly Nymph to end it (yagoMove)
+const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col:'#8a9a5a',core:'#2a3018',glow:'rgba(170,190,110,0.45)',name:['ヤゴ','Dragonfly Nymph'],sh:5,rot:1,fr:4}],
+ GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
+const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
+ // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
+ PIT_WAVES=[[0,16,1.0],[20,24,0.9,'stream'],[50,32,0.8],[80,14,1.1],[100,40,0.75,'stream'],[135,18,1.0],[160,50,0.7,'stream'],[195,20,1.0],
+  [220,60,0.65,'stream'],[255,24,0.9],[285,70,0.6,'stream'],[320,28,0.9],[350,80,0.6,'stream'],[390,32,0.9],[420,90,0.55,'stream'],[460,36,0.9]];
 //#/FULL
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);
@@ -452,6 +480,133 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
     g.strokeStyle=fl?'#fff':'rgba(255,255,255,.7)';g.lineWidth=Math.max(1.5,r*.035);hex(r*.96);g.stroke();hex(r*.56);g.stroke();
     g.beginPath();for(let i=0;i<6;i++){const a=i/6*TAU;g.moveTo(Math.cos(a)*r*.56,Math.sin(a)*r*.56);g.lineTo(Math.cos(a)*r*.96,Math.sin(a)*r*.96);}g.stroke();
     g.fillStyle=core;hex(r*.36);g.fill();g.fillStyle=col;circ(g,0,0,r*.14);g.fill();break;}
+//#FULL
+  case 'ant':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37 an ant: head, thorax and a round gaster, elbowed feelers, six legs in a tripod walk
+    g.strokeStyle=fl?'#fff':'#7a2c1c';g.lineWidth=Math.max(1.2,r*0.1);
+    for(let i=0;i<3;i++){const x=r*(0.28-i*0.16);for(const sg of[-1,1]){const sw=Math.sin(p+(i%2?Math.PI:0)+(sg>0?Math.PI:0))*r*0.16,kx=x+(1-i)*r*0.14+sw*0.5,ky=sg*r*0.5;
+      g.beginPath();g.moveTo(x,sg*r*0.12);g.lineTo(kx,ky);g.lineTo(kx+(1-i)*r*0.42+sw,sg*r*(0.92-Math.abs(1-i)*0.12));g.stroke();}}
+    g.lineWidth=Math.max(1,r*0.08);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.8,sg*r*0.1);g.lineTo(r*1.05,sg*r*0.42);g.lineTo(r*1.38,sg*r*0.3);g.stroke();}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.6,0,r*0.5,r*0.4,0,0,TAU);g.fill();circ(g,-r*0.06,0,r*0.11);g.fill();
+    g.beginPath();g.ellipse(r*0.2,0,r*0.3,r*0.17,0,0,TAU);g.fill();circ(g,r*0.68,0,r*0.27);g.fill();
+    g.strokeStyle=col;g.lineWidth=Math.max(1,r*0.09);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.88,sg*r*0.12);g.quadraticCurveTo(r*1.08,sg*r*0.12,r*1.04,sg*r*0.01);g.stroke();}
+    if(!fl){g.fillStyle='rgba(255,235,220,0.35)';g.beginPath();g.ellipse(-r*0.68,-r*0.13,r*0.24,r*0.12,0,0,TAU);g.fill();circ(g,r*0.62,-r*0.1,r*0.09);g.fill();
+      g.fillStyle='#120604';for(const sg of[-1,1]){circ(g,r*0.76,sg*r*0.17,r*0.07);g.fill();}}
+    break;}
+  case 'pill':{const L=r,w=r*0.72,p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37 a pill bug, walking: a dome of seven plates, short feelers, legs just showing under the rim
+    g.strokeStyle=fl?'#fff':core;g.lineWidth=Math.max(1.2,r*0.07);for(let i=0;i<7;i++){const x=L*0.6-i*L*0.19,sw=Math.sin(p+i*0.9)*L*0.07;for(const sg of[-1,1]){g.beginPath();g.moveTo(x,sg*w*0.7);g.lineTo(x+sw,sg*w*1.08);g.stroke();}}
+    for(const sg of[-1,1]){g.beginPath();g.moveTo(L*0.85,sg*w*0.3);g.quadraticCurveTo(L*1.15,sg*w*0.45,L*1.28,sg*w*0.85);g.stroke();}
+    const gr=g.createLinearGradient(0,-w,0,w);gr.addColorStop(0,fl?'#fff':'#c4ccd8');gr.addColorStop(0.45,col);gr.addColorStop(1,fl?'#fff':'#4a5262');
+    g.fillStyle=gr;g.beginPath();g.ellipse(0,0,L,w,0,0,TAU);g.fill();
+    if(!fl){g.strokeStyle='rgba(30,36,48,0.75)';g.lineWidth=r*0.06;for(let i=1;i<8;i++){const x=L-i*L*2/8,hh=w*Math.sqrt(Math.max(0,1-x*x/(L*L)));g.beginPath();g.moveTo(x+L*0.05,-hh);g.quadraticCurveTo(x-L*0.07,0,x+L*0.05,hh);g.stroke();}
+      g.strokeStyle='rgba(230,236,245,0.45)';g.lineWidth=r*0.04;for(let i=1;i<8;i++){const x=L-i*L*2/8-L*0.05,hh=w*0.85*Math.sqrt(Math.max(0,1-x*x/(L*L)));g.beginPath();g.moveTo(x+L*0.04,-hh);g.quadraticCurveTo(x-L*0.06,-hh*0.2,x-L*0.03,0);g.stroke();}
+      g.fillStyle='#1a1e26';for(const sg of[-1,1]){circ(g,L*0.82,sg*w*0.32,r*0.07);g.fill();}}
+    break;}
+  case 'pillb':{g.lineCap='round'; // v37 a pill bug rolled up into a ball, the plates in bands round it
+    const R=r*0.86,gr=g.createRadialGradient(-R*0.35,-R*0.35,R*0.1,0,0,R);gr.addColorStop(0,fl?'#fff':'#dfe5ee');gr.addColorStop(0.55,col);gr.addColorStop(1,fl?'#fff':'#3e4656');
+    g.fillStyle=gr;circ(g,0,0,R);g.fill();
+    if(!fl){g.save();circ(g,0,0,R);g.clip();g.strokeStyle='rgba(28,34,46,0.8)';g.lineWidth=r*0.07;for(let i=-3;i<=3;i++){const x=i*R*0.3;g.beginPath();g.moveTo(x+R*0.12,-R);g.quadraticCurveTo(x-R*0.22,0,x+R*0.12,R);g.stroke();}
+      g.strokeStyle='rgba(235,240,248,0.4)';g.lineWidth=r*0.045;for(let i=-3;i<=3;i++){const x=i*R*0.3-R*0.07;g.beginPath();g.moveTo(x+R*0.1,-R*0.9);g.quadraticCurveTo(x-R*0.18,-R*0.2,x-R*0.12,R*0.1);g.stroke();}g.restore();
+      g.strokeStyle='rgba(20,24,34,0.9)';g.lineWidth=r*0.07;circ(g,0,0,R);g.stroke();}
+    break;}
+  case 'sprg':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37 a springtail: a soft little body, long feelers, and the spring folded under it (the fork at the back)
+    g.strokeStyle=fl?'#fff':core;g.lineWidth=Math.max(1,r*0.09);for(let i=0;i<3;i++){const x=r*(0.35-i*0.22);for(const sg of[-1,1]){g.beginPath();g.moveTo(x,sg*r*0.25);g.lineTo(x-r*0.05,sg*r*0.6);g.stroke();}}
+    for(const sg of[-1,1]){g.beginPath();g.moveTo(-r*0.95,sg*r*0.08);g.quadraticCurveTo(-r*1.25,sg*r*0.32,-r*1.05,sg*r*0.5);g.stroke();} // the spring
+    g.lineWidth=Math.max(1,r*0.08);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.9,sg*r*0.12);g.quadraticCurveTo(r*1.25,sg*r*0.2,r*1.45,sg*r*(0.55+0.05*Math.sin(p)));g.stroke();}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.12,0,r*0.82,r*0.36,0,0,TAU);g.fill();circ(g,r*0.72,0,r*0.3);g.fill();
+    if(!fl){g.fillStyle=core;g.globalAlpha=0.45;for(let i=0;i<5;i++){const x=r*(0.45-i*0.27);g.beginPath();g.ellipse(x,0,r*0.06,r*0.3,0,0,TAU);g.fill();}g.globalAlpha=1;
+      g.fillStyle='rgba(255,255,255,0.5)';g.beginPath();g.ellipse(-r*0.2,-r*0.14,r*0.45,r*0.09,0,0,TAU);g.fill();g.fillStyle='#1a1028';for(const sg of[-1,1]){circ(g,r*0.84,sg*r*0.15,r*0.08);g.fill();}}
+    break;}
+  case 'spid':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37 a jumping spider: a square head with two big eyes in front, a striped body, eight legs, the front pair thick
+    const legs=[[0.42,0.55,1.15,0.15,-0.55],[0.28,1.2,1.0,0.11,-0.35],[0.12,1.95,1.0,0.11,0.35],[0,2.45,1.15,0.11,0.5]];g.strokeStyle=fl?'#fff':'#8a8290';
+    legs.forEach(([x,a0,len,lw,bend],i)=>{for(const sg of[-1,1]){const a=sg*(a0+Math.sin(p+i*1.7+(sg>0?2:0))*0.08);g.lineWidth=Math.max(1.2,r*lw);
+      const kx=r*x+Math.cos(a)*r*len*0.55,ky=Math.sin(a)*r*len*0.55,b=a+sg*bend;g.beginPath();g.moveTo(r*x,sg*r*0.16);g.lineTo(kx,ky);g.lineTo(kx+Math.cos(b)*r*len*0.5,ky+Math.sin(b)*r*len*0.5);g.stroke();}});
+    g.fillStyle=fl?'#fff':'#26222a';g.beginPath();g.ellipse(-r*0.52,0,r*0.5,r*0.4,0,0,TAU);g.fill();
+    if(!fl){g.save();g.beginPath();g.ellipse(-r*0.52,0,r*0.5,r*0.4,0,0,TAU);g.clip();g.fillStyle=core;for(let i=0;i<3;i++){g.beginPath();g.ellipse(-r*(0.25+i*0.27),0,r*0.07,r*0.42,0,0,TAU);g.fill();}g.restore();}
+    g.fillStyle=fl?'#fff':'#2e2a30';g.beginPath();g.roundRect?g.roundRect(-r*0.12,-r*0.38,r*0.82,r*0.76,r*0.26):g.rect(-r*0.12,-r*0.38,r*0.82,r*0.76);g.fill();
+    if(!fl){g.fillStyle=core;g.globalAlpha=0.85;g.beginPath();g.moveTo(-r*0.05,-r*0.36);g.lineTo(r*0.5,-r*0.18);g.lineTo(r*0.5,r*0.18);g.lineTo(-r*0.05,r*0.36);g.lineTo(r*0.2,0);g.closePath();g.fill();g.globalAlpha=1;
+      g.fillStyle='#e8e2d6';for(const sg of[-1,1]){circ(g,r*0.82,sg*r*0.24,r*0.11);g.fill();} // palps
+      g.fillStyle='#0a0a0c';for(const sg of[-1,1]){circ(g,r*0.66,sg*r*0.15,r*0.16);g.fill();circ(g,r*0.62,sg*r*0.36,r*0.08);g.fill();circ(g,r*0.12,sg*r*0.3,r*0.07);g.fill();}
+      g.fillStyle='#ffffff';for(const sg of[-1,1]){circ(g,r*0.7,sg*r*0.15-r*0.05,r*0.05);g.fill();}}
+    break;}
+  case 'beet':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37 a ground beetle: long legs, curved jaws, a shining pair of wing cases with grooves
+    g.strokeStyle=fl?'#fff':'#1a1430';g.lineWidth=Math.max(1.2,r*0.08);
+    for(let i=0;i<3;i++){const x=r*(0.32-i*0.2);for(const sg of[-1,1]){const sw=Math.sin(p+(i%2?Math.PI:0)+(sg>0?Math.PI:0))*r*0.16,kx=x+(i-1)*r*0.2+sw*0.4,ky=sg*r*0.66;
+      g.beginPath();g.moveTo(x,sg*r*0.2);g.lineTo(kx,ky);g.lineTo(kx+(i-1)*r*0.45+sw,sg*r*1.05);g.stroke();}}
+    g.lineWidth=Math.max(1,r*0.06);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.85,sg*r*0.1);g.quadraticCurveTo(r*1.2,sg*r*0.3,r*1.42,sg*r*0.62);g.stroke();}
+    g.fillStyle=fl?'#fff':'#2a2248';for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.92,sg*r*0.05);g.quadraticCurveTo(r*1.18,sg*r*0.12,r*1.12,sg*r*0.24);g.quadraticCurveTo(r*1.0,sg*r*0.18,r*0.88,sg*r*0.16);g.fill();}
+    const gr=g.createLinearGradient(0,-r*0.5,0,r*0.5);gr.addColorStop(0,fl?'#fff':'#c7bcff');gr.addColorStop(0.35,col);gr.addColorStop(0.75,fl?'#fff':'#3a2c8a');gr.addColorStop(1,fl?'#fff':'#5ad1a0');
+    g.fillStyle=gr;g.beginPath();g.ellipse(-r*0.32,0,r*0.66,r*0.46,0,0,TAU);g.fill();g.beginPath();g.ellipse(r*0.42,0,r*0.22,r*0.3,0,0,TAU);g.fill();
+    g.fillStyle=fl?'#fff':'#3a2c80';circ(g,r*0.78,0,r*0.17);g.fill();
+    if(!fl){g.strokeStyle='rgba(20,14,50,0.8)';g.lineWidth=r*0.05;g.beginPath();g.moveTo(r*0.32,0);g.lineTo(-r*0.97,0);g.stroke();
+      g.strokeStyle='rgba(20,14,50,0.35)';g.lineWidth=r*0.03;for(const k of[-0.55,-0.28,0.28,0.55]){g.beginPath();g.ellipse(-r*0.32,0,r*0.6,Math.abs(k)*r*0.8,0,k<0?Math.PI:0,k<0?TAU:Math.PI);g.stroke();}
+      g.fillStyle='rgba(255,255,255,0.45)';g.beginPath();g.ellipse(-r*0.3,-r*0.24,r*0.42,r*0.07,0,0,TAU);g.fill();}
+    break;}
+  case 'alion':{g.lineCap='round';g.lineJoin='round'; // v37 the antlion larva: a fat bristly body, a flat head, and two great sickle jaws with teeth (open)
+    const B=fl?'#fff':'#3a2412';g.strokeStyle=B;g.lineWidth=r*0.07;
+    for(let i=0;i<3;i++){const x=r*(0.05-i*0.22);for(const sg of[-1,1]){g.beginPath();g.moveTo(x,sg*r*0.3);g.lineTo(x-r*0.08,sg*r*0.62);g.lineTo(x-r*0.22,sg*r*0.78);g.stroke();}}
+    const gr=g.createRadialGradient(-r*0.55,-r*0.2,r*0.1,-r*0.45,0,r*0.95);gr.addColorStop(0,fl?'#fff':'#e8cc98');gr.addColorStop(0.6,col);gr.addColorStop(1,fl?'#fff':'#6a4422');
+    g.fillStyle=gr;g.beginPath();g.moveTo(r*0.1,-r*0.32);g.bezierCurveTo(-r*0.3,-r*0.78,-r*1.15,-r*0.75,-r*1.2,0);g.bezierCurveTo(-r*1.15,r*0.75,-r*0.3,r*0.78,r*0.1,r*0.32);g.closePath();g.fill();
+    if(!fl){g.strokeStyle='rgba(60,36,16,0.75)';g.lineWidth=r*0.03;for(let i=0;i<5;i++){const x=-r*(0.2+i*0.2),hh=r*(0.55+0.15*Math.sin(i*0.8+0.6));g.beginPath();g.moveTo(x+r*0.05,-hh);g.quadraticCurveTo(x-r*0.08,0,x+r*0.05,hh);g.stroke();}
+      g.fillStyle='rgba(70,40,18,0.55)';for(const [x,y,s] of[[-0.55,-0.32,0.09],[-0.8,0.22,0.1],[-0.35,0.36,0.07],[-1.0,-0.18,0.07],[-0.62,0.02,0.06],[-0.25,-0.42,0.06]]){circ(g,r*x,r*y,r*s);g.fill();}
+      g.strokeStyle='rgba(50,30,12,0.9)';g.lineWidth=r*0.025;for(let i=0;i<14;i++){const a=Math.PI*0.62+i/13*Math.PI*0.76,x=-r*0.55+Math.cos(a)*r*0.66,y=Math.sin(a)*r*0.7;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*r*0.12,y+Math.sin(a)*r*0.12);g.stroke();
+        g.beginPath();g.moveTo(x,-y);g.lineTo(x+Math.cos(a)*r*0.12,-y-Math.sin(a)*r*0.12);g.stroke();}}
+    alionHead(g,r,0.12,fl);
+    if(!fl){g.fillStyle='rgba(255,240,210,0.28)';g.beginPath();g.ellipse(-r*0.6,-r*0.3,r*0.38,r*0.12,-0.2,0,TAU);g.fill();}
+    break;}
+  case 'grass':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37.1 a grasshopper: a long body, folded hind legs as long as it is, short feelers, a big eye
+    g.strokeStyle=fl?'#fff':'#6a7a20';g.lineWidth=Math.max(1,r*0.06);for(let i=0;i<2;i++){const x=r*(0.35-i*0.2);for(const sg of[-1,1]){const sw=Math.sin(p+i*2+(sg>0?1.5:0))*r*0.08;g.beginPath();g.moveTo(x,sg*r*0.18);g.lineTo(x+r*0.12+sw,sg*r*0.48);g.lineTo(x+r*0.02+sw,sg*r*0.62);g.stroke();}}
+    for(const sg of[-1,1]){g.fillStyle=fl?'#fff':'#8aa828';g.beginPath();g.moveTo(r*0.05,sg*r*0.2);g.quadraticCurveTo(-r*0.4,sg*r*0.62,-r*1.05,sg*r*0.42);g.quadraticCurveTo(-r*0.5,sg*r*0.32,r*0.05,sg*r*0.1);g.fill(); // the hind leg: a thick thigh
+      g.strokeStyle=fl?'#fff':'#5a6a18';g.lineWidth=Math.max(1,r*0.07);g.beginPath();g.moveTo(-r*1.02,sg*r*0.44);g.lineTo(-r*0.35,sg*r*0.66);g.stroke();
+      if(!fl){g.strokeStyle='rgba(60,72,16,0.6)';g.lineWidth=r*0.025;for(let k=1;k<5;k++){const x=r*0.02-k*r*0.2;g.beginPath();g.moveTo(x,sg*r*(0.2+k*0.06));g.lineTo(x-r*0.08,sg*r*(0.32+k*0.04));g.stroke();}}}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.25,0,r*0.78,r*0.22,0,0,TAU);g.fill();g.beginPath();g.ellipse(r*0.3,0,r*0.3,r*0.26,0,0,TAU);g.fill();
+    g.fillStyle=fl?'#fff':'#c8e060';g.beginPath();g.ellipse(r*0.66,0,r*0.2,r*0.2,0,0,TAU);g.fill();
+    if(!fl){g.strokeStyle='rgba(70,84,20,0.5)';g.lineWidth=r*0.03;for(let i=1;i<7;i++){const x=-r*0.95+i*r*0.17;g.beginPath();g.moveTo(x,-r*0.2);g.lineTo(x,r*0.2);g.stroke();}
+      g.fillStyle='rgba(255,255,220,0.4)';g.beginPath();g.ellipse(-r*0.2,-r*0.09,r*0.5,r*0.05,0,0,TAU);g.fill();g.fillStyle='#3a2a10';for(const sg of[-1,1]){circ(g,r*0.72,sg*r*0.13,r*0.07);g.fill();}}
+    g.strokeStyle=fl?'#fff':'#6a7a20';g.lineWidth=Math.max(1,r*0.035);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.82,sg*r*0.06);g.quadraticCurveTo(r*1.05,sg*r*0.15,r*1.2,sg*r*0.3);g.stroke();}
+    break;}
+  case 'mantis':{const p=ph||0;g.lineCap='round';g.lineJoin='round'; // v37.1 a praying mantis: a long neck, a three-cornered head with big eyes, the folded catching legs, four walking legs
+    g.strokeStyle=fl?'#fff':'#4a7a28';g.lineWidth=Math.max(1,r*0.045);
+    for(let i=0;i<2;i++){const x=-r*(0.05+i*0.22);for(const sg of[-1,1]){const sw=Math.sin(p+i*2.2+(sg>0?1.4:0))*r*0.07;g.beginPath();g.moveTo(x,sg*r*0.08);g.lineTo(x-r*0.05+sw,sg*r*0.5);g.lineTo(x-r*0.3+sw,sg*r*0.72);g.stroke();}}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.62,0,r*0.5,r*0.2,0,0,TAU);g.fill(); // the abdomen
+    if(!fl){g.fillStyle='rgba(60,110,30,0.6)';g.beginPath();g.ellipse(-r*0.55,0,r*0.42,r*0.09,0,0,TAU);g.fill();}
+    g.fillStyle=col;g.beginPath();g.moveTo(-r*0.15,-r*0.08);g.lineTo(r*0.55,-r*0.05);g.lineTo(r*0.55,r*0.05);g.lineTo(-r*0.15,r*0.08);g.closePath();g.fill(); // the long neck
+    for(const sg of[-1,1]){g.fillStyle=fl?'#fff':'#8ccc58';g.beginPath();g.moveTo(r*0.42,sg*r*0.05);g.lineTo(r*0.62,sg*r*0.32);g.lineTo(r*0.95,sg*r*0.3);g.lineTo(r*0.78,sg*r*0.18);g.lineTo(r*0.5,sg*r*0.04);g.fill(); // the catching leg, folded
+      if(!fl){g.strokeStyle='#2a4a18';g.lineWidth=r*0.02;for(let k=0;k<4;k++){const u=0.66+k*0.07;g.beginPath();g.moveTo(r*u,sg*r*0.3);g.lineTo(r*(u+0.02),sg*r*0.37);g.stroke();}}}
+    g.fillStyle=fl?'#fff':'#9ed868';g.beginPath();g.moveTo(r*0.55,-r*0.18);g.lineTo(r*0.85,0);g.lineTo(r*0.55,r*0.18);g.quadraticCurveTo(r*0.48,0,r*0.55,-r*0.18);g.fill(); // the head
+    if(!fl){g.fillStyle='#d8f0a0';for(const sg of[-1,1]){circ(g,r*0.57,sg*r*0.16,r*0.08);g.fill();}g.fillStyle='#2a3a10';for(const sg of[-1,1]){circ(g,r*0.59,sg*r*0.16,r*0.03);g.fill();}}
+    g.strokeStyle=fl?'#fff':'#4a7a28';g.lineWidth=Math.max(1,r*0.02);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.8,sg*r*0.04);g.quadraticCurveTo(r*1.05,sg*r*0.1,r*1.18,sg*r*0.32);g.stroke();}
+    break;}
+  case 'centi':{const p=ph||0;g.lineCap='round'; // v37.1 a centipede's segment: a flat plate with a pair of legs (the whole is a chain of these)
+    g.strokeStyle=fl?'#fff':'#ffb040';g.lineWidth=Math.max(1,r*0.1);for(const sg of[-1,1]){const sw=Math.sin(p+(sg>0?Math.PI:0))*r*0.3;g.beginPath();g.moveTo(0,sg*r*0.5);g.lineTo(sw*0.5,sg*r*1.0);g.lineTo(sw-r*0.2,sg*r*1.3);g.stroke();}
+    g.fillStyle=col;g.beginPath();g.ellipse(0,0,r*0.62,r*0.72,0,0,TAU);g.fill();
+    if(!fl){g.fillStyle=core;g.beginPath();g.ellipse(-r*0.15,0,r*0.3,r*0.62,0,0,TAU);g.fill();g.fillStyle='rgba(255,255,255,0.3)';g.beginPath();g.ellipse(r*0.05,-r*0.32,r*0.3,r*0.1,0,0,TAU);g.fill();}
+    break;}
+  case 'centh':{const p=ph||0;g.lineCap='round'; // v37.1 the centipede's head: red, with poison claws and long feelers
+    g.strokeStyle=fl?'#fff':'#ffb040';g.lineWidth=Math.max(1,r*0.1);for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.3,sg*r*0.3);g.quadraticCurveTo(r*1.0,sg*r*0.5,r*1.9,sg*r*(1.0+0.1*Math.sin(p)));g.stroke();}
+    g.fillStyle=fl?'#fff':'#ff5030';for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.4,sg*r*0.45);g.quadraticCurveTo(r*1.05,sg*r*0.55,r*1.05,sg*r*0.08);g.quadraticCurveTo(r*0.85,sg*r*0.3,r*0.45,sg*r*0.2);g.fill();}
+    g.fillStyle=fl?'#fff':'#e04a2a';g.beginPath();g.ellipse(0,0,r*0.75,r*0.7,0,0,TAU);g.fill();
+    if(!fl){g.fillStyle='rgba(255,220,180,0.4)';g.beginPath();g.ellipse(-r*0.05,-r*0.3,r*0.35,r*0.12,0,0,TAU);g.fill();g.fillStyle='#200805';for(const sg of[-1,1]){circ(g,r*0.38,sg*r*0.35,r*0.08);g.fill();}}
+    break;}
+// v38 the boss of the Land of Giants
+  case 'yago':{const L=t.L,w=t.w,p=ph||0;g.lineCap='round';g.lineJoin='round'; // v38 a dragonfly nymph: a long tapering abdomen with three spines at the end, wing pads, six long legs, a wide head with great eyes, the mask folded under its chin
+    g.strokeStyle=fl?'#fff':'#55602e';
+    for(let i=0;i<3;i++){const x=L*(0.28-i*0.13);for(const sg of[-1,1]){const sw=Math.sin(p+i*1.9+(sg>0?1.6:0))*w*0.08,kx=x+(1-i)*w*0.35+sw,ky=sg*w*(0.95+0.05*i);
+      g.lineWidth=w*0.09;g.beginPath();g.moveTo(x,sg*w*0.25);g.lineTo(kx,ky);g.stroke();g.lineWidth=w*0.06;g.beginPath();g.moveTo(kx,ky);g.lineTo(kx+(i-1.2)*w*0.55+sw,sg*w*1.3);g.stroke();}}
+    g.fillStyle=fl?'#fff':'#4a5428';for(const k of[-0.22,0,0.22]){g.beginPath();g.moveTo(-L*0.93,k*w*0.4);g.lineTo(-L*1.08,k*w*1.0);g.lineTo(-L*0.9,k*w*0.75);g.fill();} // the spines at the end
+    let gr=g.createLinearGradient(0,-w,0,w);gr.addColorStop(0,fl?'#fff':'#b6c27a');gr.addColorStop(0.5,col);gr.addColorStop(1,fl?'#fff':'#4a5428');g.fillStyle=gr;
+    g.beginPath();g.moveTo(L*0.05,-w*0.5);g.bezierCurveTo(-L*0.35,-w*0.78,-L*0.85,-w*0.45,-L*0.95,0);g.bezierCurveTo(-L*0.85,w*0.45,-L*0.35,w*0.78,L*0.05,w*0.5);g.closePath();g.fill(); // the abdomen
+    if(!fl){g.strokeStyle='rgba(40,48,20,0.6)';g.lineWidth=w*0.04;for(let i=1;i<8;i++){const x=L*0.02-i*L*0.12,hh=w*0.62*Math.sqrt(Math.max(0,1-Math.pow((x+L*0.3)/(L*0.68),2)));g.beginPath();g.moveTo(x+L*0.02,-hh);g.quadraticCurveTo(x-L*0.03,0,x+L*0.02,hh);g.stroke();}
+      g.fillStyle='rgba(40,48,20,0.35)';for(const [x,y,s] of[[-0.3,-0.25,0.09],[-0.5,0.2,0.08],[-0.65,-0.1,0.07],[-0.2,0.3,0.06],[-0.78,0.12,0.05]]){circ(g,L*x,w*y,w*s);g.fill();}}
+    g.fillStyle=fl?'#fff':'#6e7a40';g.beginPath();g.ellipse(L*0.2,0,L*0.2,w*0.5,0,0,TAU);g.fill(); // the thorax
+    g.fillStyle=fl?'#fff':'rgba(80,92,44,0.95)';for(const sg of[-1,1]){g.beginPath();g.moveTo(L*0.26,sg*w*0.08);g.quadraticCurveTo(L*0.05,sg*w*0.42,-L*0.38,sg*w*0.2);g.quadraticCurveTo(-L*0.1,sg*w*0.06,L*0.26,sg*w*0.08);g.fill();} // wing pads
+    if(!fl){g.strokeStyle='rgba(200,215,150,0.4)';g.lineWidth=w*0.025;for(const sg of[-1,1]){g.beginPath();g.moveTo(L*0.2,sg*w*0.12);g.lineTo(-L*0.3,sg*w*0.2);g.stroke();}}
+    g.fillStyle=fl?'#fff':'#7e8a4a';g.beginPath();g.moveTo(L*0.36,-w*0.45);g.quadraticCurveTo(L*0.5,-w*0.7,L*0.62,-w*0.4);g.quadraticCurveTo(L*0.72,0,L*0.62,w*0.4);g.quadraticCurveTo(L*0.5,w*0.7,L*0.36,w*0.45);g.quadraticCurveTo(L*0.32,0,L*0.36,-w*0.45);g.fill(); // the head
+    g.fillStyle=fl?'#fff':'#5a6630';g.beginPath();g.ellipse(L*0.66,0,L*0.07,w*0.3,0,0,TAU);g.fill(); // the mask, folded under the chin
+    g.strokeStyle=fl?'#fff':'#3a4222';g.lineWidth=w*0.03;for(const sg of[-1,1]){g.beginPath();g.moveTo(L*0.66,sg*w*0.2);g.quadraticCurveTo(L*0.78,sg*w*0.3,L*0.82,sg*w*0.5);g.stroke();} // feelers
+    for(const sg of[-1,1]){g.fillStyle=fl?'#fff':'#2a2e18';circ(g,L*0.5,sg*w*0.5,w*0.26);g.fill();if(!fl){gr=g.createRadialGradient(L*0.48,sg*w*0.44,0,L*0.5,sg*w*0.5,w*0.26);gr.addColorStop(0,'rgba(220,240,170,0.7)');gr.addColorStop(0.5,'rgba(120,140,70,0.3)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;circ(g,L*0.5,sg*w*0.5,w*0.26);g.fill();
+      g.fillStyle='rgba(255,255,255,0.8)';circ(g,L*0.52,sg*w*0.42,w*0.06);g.fill();}}
+    break;}
+//#/FULL
   case 'virion':{g.strokeStyle=col;g.lineWidth=Math.max(1.5,r*.12);g.fillStyle=fl?'#fff':'#eafff6'; // a small six-sided particle with a knob on each corner
     for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);g.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);g.stroke();circ(g,Math.cos(a)*r*1.2,Math.sin(a)*r*1.2,r*.13);g.fill();}
     g.fillStyle=col;g.beginPath();for(let i=0;i<6;i++){const a=i/6*TAU;i?g.lineTo(Math.cos(a)*r*.86,Math.sin(a)*r*.86):g.moveTo(r*.86,0);}g.closePath();g.fill();
@@ -459,10 +614,20 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   }
   g.globalAlpha=1;
 }
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+//#FULL
+// v37 the antlion's thorax, head and jaws. open: how far each jaw is turned out (radians). The pit draws it moving, buried to the jaws (drawPit)
+function alionHead(g,r,open,fl){g.lineCap='round';g.lineJoin='round';
+    g.fillStyle=fl?'#fff':'#8a6034';g.beginPath();g.ellipse(r*0.18,0,r*0.16,r*0.3,0,0,TAU);g.fill();
+    g.fillStyle=fl?'#fff':'#a8784a';g.beginPath();g.moveTo(r*0.28,-r*0.3);g.lineTo(r*0.62,-r*0.26);g.quadraticCurveTo(r*0.7,0,r*0.62,r*0.26);g.lineTo(r*0.28,r*0.3);g.quadraticCurveTo(r*0.22,0,r*0.28,-r*0.3);g.fill();
+    for(const sg of[-1,1]){g.save();g.translate(r*0.6,sg*r*0.13);g.rotate(sg*open);g.translate(-r*0.6,-sg*r*0.13);g.fillStyle=fl?'#fff':'#5a3418';g.beginPath();g.moveTo(r*0.58,sg*r*0.2);g.bezierCurveTo(r*1.05,sg*r*0.5,r*1.55,sg*r*0.42,r*1.68,sg*r*0.08);g.bezierCurveTo(r*1.45,sg*r*0.28,r*1.05,sg*r*0.3,r*0.62,sg*r*0.06);g.closePath();g.fill();if(!fl){g.strokeStyle='rgba(240,200,140,0.75)';g.lineWidth=r*0.03;g.stroke();}
+      for(const [u,l] of[[0.95,0.13],[1.18,0.12],[1.4,0.1]]){g.beginPath();const bx=r*u,by=sg*r*(0.3-0.08*(u-0.95)/0.45);g.moveTo(bx-r*0.04,by);g.lineTo(bx+r*0.03,by-sg*r*l);g.lineTo(bx+r*0.08,by);g.fill();}g.restore();
+      g.fillStyle=fl?'#fff':'#1a0e06';circ(g,r*0.52,sg*r*0.3,r*0.06);g.fill();}
+}
+//#/FULL
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='yago'?t.L*1.12:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='yago'?(t.w*1.45+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
 const ALLT=[...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...BODY_RUSH];
 //#FULL
-ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH);
+ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS);
 //#/FULL
 for(const t of ALLT){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
@@ -502,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v36.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -679,6 +844,33 @@ const STR={
  bk_mosqs:['止まっては体をくねらせて跳ぶ','Hangs still, then wriggles off in a jump'],
  bk_ontard:['このスケールのボス。締めて乾眠させ、頭で潰す。転がってくる','Boss of this scale. Squeeze it dormant, crush it. It rolls at you'],
  bk_tadp:['巨大。ここでは巻けない。次の世界の住人','Huge. Cannot be coiled here. One of the next world'],
+ tip_pit:['アリジゴクの巣','The antlion\'s pit'],
+ tip_pit_s:['縁に近づくと滑り落ちて噛まれる。上へ逃げろ','Near the edge you slide in and get bitten. Go up'],
+ boss_in_p:['{0}が巣から出てきた！ 体ごと巻いて締めろ','The {0} is out of its pit! Coil all the way round it'],
+ boss_hud_p:['ボス {0}　体ごと巻いて締める','Boss: {0}   Coil all the way round it'],
+ gate_p:['尾が伸びると大きくなる','Grow your tail to grow bigger'],
+ goal_p:['吸収して大きくなり、アリジゴクを倒すとクリア','Take them in, grow, and beat the Antlion to win'],
+ pit_bite:['噛まれた！','Bitten!'],
+ pit_grow:['吸収 +{0}','Absorbed +{0}'],
+ tip_giant:['巨人の国','The Land of Giants'],
+ tip_giant_s:['体のどこに触れても痛い。大きく回って巻く','They hurt anywhere along the body. Coil wide'],
+ bk_gpara:['ここでは巻ける大きさ。ゆっくり回りこんでくる','Small enough to coil here. Turns slowly to come at you'],
+ bk_geugl:['まっすぐ泳ぎ抜け、向きを変えてまた来る','Swims straight past, turns, and comes again'],
+ bk_gdaph:['殻 2 枚。水をかいて寄ってくる','Two shells. Comes at you in strokes'],
+ bk_gmosq:['長い体で左右に跳ねながら来る','A long body that lashes from side to side'],
+ bk_ghelio:['ふくらんだら、まわりにとげを放つ。尾で防げる','Swells, then lets go a ring of rays. Your tail stops them'],
+ bk_gtadp:['いちばん大きい。速いが、大回りでしか曲がれない','The biggest. Fast, but it can only turn wide'],
+ bk_yago:['ボス。下あごを伸ばして捕まえる。水を噴いて突っ込む','Boss. Shoots out its jaw to grab you, and jets at you'],
+ bk_ant:['いちばん多い。砂の坂を転がり落ちてくる','The most common. They come tumbling down the slope'],
+ bk_antl:['アリの行列。先頭がうねり、後ろがついてくる','A column of ants. The leader snakes, the rest follow'],
+ bk_sprg:['止まっては、尾のばねで跳ねる','Sits still, then springs off with its tail'],
+ bk_pill:['丸まって転がり落ちてくる。止まると歩いてくる','Rolls down as a ball, then opens out and walks'],
+ bk_spid:['狙いを定めて、跳びかかってくる','Takes aim, then pounces'],
+ bk_beet:['速い。まっすぐ走り抜け、向きを変えてまた来る','Fast. Runs straight past, turns, and comes again'],
+ bk_alion:['ボス。殻はない。大きくなってから体ごと巻く','Boss. No shell. Grow big, then coil all the way round it'],
+ bk_grass:['止まっては、長い後ろ脚で遠くへ跳ぶ','Sits still, then leaps far on its long hind legs'],
+ bk_mantis:['狙いを定めて、鎌の脚で飛びかかる','Takes aim, then strikes with its catching legs'],
+ bk_centi:['長い体でうねりながら来る。頭が倒れると次が頭になる','A long body that snakes in. Kill the head, the next leads'],
 //#/FULL
  boss_ate:['食べて殻が戻った！','It ate, and a shell grew back!'],
  lv_more:['このあと、さらに {0} 回えらべる','{0} more to pick after this'],
@@ -896,7 +1088,7 @@ const STR={
 };
 loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(BODY_RUSH,'name');
 //#FULL
-loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(JAR_RUSH,'name');
+loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(JAR_RUSH,'name');
 //#/FULL
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
@@ -1052,9 +1244,10 @@ function promoteSteer(tc){
 // It only sets the aim point (mx, my) around the screen centre: everything downstream is as before. META.opts.ctl = 'point' turns it off.
 let stick=null; // {ox,oy,x,y,on} in canvas px, while the steering finger is down
 const STICK_DEAD=10,STICK_R=56;
+function headSY(){return H/2-(PIT?H*CAMY:0);} // v37.1 where the head is on the screen, up and down (in the pit the camera looks a little below it: the antlion is there)
 function stickMove(x,y){const s=stick;if(!s)return;s.x=x;s.y=y;let dx=x-s.ox,dy=y-s.oy,d=Math.hypot(dx,dy);
   if(d>STICK_R){s.ox=x-dx/d*STICK_R;s.oy=y-dy/d*STICK_R;dx=x-s.ox;dy=y-s.oy;d=STICK_R;}
-  if(d>STICK_DEAD){s.on=true;mx=W/2+dx/d*120;my=H/2+dy/d*120;mouseUsed=true;}}
+  if(d>STICK_DEAD){s.on=true;mx=W/2+dx/d*120;my=headSY()+dy/d*120;mouseUsed=true;}}
 function stickDraw(){const s=stick;if(!s||state!=='play')return;const a=s.on?0.5:0.28;
   ctx.lineWidth=2;ctx.strokeStyle=`rgba(190,235,255,${a})`;ctx.fillStyle=`rgba(120,200,255,${a*0.22})`;ctx.beginPath();ctx.arc(s.ox,s.oy,STICK_R,0,TAU);ctx.fill();ctx.stroke();
   ctx.fillStyle=`rgba(125,255,176,${a+0.2})`;ctx.beginPath();ctx.arc(s.x,s.y,20,0,TAU);ctx.fill();}
@@ -1139,18 +1332,18 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0];let KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
 // P.tailLen stays in "base" units (gates, caps, HUD); the tail in the world is P.tailLen*P.grow long, so on screen it does not shrink when the world does.
 function zoomT(){return targetS(P.tailLen)*P.grow;}
 // Outgrown: a creature of a scale the player has left behind. It only drifts toward the player, has 1 HP and no shell, and dies when the head runs it over.
-function isPrey(e){return !e.boss&&!e.hunter&&!e.titan&&e.t.st<P.stage&&e.t.k!=='toxin';}
+function isPrey(e){return e.pf||!e.boss&&!e.hunter&&!e.titan&&e.t.st<P.stage&&e.t.k!=='toxin';}
 const PREY_XP=0.3; // XP for one outgrown creature, whatever it used to be worth
 function reset(start){
   if(start){if(LOCKED||!stageOpen(stgIdx))return;useStage(stgIdx);} // a run is always of the stage shown on the title screen
-  const tl=+Q.get('tail')||640;
+  const tl=+Q.get('tail')||(start&&STAGES[CS].tail0)||640; // (v38: a stage may start the tail longer)
   P={x:0,y:0,a:0,spd:195,turn:4.0,hp:100,maxHp:100,inv:0,tailLen:tl,dashCd:2.2,dashT:0,dashCdT:0,dashBuf:0,dashNo:0,hurtT:0,boomAt:-9,lvWait:0,dashAge:0,ghostT:0,
      dashBase:0.55,dashHoldMax:0.85,dashStacks:0,
      trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,knots:[],lastKnot:null,lastLoop:null,str:0,strT:0,chainAt:-9,chainN:0,chainId:0,chainSum:null,infAt:0,S:targetS(tl)*Math.pow(GROW,stageOf(tl)),stage:stageOf(tl),grow:Math.pow(GROW,stageOf(tl)),stageT:0,
@@ -1167,9 +1360,14 @@ function reset(start){
   calmUntil=0;bossKills=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;DEATH=null;slime=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
+  PIT=null;
+//#FULL
+  if(start&&STAGES[CS].pit)PIT=pitNew(); // v37 (the full game only)
+//#/FULL
+  if(start&&APART)tip('giant'); // v38
   resetBubbles();
-  if(start)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:8);
-  if(start&&Q.has('toxin'))for(let i=0;i<2;i++)spawnToxin();
+  if(start)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
+  if(start&&Q.has('toxin')&&TOXIN_T[0])for(let i=0;i<2;i++)spawnToxin();
   if(start&&Q.has('titan'))spawnTitan();
   if(start&&Q.has('rush'))startRush();
   if(start&&Q.has('boss'))spawnBoss();
@@ -1213,7 +1411,7 @@ let TIERS=[
 function pickFrom(list,t,flat){let tot=0;const w=list.map(([k,t0,top,ramp])=>{let v=t<t0?0:top*(ramp?Math.min(1,(t-t0)/ramp):1);if(flat)v=Math.sqrt(v)/(ET[k].chain||ET[k].wedge?3:1);tot+=v;return v;}); // flat: an even mix (a chain counts for less: it comes as many)
   let r=Math.random()*tot;for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return ET[list[i][0]];}return ET[list[0][0]];}
 function pickType(){return pickFrom(TIERS[P.stage],T-P.stageT);}
-function pickPrey(){const st=P.stage>1&&Math.random()<0.75?P.stage-1:Math.random()*P.stage|0;return pickFrom(TIERS[st],1e9,true);} // mostly from the scale just left, in an even mix of its kinds (so the field is not all round germs)
+function pickPrey(){if(PREY_L)return ET[PREY_L[Math.random()*PREY_L.length|0]];const st=P.stage>1&&Math.random()<0.75?P.stage-1:Math.random()*P.stage|0;return pickFrom(TIERS[st],1e9,true);} // mostly from the scale just left, in an even mix of its kinds (so the field is not all round germs)
 const CAP=260;
 function hpScale(){return 1+T/300+P.stage*0.3;}
 // Creatures keep their size in the world, so they look smaller and smaller as the player grows.
@@ -1230,19 +1428,22 @@ function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, 
   else{let a=Math.random()*TAU;
     // keep fresh groups of real enemies out of the head's path
     if(!prey&&Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
+    if(PIT)a=-Math.PI/2+rand(-1.2,1.2); // v37 in the pit, everything comes from above
     const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx*(prey?1.7:1);}
   for(let i=0;i<n&&enemies.length<CAP;i++){
-    let t=prey?pickPrey():pickType();if(t.kin&&!prey){let nk=0,nh=0,nd=0;for(const q of enemies)if(q.t.kin&&!q.dead&&!q.boss){nk++;if(q.t.kb==='hunt')nh++;else if(q.t.kb==='dash')nd++;}if(nk>=14||(t.kb==='hunt'&&nh>=2)||(t.kb==='dash'&&nd>=4))t=ET[TIERS[P.stage][0][0]];} // no more than 14 of the kin at once (2 Encirclers, 4 Lancers)
+    let t=prey?pickPrey():pickType();
+    if(APART&&!at&&!prey){let a=Math.random()*TAU;if(Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);const d=Math.hypot(W,H)/2*Sx+(t.L||t.r)+rand(40,140)*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=1;} // v38 a giant comes on its own, from its own side
+    if(t.kin&&!prey){let nk=0,nh=0,nd=0;for(const q of enemies)if(q.t.kin&&!q.dead&&!q.boss){nk++;if(q.t.kb==='hunt')nh++;else if(q.t.kb==='dash')nd++;}if(nk>=14||(t.kb==='hunt'&&nh>=2)||(t.kb==='dash'&&nd>=4))t=ET[TIERS[P.stage][0][0]];} // no more than 14 of the kin at once (2 Encirclers, 4 Lancers)
     const aa=Math.random()*TAU,rr=at?(at.r||0)+Math.random()*spread:Math.sqrt(Math.random())*spread;
     if(t.chain){i+=Math.max(1,spawnChain(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.wedge&&!prey){i+=Math.max(1,spawnWedge(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr))-1;continue;}
     if(t.mv==='spring'&&!prey&&!at){const a2=P.a+rand(-1.2,1.2),d2=rand(250,400)*Sx,e=mkEnemy(t,P.x+Math.cos(a2)*d2,P.y+Math.sin(a2)*d2);burst(e.x,e.y,8,t.col,120,0.5,3);enemies.push(e);continue;} // rooted: it sprouts ahead of the player, in sight
-    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(!at&&!prey)maybeShell(e);if(!e.pr){if(t.boom)tip('bomb');else if(t.charge)tip('rush');else if(t.shoot)tip('shot');else if(t.split)tip('split');}enemies.push(e);
+    const e=mkEnemy(t,cx+Math.cos(aa)*rr,cy+Math.sin(aa)*rr);if(prey&&!e.pr){e.pr=e.pf=true;e.hp=1;e.sh=e.shMax=0;}if(!at&&!prey)maybeShell(e);if(!e.pr){if(t.boom)tip('bomb');else if(t.charge)tip('rush');else if(t.shoot)tip('shot');else if(t.split)tip('split');}enemies.push(e);
   }
 }
 // A chain: beads in a line, each one following the one in front (e.lead). The first has no lead and snakes its way in; when it dies the next takes over.
-function spawnChain(t,x,y,len){const n=len||t.chain+(Math.random()*3|0),a=Math.atan2(y-P.y,x-P.x),gap=t.r*2.05,ph=Math.random()*TAU;let prev=null,k=0;
-  for(;k<n&&enemies.length<CAP;k++){const e=mkEnemy(t,x+Math.cos(a)*gap*k,y+Math.sin(a)*gap*k,true);e.lead=prev;e.ph=ph;enemies.push(e);prev=e;}
+function spawnChain(t,x,y,len){const n=len||t.chain+(Math.random()*3|0),a=Math.atan2(y-P.y,x-P.x),gap=t.r*(t.hd?1.5:2.05),ph=Math.random()*TAU;let prev=null,k=0;
+  for(;k<n&&enemies.length<CAP;k++){const e=mkEnemy(t,x+Math.cos(a)*gap*k,y+Math.sin(a)*gap*k,true);e.lead=prev;e.ph=ph;if(!prev&&t.hd)e.alt=ET[t.hd];enemies.push(e);prev=e;}
   return k;}
 // A wedge: a leader and its wings in a V behind it (e.lead, and e.ox / e.oy: the wing's place in the leader's frame). The leader flies as its
 // type does; with the leader gone, each wing goes its own way.
@@ -1276,12 +1477,22 @@ const STAGES=[
   tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
   waves:WAVES,boss:JAR_BOSS,hunt:[null],titan:[null],toxin:[TOXIN_T[0]],gas:[8],realK:[1],rush:JAR_RUSH,
   book:[[0,'germ','germ'],[0,'kinc','kinc'],[0,'virus','virus'],[0,'kind','kind'],[0,'halt','hop'],[0,'kinh','kinh'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,JAR_RUSH[0],'rush'],[0,JAR_BOSS[0],'kinb']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'pit',n:['蟻地獄','Antlion Pit'],wip:1,pit:1,gate:2100,names:[['すり鉢の底','Pit Bottom'],['すり鉢の中ほど','Pit Slope'],['すり鉢のふち','Pit Rim']], // v37: a forced scroll up the side of an antlion's pit (pitTick). v37.1: the player grows a scale each time the tail is long enough (no bosses on the way); the antlion, the same size all along, is the boss at the rim
+  tiers:[[['ant',0,8,0],['sprg',12,3,40],['antl',20,1.2,30],['pill',30,2.2,40]],
+         [['grass',0,5,0],['spid',8,2.4,40],['beet',16,2.2,40]],
+         [['centi',0,1.2,0],['mantis',8,2.4,40]]],
+  waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.7,0.55],rush:[null,null,null],
+  book:[[0,'ant','ant'],[0,'antl','antl'],[0,'sprg','sprg'],[0,'pill','pill'],[1,'grass','grass'],[1,'spid','spid'],[1,'beet','beet'],[2,'centi','centi'],[2,'mantis','mantis'],[2,PIT_BOSS[0],'alion']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:900,gate:1600,apart:1,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
+  tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
+  waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
+  book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 //#/FULL
-//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1}, // in the demo: names only, shown as in the full game
+//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1}, // in the demo: names only, shown as in the full game
 ];
 loc(STAGES,'n');
-let CS=0,stgIdx=0; // the stage being played, and the one shown on the title screen
-function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;return true;}
+let CS=0,stgIdx=0,APART=false,PREY_L=null; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
+function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;PREY_L=d.prey||null;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i){if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
 function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&((bestOf(i-1).clears||0)>0||FORCE_STG===i));} // a stage opens when the one before it has been cleared
@@ -1306,8 +1517,8 @@ function waveTick(dt){
   const def=Math.round(w[1]*mul*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real;
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));
     if(P.kps>6&&def>(def+real)*0.4)P.waveT=Math.min(P.waveT,0.3);} // v23: the screen is being emptied faster than it fills: the next group comes at once
-  else if(Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle
-  if(P.stage){const pd=Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
+  else if(!APART&&Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle (v38: not giants: a few at a time is the point)
+  if(P.stage||PREY_L){const pd=(PREY_L?Math.min(QL<2?16:22,12+(T/20|0)):Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9)))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
 // first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
@@ -1347,12 +1558,12 @@ function rushTick(dt){
     return;}
   if(P.rushSp<=0){P.rushSp=1.2;let n=0;for(const e of enemies)if(e.rush&&!e.dead&&!e.pr)n++;if(n<34)rushSpawn(Math.min(8,34-n));}} // the pack is kept up to strength
 function streamEvent(){const st=P.stage,Sx=Math.max(P.S,zoomT()),alt=CS===0?['','rod','bigrod'][st]:'',t=ET[alt&&Math.random()<0.5?alt:TIERS[st][0][0]],n=st?[0,20,14][st]:Math.min(40,18+(T/20|0)); // the basic creature of the current scale (or its rods, half the time), in a line across the screen
-  const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=Math.min(W,H)*0.5*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
+  const a=PIT?Math.PI/2:Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),nx=-dy,ny=dx,D=Math.hypot(W,H)/2*Sx+60*Sx,wid=(PIT?W*0.9:Math.min(W,H)*0.5)*Sx,off=rand(-0.25,0.25)*Math.min(W,H)*Sx;
   for(let i=0;i<n;i++){const lat=off+(i/(n-1)-0.5)*wid,dep=rand(0,90)*Sx;
     const e=mkEnemy(t,P.x-dx*(D+dep)+nx*lat,P.y-dy*(D+dep)+ny*lat,true);e.sdx=dx;e.sdy=dy;e.sT=7;e.spd*=1.25;enemies.push(e);}}
 function ringEvent(){const st=P.stage,Sx=Math.max(P.S,zoomT()),n=st?[0,20,14][st]:Math.min(48,28+(T/25|0)),R=Math.hypot(W,H)/2*Sx*0.92,L=TIERS[st]; // always real enemies of the current scale
   for(let i=0;i<n;i++){const a=i/n*TAU,e=mkEnemy(ET[L[st||ET[L[1][0]].kin?0:i%2][0]],P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);e.spd*=0.75;enemies.push(e);}}
-function spawnToxin(){const t=TOXIN_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,Math.PI),d=Math.hypot(W,H)/2*Sx+40*Sx;
+function spawnToxin(){const t=TOXIN_T[P.stage];if(!t)return;const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,Math.PI),d=Math.hypot(W,H)/2*Sx+40*Sx;
   const e=mkEnemy(t,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d);e.puffT=0.4;enemies.push(e);}
 // ---------- poison gas ----------
 function puff(x,y,R,life){if(gas.length<90)gas.push({x,y,r:R*0.45,R,life,max:life});}
@@ -1412,18 +1623,114 @@ function drawItems(){const S=P.S;
     ctx.stroke();}}
 // Shells = coils needed. Big types always have them (sh in ETYPES), so they cannot be squeezed with a single lap.
 // A few enemies are elites: one more shell, gold rings, and a capsule when beaten.
+//#FULL
+// v37 stage 4, the Antlion Pit (the owner's idea: a forced scroll, a huge antlion coming up from below or the side, creatures falling in to be coiled and taken in).
+// The pit's edge (PIT.y) comes up from below: a little faster as time goes on, and at once if the player gets far ahead (so it is never below the bottom of the
+// screen). Above it the sand gives way: near the edge the head slips down (not while dashing). At the edge the antlion's jaws bite and throw the head back up.
+// Everything else slides down the slope (PIT_SLIDE), and what goes over the edge is eaten: no kill, no XP. Now and then the antlion rises a little and flicks
+// a fan of sand at the player (the tail stops it). When the tail is long enough the antlion comes out of the sand to fight (alionMove), and the pit falls away.
+function pitNew(){return{jr:PIT_BOSS[0].r*0.96,y:P.y+H*(0.5+CAMY)*P.S*0.62+PIT_BOSS[0].r*0.96,v:0,jx:P.x,bite:0,snap:0,fT:7,fq:0,fw:0,kb:0};}
+function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: how far below the head can be seen)
+  if(P.boss||P.clearAt||state!=='play')PIT.y+=(PIT.y-P.y<half*1.15?90:20)*S*dt; // the antlion is out (or the stage is won): the pit sinks away
+  else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,T/300));PIT.v=base+Math.max(0,gap-half*0.62)*2.5;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws: they are always in sight at the bottom)
+  PIT.jx+=(P.x-PIT.jx)*Math.min(1,dt*1.3); // the jaws follow along under the player, a little behind
+  if(PIT.bite>0)PIT.bite-=dt;if(PIT.snap>0)PIT.snap-=dt;
+  const g=PIT.y-P.y;
+  if(!P.boss&&g<PIT_BAND*S&&P.dashT<=0){P.y+=P.spd*S*0.34*(1-Math.max(0,g)/(PIT_BAND*S))*dt;tip('pit');} // the sand gives way under the head
+  if(PIT.kb>0){PIT.kb-=dt;P.y-=P.spd*S*3.2*Math.max(0,PIT.kb/0.32)*dt;} // thrown back up after a bite
+  const out=P.boss||P.clearAt;if(P.y>PIT.y-12*S||(!out&&pitJaw(P.x,P.y))){if(P.y>PIT.y-12*S)P.y=PIT.y-12*S; // at the edge, or in its jaws: a bite (not while the antlion is out of its pit)
+    if(!(PIT.bite>0)&&!out){PIT.bite=1.0;PIT.snap=0.3;PIT.kb=0.32;shake=Math.max(shake,12);sfx('crack');burst(P.x,PIT.y,16,'#d8b47a',220,0.5,3);if(hitHead(Math.round(B.dmg*0.9),B))text(P.x,P.y-64*S,TX('pit_bite'),22,'#ffb0a0',0.9);}}
+  if(!P.boss&&!P.clearAt&&state==='play'){PIT.fT-=dt; // the sand: it rises out of the sand (0.7 s), then flicks a fan of grains at the player
+    if(PIT.fq===0&&PIT.fT<=0&&g<half*1.3){PIT.fq=1;PIT.fw=0.7;sfx('latch');}
+    if(PIT.fq===1){PIT.fw-=dt;if(PIT.fw<=0){PIT.fq=0;PIT.fT=Math.max(3.5,rand(6,8.5)-T/120);const x0=PIT.jx,y0=PIT.y-B.r*0.95,a=Math.atan2(P.y-y0,P.x-x0),n=T>180?7:5,v=250*S;
+      for(let i=0;i<n;i++){const b=a+(i/(n-1)-0.5)*0.9;shots.push({x:x0,y:y0,vx:Math.cos(b)*v,vy:Math.sin(b)*v,life:3,dmg:8,by:B});}burst(x0,y0,18,'#d8b47a',260,0.6,3);sfx('brood');}}}
+  for(const it of items)if(it.y>PIT.y-30*S)it.y=PIT.y-30*S; // what can be picked up is not lost: it rides up in front of the edge
+  for(const c of chests)if(c.y>PIT.y-40*S)c.y=PIT.y-40*S;}
+function pitJaw(x,y){const R=PIT_BOSS[0].r,qx=(x-PIT.jx)/(R*0.48),qy=(y-PIT.y+R*0.42)/(R*0.55);return qx*qx+qy*qy<1;} // v37.1 inside the antlion's open jaws (they stand up out of the sand, as tall as it is big)
+function pitEat(e){e.dead=true;burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;} // over the edge: eaten
+// the slope giving way above the edge (a warm haze, sand running down), the pit (sand going down into the dark), and the antlion buried to its jaws (world space)
+function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,B=PIT_BAND*S;if(y>vy1+r*2)return;
+  const near=Math.max(0,Math.min(1,1-(y-P.y)/B));let gr=ctx.createLinearGradient(0,y-B,0,y);gr.addColorStop(0,'rgba(255,170,90,0)');gr.addColorStop(1,`rgba(255,${(150-100*near)|0},80,${(0.14+0.24*near).toFixed(3)})`);ctx.fillStyle=gr;ctx.fillRect(vx0,y-B,w,B);
+  ctx.fillStyle='rgba(225,190,130,0.5)';for(let i=0;i<70;i++){const u=(i*0.618034)%1,f=(T*0.55+i*0.37)%1;ctx.fillRect(vx0+u*w,y-B+f*B,2.2*S,(3+5*f)*S);}
+  gr=ctx.createLinearGradient(0,y,0,y+H*S*0.6);gr.addColorStop(0,'#9a7444');gr.addColorStop(0.08,'#5a3e20');gr.addColorStop(1,'#120a04');ctx.fillStyle=gr;ctx.fillRect(vx0,y,w,Math.max(0,vy1-y));
+  const lip=()=>{ctx.fillStyle='#b8925a';ctx.beginPath();ctx.moveTo(vx0,y+10*S);const st=24*S;for(let x=Math.floor(vx0/st)*st;x<=vx1+st;x+=st)ctx.lineTo(x,y-4*S*(1+Math.sin(x*0.013/S+1.3)+0.5*Math.sin(x*0.041/S)));ctx.lineTo(vx1,y+10*S);ctx.closePath();ctx.fill();};
+  if(P.boss||P.clearAt){lip();return;}
+  const R=r,up=PIT.fq===1?(1-PIT.fw/0.7)*R*0.3:0,op=PIT.snap>0?-0.14:PIT.fq===1?0.55:0.2+0.08*Math.sin(T*2.2); // in its pit it looks bigger than when it comes out: only its head and jaws show
+  ctx.globalCompositeOperation='lighter';ctx.drawImage(PIT_BOSS[0].gspr,PIT.jx-R*1.3,y-R*1.5-up,R*2.6,R*2.6);ctx.globalCompositeOperation='source-over';
+  ctx.save();ctx.beginPath();ctx.rect(vx0,vy0,w,y+R*0.15-vy0);ctx.clip();ctx.translate(PIT.jx,y+R*0.72-up);ctx.rotate(-Math.PI/2);alionHead(ctx,R,op,false);ctx.restore();
+  lip();ctx.fillStyle='#b8925a';ctx.beginPath();ctx.ellipse(PIT.jx,y+R*0.08,R*0.8,R*0.2,0,0,TAU);ctx.fill();
+  if(PIT.fq===1){const x0=PIT.jx,y0=y-R*0.95,a=Math.atan2(P.y-y0,P.x-x0),L=Math.min(Math.hypot(P.x-x0,P.y-y0),360*S);ctx.strokeStyle=`rgba(255,80,80,${0.4+0.35*Math.sin(T*30)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([9*S,8*S]);
+    for(const k of[-0.45,0,0.45]){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+Math.cos(a+k)*L,y0+Math.sin(a+k)*L);ctx.stroke();}ctx.setLineDash([]);
+    if(QL>=1&&Math.random()<0.6)burst(x0+rand(-r,r)*0.5,y-4*S,1,'#d8b47a',90,0.5,2.5);}}
+// the antlion out of its pit. It climbs out (bq 8), then keeps its jaws to the player at a distance, backing off when it comes close (antlions walk backwards).
+// Two moves, in turn: the sand (it rears, a red fan shows where, then a fan of grains: twice at half its shells) and the ambush (it digs in, a mound runs under
+// the sand to the player and a red ring marks where it will come up; for the last 0.7 s the ring stays put; it comes up there with its jaws). Each leaves an opening.
+function alionMove(e,dx,dy,d,s,dt,S,half){const t=e.t;
+  if(e.bq===8){MV[0]=0;MV[1]=-t.r*0.8;e.ang=-Math.PI/2;if(QL>=1&&Math.random()<0.5)burst(e.x+rand(-1,1)*t.r,e.y+t.r*0.5,1,'#d8b47a',120,0.5,3);if(e.bT<=0){e.bq=0;e.bT=1.6;}return true;}
+  if(!e.bq){const want=Math.max(300*S,t.r*2.2),k=d<want*0.8?-0.7:d>want*1.3?0.8:0,sd=e.ph<Math.PI?1:-1;MV[0]=(dx/d*k-dy/d*0.35*sd)*s;MV[1]=(dy/d*k+dx/d*0.35*sd)*s;e.ang+=angDiff(e.ang,Math.atan2(dy,dx))*Math.min(1,dt*4);
+    if(e.bT<=0){e.cyc=(e.cyc||0)+1;if(e.cyc%2&&d<720*S){e.bq=1;e.bT=0.7;e.rn=half?2:1;sfx('latch');}else{e.bq=5;e.bT=0.45;e.freeT=T+1.75;sfx('crack');}}
+    return true;}
+  if(e.bq===1){MV[0]=MV[1]=0;e.ang+=angDiff(e.ang,Math.atan2(dy,dx))*Math.min(1,dt*6);
+    if(e.bT<=0){const n=half?13:9,v=220*S,a=e.ang,mx=e.x+Math.cos(a)*t.r*1.4,my=e.y+Math.sin(a)*t.r*1.4;for(let i=0;i<n;i++){const b=a+(i/(n-1)-0.5)*1.25;shots.push({x:mx,y:my,vx:Math.cos(b)*v,vy:Math.sin(b)*v,life:3.2,dmg:Math.round(t.dmg*0.45),by:t});}
+      burst(mx,my,20,'#d8b47a',280,0.6,3);sfx('brood');shake=Math.max(shake,6);e.rn--;if(e.rn>0)e.bT=0.45;else{e.bq=3;e.bT=1.3;}}return true;}
+  if(e.bq===5){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=6;e.bT=1.2;e.hide=1;e.tx=P.x;e.ty=P.y;e.tR=Math.max(t.r*1.05,90*S);burst(e.x,e.y,26,'#d8b47a',240,0.6,4);}return true;} // it digs in
+  if(e.bq===6){if(e.bT>0.7){const k=Math.min(1,dt*2.5);e.tx+=(P.x-e.tx)*k;e.ty+=(P.y-e.ty)*k;}const q=Math.max(dt,e.bT);MV[0]=(e.tx-e.x)/q;MV[1]=(e.ty-e.y)/q;e.vx=e.vy=0;
+    if(QL>=1&&Math.random()<0.7)burst(e.x+rand(-0.5,0.5)*t.r,e.y+rand(-0.5,0.5)*t.r,1,'#d8b47a',100,0.5,3);
+    if(e.bT<=0){e.hide=0;e.bq=3;e.bT=1.6;e.ang=Math.atan2(dy,dx);shake=Math.max(shake,14);sfx('crack');burst(e.x,e.y,34,'#d8b47a',340,0.7,4);rings.push({x:e.x,y:e.y,r:e.tR*0.4,R:e.tR*1.2,life:0.35,max:0.35,col:'#ff7060',w:7*S});
+      if(Math.hypot(P.x-e.x,P.y-e.y)<e.tR+10*S)hitHead(Math.round(t.dmg*1.5),t);}return true;}
+  MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(2,3)*(half?0.7:1);}return true;}
+function alionFx(e){const S=P.S,q=e.bq,t=e.t;
+  if(q===1){const a=e.ang,x0=e.x+Math.cos(a)*t.r*1.4,y0=e.y+Math.sin(a)*t.r*1.4,L=340*S;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);
+    for(const k of[-0.62,-0.31,0,0.31,0.62]){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+Math.cos(a+k)*L,y0+Math.sin(a+k)*L);ctx.stroke();}ctx.setLineDash([]);}
+  if(q===6){const f=e.bT<=0.7?1:0;ctx.fillStyle='rgba(200,160,100,0.8)';ctx.beginPath();ctx.ellipse(e.x,e.y,t.r*0.7,t.r*0.45,0,0,TAU);ctx.fill();ctx.fillStyle='rgba(120,85,45,0.8)';ctx.beginPath();ctx.ellipse(e.x,e.y+t.r*0.12,t.r*0.45,t.r*0.18,0,0,TAU);ctx.fill();
+    ctx.fillStyle=`rgba(255,40,60,${0.1+0.16*f+0.05*Math.sin(T*20)})`;circ(ctx,e.tx,e.ty,e.tR);ctx.fill();ctx.strokeStyle=`rgba(255,80,95,${0.55+0.35*f})`;ctx.lineWidth=4*S;circ(ctx,e.tx,e.ty,e.tR);ctx.stroke();}
+  if(q===3){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.7,e.y-e.r*1.05+Math.sin(a)*e.r*0.2,7*S,'#ffe680');}}}
+//#/FULL
+//#FULL
+// v38 the Dragonfly Nymph, boss of the Land of Giants. Real nymphs catch prey by shooting out their mask (a hinged lower lip with hooks), and get about fast
+// by jetting water out of the rear. It stalks the player face on. In reach, it takes aim (0.6 s: a red line and a ring where the mask will go; the spot is fixed
+// then, so a step aside is enough), shoots the mask out (0.16 s), pulls it back (0.55 s), and is open for a moment. At half its shells it strikes twice.
+// Far off, it gets ready to jet (0.5 s: bubbles at its tail, a red lane) and shoots along that lane. The mask hurts along its length while it is out.
+function segD(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l2=vx*vx+vy*vy||1,u=clamp(((px-ax)*vx+(py-ay)*vy)/l2,0,1);return Math.hypot(px-ax-vx*u,py-ay-vy*u);}
+function yagoMove(e,dx,dy,d,s,dt,S,half){const t=e.t,a=Math.atan2(dy,dx),hx=e.x+Math.cos(e.ang)*t.L*0.66,hy=e.y+Math.sin(e.ang)*t.L*0.66,reach=t.L*2.3;
+  if(!e.bq){e.ang+=angDiff(e.ang,a)*Math.min(1,dt*2.5);MV[0]=Math.cos(e.ang)*s*0.7;MV[1]=Math.sin(e.ang)*s*0.7;
+    if(e.bT<=0){if(d<reach+t.L*0.5){e.bq=1;e.bT=0.6;e.mx=P.x;e.my=P.y;e.rn=half?2:1;sfx('latch');}else if(d>reach*1.15){e.bq=4;e.bT=0.5;e.ang=a;sfx('brood');}else e.bT=0.3;}
+    return true;}
+  if(e.bq===1){MV[0]=MV[1]=0;e.ang+=angDiff(e.ang,Math.atan2(e.my-e.y,e.mx-e.x))*Math.min(1,dt*8);if(e.bT<=0){e.bq=2;e.bT=0.16;e.mL=Math.min(reach,Math.hypot(e.mx-hx,e.my-hy)+30*S);e.mk=0;e.mHit=0;sfx('dash');}return true;}
+  if(e.bq===2||e.bq===3){MV[0]=MV[1]=0;e.mk=e.bq===2?Math.min(1,1-e.bT/0.16):Math.max(0,e.bT/0.55);
+    const tx=hx+Math.cos(e.ang)*e.mL*e.mk,ty=hy+Math.sin(e.ang)*e.mL*e.mk;
+    if(!e.mHit&&e.mk>0.3&&segD(P.x,P.y,hx,hy,tx,ty)<t.w*0.3+12*S){e.mHit=1;hitHead(Math.round(t.dmg*1.2),t);}
+    if(e.bT<=0){if(e.bq===2){e.bq=3;e.bT=0.55;shake=Math.max(shake,8);burst(tx,ty,10,'#c8d890',200,0.4,3);}else{e.rn--;if(e.rn>0){e.bq=1;e.bT=0.4;e.mx=P.x;e.my=P.y;}else{e.bq=5;e.bT=1.1;e.mk=0;}}}return true;}
+  if(e.bq===4){MV[0]=MV[1]=0;if(QL>=1&&Math.random()<0.6)burst(e.x-Math.cos(e.ang)*t.L,e.y-Math.sin(e.ang)*t.L,1,'#d8f4ff',80,0.5,3);if(e.bT<=0){e.bq=6;e.bT=0.45;}return true;}
+  if(e.bq===6){const v=P.spd*S*2.4;MV[0]=Math.cos(e.ang)*v;MV[1]=Math.sin(e.ang)*v;if(QL>=1)burst(e.x-Math.cos(e.ang)*t.L,e.y-Math.sin(e.ang)*t.L,2,'#d8f4ff',120,0.6,3);if(e.bT<=0){e.bq=5;e.bT=0.8;}return true;}
+  MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(1.2,2)*(half?0.7:1);}return true;}
+function yagoFx(e){const S=P.S,q=e.bq,t=e.t,hx=e.x+Math.cos(e.ang)*t.L*0.66,hy=e.y+Math.sin(e.ang)*t.L*0.66;
+  if(q===1){ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(e.mx,e.my);ctx.stroke();ctx.setLineDash([]);
+    const f=1-e.bT/0.6;ctx.lineWidth=2.5*S;circ(ctx,e.mx,e.my,(t.w*0.3+12*S)*(2-f));ctx.stroke();}
+  if((q===2||q===3)&&!e.cap&&e.mk>0){const L=e.mL*e.mk,c=Math.cos(e.ang),sn=Math.sin(e.ang),w=t.w;ctx.save();ctx.translate(hx,hy);ctx.rotate(e.ang); // the mask, out: two hinged plates and the hooks at the end
+    const k=Math.min(1,L/(t.L*0.6));ctx.fillStyle=e.flash>0?'#fff':'#6e7a40';ctx.strokeStyle='#3a4222';ctx.lineWidth=2*S;
+    ctx.beginPath();ctx.moveTo(0,-w*0.14);ctx.lineTo(L*0.5,-w*0.1*k-w*0.06);ctx.lineTo(L*0.5,w*0.1*k+w*0.06);ctx.lineTo(0,w*0.14);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(L*0.48,-w*0.12);ctx.lineTo(L,-w*0.2);ctx.lineTo(L,w*0.2);ctx.lineTo(L*0.48,w*0.12);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#4a5428';for(const sg of[-1,1]){ctx.beginPath();ctx.moveTo(L,sg*w*0.2);ctx.quadraticCurveTo(L+w*0.35,sg*w*0.32,L+w*0.3,sg*w*0.02);ctx.quadraticCurveTo(L+w*0.18,sg*w*0.16,L,sg*w*0.06);ctx.fill();}
+    ctx.restore();}
+  if(q===4){const D=P.spd*S*2.4*0.45+t.L,f=1-e.bT/0.5;ctx.fillStyle=`rgba(255,60,70,${(0.1+0.16*f).toFixed(3)})`;ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.ang);ctx.beginPath();ctx.moveTo(0,-t.w);ctx.lineTo(D,-t.w);ctx.arc(D,0,t.w,-Math.PI/2,Math.PI/2);ctx.lineTo(0,t.w);ctx.closePath();ctx.fill();
+    ctx.strokeStyle=`rgba(255,150,160,${(0.55+0.4*Math.sin(T*30)).toFixed(3)})`;ctx.lineWidth=3*S;ctx.setLineDash([14*S,10*S]);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
+  if(q===5){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*t.w*0.9,e.y-t.w*1.3+Math.sin(a)*t.w*0.25,7*S,'#ffe680');}}}
+//#/FULL
 function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
   if(e.sh)tip('shell');}
 function spawnBoss(){
-  const t=BOSS_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
+  const t=BOSS_T[P.stage];if(!t)return; // (v37.1: the pit has a boss at its last scale only)
+  const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
   if(t.naps){e.naps=e.napsMax=Math.min(5,t.naps+P.bossN);} // v36
+  if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
   if(t.k==='hydra'&&!OLDB){const n=Math.min(6,4+P.bossN);e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
-  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -1490,6 +1797,10 @@ function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
     if(e.bq===2){const v=P.spd*S*(1.5+0.12*Math.min(3,e.angry||0));MV[0]=e.cdx*v;MV[1]=e.cdy*v;e.ang+=dt*12;if(e.bT<=0){e.bq=3;e.bT=1.8;e.alt=null;
       if(half&&enemies.length<CAP-20)spawnQ.push(['tard',3,e.x,e.y,e.r,1]);}return true;} // at half its shells, it leaves young behind as it uncurls
     MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(3,4.2)*(half?0.7:1);}return true;}
+//#FULL
+  if(k==='alion')return alionMove(e,dx,dy,d,s,dt,S,half); // v37
+  if(k==='yago')return yagoMove(e,dx,dy,d,s,dt,S,half); // v38
+//#/FULL
   return false;}
 // Hydra: tumbles head over heels (as real ones do) to a spot near the player (a dotted arc shows where), then rests a moment. Arms rest while it tumbles
 function hydraHop(e,dx,dy,d,dt,S,half){
@@ -1500,6 +1811,10 @@ function hydraHop(e,dx,dy,d,dt,S,half){
 // how each move is shown before it comes, and the opening after it
 function drawBossFx(e){const S=P.S,q=e.bq;if(budsOn(e)){ctx.strokeStyle=`rgba(255,220,150,${0.35+0.2*Math.sin(T*4)})`;ctx.lineWidth=4*S;ctx.setLineDash([12*S,10*S]);ctx.lineDashOffset=-T*30*S;circ(ctx,e.x,e.y,e.r*1.25);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // v35: guarded by its buds
   if(!q||OLDB)return;const k=e.t.k;
+//#FULL
+  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}
+//#/FULL
+ 
   if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
     ctx.strokeStyle='rgba(255,90,100,0.8)';ctx.lineWidth=3*S;circ(ctx,e.x,e.y,e.r*(1.05+0.25*f));ctx.stroke();}
   if(k==='ontard'&&q===1){const L=P.spd*S*1.5*1.2+e.r;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.7;ctx.lineCap='round';ctx.setLineDash([18*S,14*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);}
@@ -1639,7 +1954,7 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
   if(dx>m||dx<-m||dy>m||dy<-m)continue;const d2=dx*dx+dy*dy;if(d2<m*m){const d=Math.sqrt(d2)||0.01;o.x=b.x+dx/d*m;o.y=b.y+dy/d*m;return b;}}return null;}
 
 // ---------- combat ----------
-function hurt(e,d,xpMul,grp){if(e.t.immune){immuneMark(e);return false;}if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
+function hurt(e,d,xpMul,grp){if(e.hide)return false;if(e.t.immune){immuneMark(e);return false;}if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
 function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
   if(e.t.immune&&!KILLOK){immuneMark(e);return;} // v36: a tardigrade dies only of a squeeze or the head (see explode, tunCrush)
   if(e.bud)budOff(e); // v35
@@ -1812,6 +2127,7 @@ function explode(cap){
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));shakeA=Math.atan2(P.y-c.y,P.x-c.x)||0;shakeDirSet=true;P.boomAt=T; // (v31: no whole-screen flash at a squeeze: the flash is the core at the squeeze, see cores)
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
   else if(!lk&&!cap.inf&&!dorm){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
+  if(PIT&&n>0&&!P.boss){const g=n*1.2*(1+0.75*P.stage);growTail(1+g/P.tailLen);if(n>=4)text(c.x,ny+(60+Math.min(1,tot/40)*20)*S,TX('pit_grow',Math.round(g)),15,'#b6ffd2',1);} // (bigger creatures, more to take in) // v37 in the pit what is squeezed is taken in: the tail grows a little for each
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
 }
 // the outline of the region closed by a crossing at `hit` on trail segment j: along the trail from there to the head.
@@ -1845,7 +2161,7 @@ function advanceTrail(dt){
 }
 
 // ---------- level up ----------
-function gateLen(){return P.stage<STAGE_N.length-1?STAGE_TAIL[P.stage+1]:STAGE_N.length>1?FINAL_TAIL:STAGE_TAIL[1];}
+function gateLen(){return P.stage<STAGE_N.length-1?STAGE_TAIL[P.stage+1]:STAGES[CS].gate||(STAGE_N.length>1?FINAL_TAIL:STAGE_TAIL[1]);} // (a stage may set the last gate: gate)
 function growTail(m){P.tailLen=Math.min(P.endless?MAX_TAIL:Math.min(MAX_TAIL,gateLen()*1.3),Math.max(P.tailLen,P.tailLen*m));}
 const UPG=[
  {id:'tail', cat:'body',max:5,n:['尾が伸びる','Longer Tail'],d:['尾の長さ +18%\nボスの出現が早まる','Tail length +18%\nThe boss comes sooner'],f:()=>growTail(1.18)},
@@ -1966,9 +2282,9 @@ function update(dt){
   let desired=P.a,kx=0,ky=0;
   if(keys.has('a')||keys.has('arrowleft'))kx--;if(keys.has('d')||keys.has('arrowright'))kx++;
   if(keys.has('w')||keys.has('arrowup'))ky--;if(keys.has('s')||keys.has('arrowdown'))ky++;
-  if(DEMO){desired=P.a+(Math.sin(T*0.3)<-0.7?0.4:2.25)*dt;}
+  if(DEMO){desired=P.a+(Math.sin(T*0.3)<-0.7?0.4:2.25)*dt;if(PIT&&!P.boss&&(T%3.6>2.8||PIT.y-PIT.jr-P.y<H*0.1*S))desired=-Math.PI/2;} // (v37.1: in the pit, auto-play makes a loop, then runs up a little; and runs when the jaws are near)
   else if(kx||ky)desired=Math.atan2(ky,kx);
-  else{const dx=mx-W/2,dy=my-H/2;if(dx*dx+dy*dy>100)desired=Math.atan2(dy,dx);}
+  else{const dx=mx-W/2,dy=my-headSY();if(dx*dx+dy*dy>100)desired=Math.atan2(dy,dx);}
   const tr=P.turn*(P.dashT>0?1.3:1)*dt;P.a+=clamp(angDiff(P.a,desired),-tr,tr);
   const sp=P.spd*S*(P.dashT>0?2.3:Math.pow(LATCH_SLOW,Math.min(2,P.latPrev||0))*(P.slimed?0.6:1)); // phages on the tail drag; a snail's slime holds (v34)
   P.x+=Math.cos(P.a)*sp*dt;P.y+=Math.sin(P.a)*sp*dt;
@@ -1999,10 +2315,14 @@ function update(dt){
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
   updateBubbles(dt);
   // boss gate + clear
-  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:P.tailLen>=gateLen()))spawnBoss();
+  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:P.tailLen>=gateLen())){if(PIT&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
   // spawn: VS-style waves with peaks, lulls and events
   waveTick(dt);rushTick(dt);ecapTick(dt);
+//#FULL
+  if(PIT)pitTick(dt);
+//#/FULL
+ 
   gasTick(dt);slimeTick(dt);chestTick();itemTick(dt);if(state!=='play')return;
   // pulse
   P.pulseT-=dt;
@@ -2017,11 +2337,14 @@ function update(dt){
     if(e.dead)continue;
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
     if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter||e.bud){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
+//#FULL
+    if(PIT&&!e.boss&&e.y>PIT.y+e.r*0.4){pitEat(e);continue;} // v37 over the edge of the pit: eaten (v37.1: not in its jaws: they stand right under the player, and would take everything that came)
+//#/FULL
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.frz>0?0:e.chill>0?(e.boss||e.hunter?0.8:0.75-0.1*P.frost):1);let ax=dx/d*s,ay=dy/d*s;
     if(e.pl>0)e.pl-=dt;if(e.chill>0)e.chill-=dt;if(e.frz>0){e.frz-=dt;if(e.frz<0.7&&QL>=1&&Math.random()<dt*14)burst(e.x+rand(-1,1)*e.r,e.y+e.r*0.5,1,'#bfeaff',50,0.4,2);}if(P.frost&&!e.titan&&d<(90+30*P.frost)*S+e.r){e.chill=0.4;if(P.iceage&&!(e.frzCd>T)){freeze(e,1.5);e.frzCd=T+5;}} // Frost Aura (Ice Age: it freezes what comes in, once every 5 s each)
     if(e.burn>0){e.burn-=dt;e.bT-=dt;if(e.bT<=0){e.bT=0.5;if(QL>=1)burst(e.x,e.y,1,'#ffa040',60,0.35,2.5);if(hurt(e,(1+P.ember)*(1+P.stage)*0.6*(P.sun?2:1),1))continue;}}
-    if(e.lead&&e.lead.dead)e.lead=null; // the bead in front is gone: this one leads now
+    if(e.lead&&e.lead.dead){e.lead=null;if(e.t.hd&&!e.pr)e.alt=ET[e.t.hd];} // the bead in front is gone: this one leads now (v37.1: and a centipede's grows a head)
     if(e.titan){titanMove(e,s,dt);ax=MV[0];ay=MV[1];}
     else if(e.hunter){hunterMove(e,dx,dy,d,dt,S);if(e.dead)continue;ax=MV[0];ay=MV[1];}
     else if(e.rush&&!e.pr){rushMove(e,dx,dy,d,dt,S);ax=MV[0];ay=MV[1];}
@@ -2042,20 +2365,20 @@ function update(dt){
     if(e.sT>0&&!e.cap){e.sT-=dt;ax=e.sdx*s*1.3;ay=e.sdy*s*1.3;} // stream events cross the screen first
     if(e.t.k==='toxin'){e.puffT-=dt;if(e.puffT<=0){e.puffT=0.6;puff(e.x,e.y,e.r*1.8,3.5);}}
     const gx=(e.x/CELL)|0,gy=(e.y/CELL)|0;let sx=0,sy=0;
-    if(!e.pr&&!e.hunter&&!e.titan)for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
-      for(const o of a){if(o===e||o.pr)continue;const qx=e.x-o.x,qy=e.y-o.y,m=e.r+o.r;const q2=qx*qx+qy*qy;
+    if(!e.pr&&!e.hunter&&!e.titan&&!e.hide)for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const a=grid.get((gx+ox)*73856093^(gy+oy)*19349663);if(!a)continue;
+      for(const o of a){if(o===e||o.pr||o.hide)continue;const qx=e.x-o.x,qy=e.y-o.y,m=e.r+o.r;const q2=qx*qx+qy*qy;
         if(q2<m*m&&q2>0.01){const q=Math.sqrt(q2),w=o.r/(e.r+o.r);sx+=qx/q*(m-q)*w*2;sy+=qy/q*(m-q)*w*2;}}}
     if(e.frz>0&&!e.cap){ax=0;ay=0;} // frozen solid, whatever its way of moving
     if(e.cap){const cx=e.cap.c.x-e.x,cy=e.cap.c.y-e.y;ax+=cx*0.8;ay+=cy*0.8;}
-    e.x+=(ax+e.vx)*dt+sx*0.35;e.y+=(ay+e.vy)*dt+sy*0.35;
-    if(!e.hunter&&!e.lead&&!e.titan&&!e.t.thru){const bb=pushOut(e,e.r*0.9);if(bb&&e.bq===2&&e.t.k==='ontard'){const nx=e.x-bb.x,ny=e.y-bb.y,nl=Math.hypot(nx,ny)+0.01,dt2=e.cdx*nx/nl+e.cdy*ny/nl;if(dt2<0){e.cdx-=2*dt2*nx/nl;e.cdy-=2*dt2*ny/nl;shake=Math.max(shake,9);sfx('crack');}} // v34 the rolling boss bounces off the tail
+    e.x+=(ax+e.vx)*dt+sx*0.35;e.y+=(ay+e.vy)*dt+sy*0.35;if(PIT&&!e.boss&&!e.cap&&!(e.frz>0))e.y+=PIT_SLIDE*S*dt; // v37 the sand slides down
+    if(!e.hunter&&!e.lead&&!e.titan&&!e.t.thru&&!e.hide){const bb=pushOut(e,e.r*0.9);if(bb&&e.bq===2&&e.t.k==='ontard'){const nx=e.x-bb.x,ny=e.y-bb.y,nl=Math.hypot(nx,ny)+0.01,dt2=e.cdx*nx/nl+e.cdy*ny/nl;if(dt2<0){e.cdx-=2*dt2*nx/nl;e.cdy-=2*dt2*ny/nl;shake=Math.max(shake,9);sfx('crack');}} // v34 the rolling boss bounces off the tail
       if(bb){let tx=-(e.y-bb.y),ty=e.x-bb.x;const tl=Math.hypot(tx,ty)+0.01;tx/=tl;ty/=tl;if(tx*dx+ty*dy<0){tx=-tx;ty=-ty;}e.x+=tx*s*dt*0.9;e.y+=ty*s*dt*0.9;}}
     e.vx*=Math.pow(0.02,dt);e.vy*=Math.pow(0.02,dt);
     if(e.t.spin)e.ang+=dt*e.t.spin;else if(e.t.rot&&(ax||ay))e.ang+=angDiff(e.ang,Math.atan2(ay,ax))*Math.min(1,dt*5);
     if(e.flash>0)e.flash-=dt;
     if(e.boss)bossTick(e,dt);
     if(e.titan){if(!(e.bite>0)&&capD(e,P.x,P.y)<e.t.w+headR&&hitHead(e.t.dmg,e.t))e.bite=0.8;continue;} // a titan hurts along its whole body, and a dash is no help
-    if(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr?crushR:headR)){ // a long body is hit anywhere along it
+    if(!e.hide&&(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr?crushR:headR))){ // a long body is hit anywhere along it
       if(e.pr){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown: run over, no harm done
       if(e.tun){tunCrush(e);continue;} // v36 a dormant tardigrade: the head crushes it (no harm done)
       if(e.naps&&e.sleepT>0){bossCrush(e);continue;} // v36 the Predatory Tardigrade, dormant: the head crushes it
@@ -2077,7 +2400,8 @@ function update(dt){
   shotTick(dt,S);splitTick();budTick();fireTick(dt);
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
-  for(const o of orbs){const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
+  for(const o of orbs){if(PIT){if(o.y>PIT.y){o.dead=true;continue;}o.y+=14*S*dt;} // v37 they slide too, and the pit eats them
+    const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
     if(d<mag){const s=(520*(1-d/mag)+160)*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;}
     else if(o.pull){const s=900*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;} // pulled in by the magnet pickup
     o.x+=o.vx*dt;o.y+=o.vy*dt;o.vx*=Math.pow(0.05,dt);o.vy*=Math.pow(0.05,dt);
@@ -2116,7 +2440,7 @@ const MV=[0,0];let shots=[],spawnQ=[];
 function special(e,dx,dy,d,s,dt,S){
   if(e.t.charge){e.cT=(e.cT||0)-dt;
     if(!e.cs){if(d<240*S&&e.cT<=0&&P.freezeT<=0){e.cs=1;e.cT=0.6;}else return false;}
-    if(e.cs===1){e.cdx=dx/d;e.cdy=dy/d;MV[0]=MV[1]=0;if(e.cT<=0){e.cs=2;e.cT=0.55;}return true;}
+    if(e.cs===1){e.cdx=dx/d;e.cdy=dy/d;MV[0]=MV[1]=0;if(e.t.rot)e.ang=Math.atan2(dy,dx);if(e.cT<=0){e.cs=2;e.cT=0.55;}return true;}
     if(e.cs===2){MV[0]=e.cdx*s*5;MV[1]=e.cdy*s*5;if(e.cT<=0){e.cs=3;e.cT=1.2;}return true;}
     MV[0]=dx/d*s*0.3;MV[1]=dy/d*s*0.3;if(e.cT<=0){e.cs=0;e.cT=rand(0.5,1.5);}return true;}
   const keep=300*S,side=e.ph<Math.PI?1:-1;e.fT=(e.fT===undefined?rand(1,2.6):e.fT)-dt;
@@ -2132,7 +2456,7 @@ function special(e,dx,dy,d,s,dt,S){
 const LATCH_SLOW=0.8; // v19: a phage on the tail no longer injects. Each one slows the snake to 80% (two at most) until a dash throws it off: the tail is too long to watch, but a drag is felt at once
 function follow(e,s){const L=e.lead;
   if(e.ox!==undefined){const c=Math.cos(L.ang),sn=Math.sin(L.ang),fx=L.x+c*e.ox-sn*e.oy-e.x,fy=L.y+sn*e.ox+c*e.oy-e.y,fd=Math.hypot(fx,fy)+0.01,fk=Math.min(s*3.4,fd*7);MV[0]=fx/fd*fk;MV[1]=fy/fd*fk;return;} // a wing of a wedge: it keeps its place beside and behind the leader
-  const qx=L.x-e.x,qy=L.y-e.y,q=Math.hypot(qx,qy)+0.01,k=Math.min(s*3.2,Math.max(0,q-(e.r+L.r)*1.02)*9);MV[0]=qx/q*k;MV[1]=qy/q*k;}
+  const qx=L.x-e.x,qy=L.y-e.y,q=Math.hypot(qx,qy)+0.01,k=Math.min(s*3.2,Math.max(0,q-(e.r+L.r)*(e.t.hd?0.75:1.02))*9);MV[0]=qx/q*k;MV[1]=qy/q*k;}
 function mover(e,dx,dy,d,s,dt,S){
   switch(e.t.mv){
   case 'run':
@@ -2175,7 +2499,7 @@ function mover(e,dx,dy,d,s,dt,S){
     MV[0]=MV[1]=0;if(e.kT<=0&&P.freezeT<=0){e.kT=rand(0.5,0.85);e.kd=0.15;e.ks=-(e.ks||1);const a=Math.atan2(dy,dx)+e.ks*0.6;e.kx=Math.cos(a);e.ky=Math.sin(a);}
     return true;
   case 'hop':e.hT=(e.hT===undefined?rand(0.2,0.8):e.hT)-dt;MV[0]=MV[1]=0; // it sits, then jumps: the jump is a shove that dies away
-    if(e.hT<=0&&P.freezeT<=0&&!(e.frz>0)){e.hT=rand(0.9,1.4);const a=Math.atan2(dy,dx)+rand(-0.7,0.7);e.vx+=Math.cos(a)*s*8;e.vy+=Math.sin(a)*s*8;}
+    if(e.hT<=0&&P.freezeT<=0&&!(e.frz>0)){e.hT=rand(0.9,1.4);const a=Math.atan2(dy,dx)+rand(-0.7,0.7);e.vx+=Math.cos(a)*s*8;e.vy+=Math.sin(a)*s*8;if(e.t.rot)e.ang=a;}
     return true;
   case 'pull':if(d<170*S&&P.dashT<=0&&!(e.frz>0)){P.x-=dx/d*42*S*dt;P.y-=dy/d*42*S*dt;e.pl=0.2;tip('pull');} // the player is dragged toward it (a dash breaks free)
     return false;
@@ -2187,6 +2511,13 @@ function mover(e,dx,dy,d,s,dt,S){
     else if(e.q===2){tx=e.ax+e.qx*165*S;ty=e.ay+e.qy*165*S;if(e.qT<=0){e.q=3;e.qT=1.1;}}
     else if(e.qT<=0){e.q=0;e.qT=rand(0.7,1.5);}
     const k=e.q===2?22:e.q===3?3:8;MV[0]=(tx-e.x)*k;MV[1]=(ty-e.y)*k;return true;}
+  case 'spines':e.sT2=(e.sT2===undefined?rand(2,4):e.sT2)-dt; // v38 a sun animalcule: it swells (0.8 s, a ring shows it), then lets go a ring of its rays (the tail stops them)
+    if(e.sq){MV[0]=MV[1]=0;if(e.sT2<=0){e.sq=0;e.sT2=rand(3.5,5);const n=12,a0=Math.random()*TAU,v=170*S;for(let i=0;i<n;i++){const a=a0+i/n*TAU;shots.push({x:e.x+Math.cos(a)*e.r,y:e.y+Math.sin(a)*e.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:2.6,dmg:Math.round(e.t.dmg*0.6),by:e.t});}sfx('brood');}return true;}
+    if(e.sT2<=0&&d<520*S&&P.freezeT<=0){e.sq=1;e.sT2=0.8;return true;}
+    MV[0]=dx/d*s;MV[1]=dy/d*s;return true;
+  case 'roll':if(e.rl===undefined){e.rl=1;e.rlT=rand(1.4,2.4);e.alt=ET.pillb;} // v37 a pill bug: down the slope rolled up, fast and straight; then it opens out and walks in
+    if(e.rl){e.rlT-=dt;MV[0]=Math.sin(T*4+e.ph)*s*0.6;MV[1]=s*4;if(QL>=2&&Math.random()<dt*8)burst(e.x,e.y-e.r,1,'#d8b47a',40,0.4,2);if(e.rlT<=0||e.y>P.y+40*S){e.rl=0;e.alt=null;e.flash=0.12;}return true;}
+    return false;
   case 'brood':
     e.bT=(e.bT===undefined?rand(2.5,4):e.bT)-dt;if(e.left===undefined)e.left=4;
     if(e.bT<=0&&e.left>0&&d<560*S&&P.freezeT<=0&&enemies.length<CAP-60){e.bT=e.t.spawn[2];e.left--;spawnQ.push([e.t.spawn[0],e.t.spawn[1],e.x,e.y,e.r,1]);e.flash=0.12;
@@ -2366,15 +2697,22 @@ function vorTile(sz,n,seed,paint){const c=document.createElement('canvas');c.wid
     const a=paint(Math.sqrt(d2)-Math.sqrt(d1),Math.sqrt(d1),pts[i1][2]),k=(y*sz+x)*4;d[k]=a[0];d[k+1]=a[1];d[k+2]=a[2];d[k+3]=a[3];}
   g.putImageData(im,0,0);return c;}
 const BG_T={}; // made when first needed
+function sandTile(){const c=mk(256,256),g=c.getContext('2d');let q=7;const rnd=()=>(q=(q*16807)%2147483647)/2147483647; // ripples that meet themselves at the edges, and grains
+  g.lineCap='round';for(let i=0;i<8;i++){const y0=16+i*32,ph=i*1.7,amp=5+(i%3)*2.5,path=dy=>{g.beginPath();for(let x=0;x<=256;x+=8){const y=y0+dy+Math.sin(x/256*TAU*2+ph)*amp+Math.sin(x/256*TAU*3+ph*2.3)*2;x?g.lineTo(x,y):g.moveTo(x,y);}};
+    path(3);g.strokeStyle='rgba(0,0,0,0.9)';g.lineWidth=5;g.stroke();path(0);g.strokeStyle='rgba(255,226,170,0.85)';g.lineWidth=2.2;g.stroke();}
+  for(let i=0;i<500;i++){g.fillStyle=rnd()<0.5?'rgba(255,230,180,0.6)':'rgba(0,0,0,0.6)';g.fillRect(rnd()*256,rnd()*256,1.5,1.5);}return c;}
 function bgTile(k){if(BG_T[k])return BG_T[k];let t;
   if(k==='cells')t=vorTile(256,13,11,(e,d1,r)=>{const m=Math.max(0,1-e/5),nu=d1<7+r*4?0.5:0;return[150,120,255,Math.round(255*Math.min(1,m*m*0.95+nu*0.45+0.04))];}); // a wall round each cell, a nucleus in it
+  else if(k==='sand')t=sandTile(); // v37
   else if(k==='light')t=vorTile(256,10,23,(e)=>{const m=Math.max(0,1-e/7);return[170,255,230,Math.round(255*m*m*m)];}); // the bright net of light under ripples
   else t=vorTile(256,16,37,(e,d1,r)=>e<1.4?[8,4,2,215]:e<2.6?[220,150,95,60]:[120+r*40|0,72+r*25|0,42,Math.round(26+r*34)]); // cracks, a lit edge beside them, clay a little different in each piece
   return BG_T[k]=t;}
 // per stage, per scale: the ground, the motes, which tile, how strong
 const BGS=[[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{base:'#0a0c2a',mote:'rgba(180,160,255,0.12)',k:'cells',a:0.15},{base:'#100a28',mote:'rgba(220,160,255,0.12)',k:'cells',a:0.14}],
   [{base:'#03161b',mote:'rgba(150,240,210,0.12)',k:'light',a:0.11},{base:'#04171a',mote:'rgba(190,240,170,0.12)',k:'light',a:0.1},{base:'#051611',mote:'rgba(200,230,150,0.12)',k:'light',a:0.1}],
-  [{base:'#100906',mote:'rgba(255,180,120,0.09)',k:'clay',a:0.5}]];
+  [{base:'#100906',mote:'rgba(255,180,120,0.09)',k:'clay',a:0.5}],
+  [{base:'#22170b',mote:'rgba(255,215,150,0.1)',k:'sand',a:0.26}], // v37 the pit: ripples in the sand
+  [{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}]]; // v38 the Land of Giants: deep green water, the net of light from far above
 function bgOf(){const L=BGS[CS]||BGS[0];return L[Math.min(L.length-1,P?P.stage|0:0)];}
 // the whole background (ground, tiles, and the jar's shade) is drawn small, at half the screen's size, then stretched over the screen in one go:
 // the tiles are soft, so they lose nothing, and the screen is filled once, as the plain ground was before (filling it two or three times was slow on fine screens)
@@ -2511,7 +2849,7 @@ function render(){
     if(shake<7){shx=0;shy=Math.sin(t*TAU*24)*A*0.55;} // small: up and down only
     else{const o=Math.sin(t*TAU*15)*A*0.6,j=(Math.random()-0.5)*A*0.25;shx=Math.cos(shakeA)*o-Math.sin(shakeA)*j;shy=Math.sin(shakeA)*o+Math.cos(shakeA)*j;}} // big: back and forth along one line, a little off it
   SHK[0]=shx;SHK[1]=shy;
-  const cx=P.x+shx*S,cy=P.y+shy*S; // world point at screen center
+  const cx=P.x+shx*S,cy=P.y+shy*S+(PIT?H*CAMY*S:0); // world point at screen center (v37.1: in the pit, a little below the head)
   if(bg9)drawBgLow(cx,cy,Z); // (v32.1: the stage's own background)
   // motes (screen-space parallax)
   ctx.fillStyle=bg9?bgOf().mote:'rgba(120,180,255,0.12)';
@@ -2524,6 +2862,9 @@ function render(){
   ctx.strokeStyle='rgba(70,130,220,0.09)';ctx.lineWidth=S;ctx.beginPath();
   for(let x=Math.floor(vx0/G)*G;x<vx1;x+=G){ctx.moveTo(x,vy0);ctx.lineTo(x,vy1);}
   for(let y=Math.floor(vy0/G)*G;y<vy1;y+=G){ctx.moveTo(vx0,y);ctx.lineTo(vx1,y);}ctx.stroke();}
+//#FULL
+  if(PIT&&bg9)drawPit(vx0,vx1,vy0,vy1); // v37 the antlion's pit
+//#/FULL
   drawBubbles(vx0,vx1,vy0,vy1);
   drawSlime(vx0,vx1,vy0,vy1);drawGas(vx0,vx1,vy0,vy1);drawChests();drawItems();
   if(goo.length){for(const g of goo){const k=g.life/g.max;ctx.globalAlpha=Math.min(1,k*1.8)*0.9;ctx.fillStyle=g.col;circ(ctx,g.x,g.y,g.r*(0.45+0.55*k));ctx.fill();}ctx.globalAlpha=1;} // v31: what is left of what burst
@@ -2563,7 +2904,7 @@ function render(){
     ctx.restore();}
   ctx.globalCompositeOperation='lighter';
   const eGlow=QL>=3||(QL===2&&enemies.length<90);
-  for(const e of enemies){if(e.titan||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
+  for(const e of enemies){const m=e.boss?e.r*2:0;if(e.titan||e.hide||e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue;const t=e.t;
     if((eGlow&&!e.pr)||e.boss){const gr=t.gR*e.sc;ctx.drawImage(t.gspr,e.x-gr,e.y-gr,gr*2,gr*2);}
     if(e.cap)ctx.drawImage(CAPGLOW,e.x-e.r*2.4,e.y-e.r*2.4,e.r*4.8,e.r*4.8);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
@@ -2583,8 +2924,8 @@ function render(){
     for(const e of enemies){const L=e.lead;if(!L||L.dead||e.ox!==undefined||!e.pr!==!pr||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;any=e;ctx.moveTo(e.x,e.y);ctx.lineTo(L.x,L.y);}
     if(any){ctx.strokeStyle=any.t.col;ctx.globalAlpha=pr?0.45:0.8;ctx.lineWidth=any.r*0.7;ctx.stroke();}}
   ctx.globalAlpha=1;
-  for(const e of enemies){if(e.titan||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1)continue;const t=e.t;
-    const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=e.alt?e.r/e.alt.r:e.sc,w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
+  for(const e of enemies){const m=e.boss?e.r*2:0;if(e.titan||e.hide||e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue;const t=e.t;
+    const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=(e.alt?e.r/e.alt.r:e.sc)/((e.alt||t).res||1),w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
     ctx.globalAlpha=e.pr?0.72:1;
     if(t.kin&&e.tr){if(e.rage){ctx.fillStyle=`rgba(255,40,50,${(0.2+0.1*Math.sin(T*9)).toFixed(3)})`;circ(ctx,e.x,e.y,e.r*1.9);ctx.fill();}drawHead(e.x,e.y,e.ha,e.r/11,1,KIN_SK[t.kc].h,false,KIN_SK[t.kc]);if(e.flash>0){ctx.fillStyle='rgba(255,255,255,0.65)';circ(ctx,e.x,e.y,e.r);ctx.fill();}} // one of the player's own kind: a real head
     else if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
@@ -2598,6 +2939,7 @@ function render(){
     else if(e.tun||e.sleepT>0){const k=e.tun?Math.max(0,e.tunT/e.tunMax):Math.max(0,e.sleepT/e.sleepMax),R=e.r*1.2+4*S; // v36 dormant: how long until it wakes (it blinks at the end)
       ctx.strokeStyle=`rgba(255,236,190,${k<0.25?0.5+0.45*Math.sin(T*30):0.85})`;ctx.lineWidth=(e.boss?5:2.6)*S;ctx.beginPath();ctx.arc(e.x,e.y,R,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
     else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
+    if(e.sq){const f=1-Math.max(0,e.sT2)/0.8;ctx.strokeStyle=`rgba(255,120,140,${0.5+0.4*f})`;ctx.lineWidth=4*S;circ(ctx,e.x,e.y,e.r*(1.1+0.4*f));ctx.stroke();} // v38 swelling: rays are coming
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,0,TAU);ctx.stroke();ctx.setLineDash([6*S,7*S]);ctx.lineWidth=2*S;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(P.x,P.y);ctx.stroke();ctx.setLineDash([]);} // clamped on: the ring closes as the next injection nears
     else if(t.spawn&&e.bT<0.8&&e.left>0&&!e.pr){ctx.strokeStyle='rgba(150,255,215,0.75)';ctx.lineWidth=2.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*(1.3-0.35*Math.max(0,e.bT)),0,TAU);ctx.stroke();} // about to let its young out
@@ -2752,13 +3094,13 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
-  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):b.napsMax?TX('boss_hud_t',b.t.name,b.naps):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.t.bare?TX('boss_hud_p',b.t.name):b.livesMax?TX('boss_hud_k',b.t.name,b.lives):b.napsMax?TX('boss_hud_t',b.t.name,b.naps):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
   else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
     ctx.fillStyle='rgba(90,140,170,0.35)';ctx.fillRect(W/2-tw/2,sy+12,tw,3);ctx.fillStyle='#7dffb0';ctx.fillRect(W/2-tw/2,sy+12,tw*f,3);
-    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('gate'),W/2,sy+25);ctx.textAlign='left';}
+    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX(PIT&&P.stage<STAGE_N.length-1?'gate_p':'gate'),W/2,sy+25);ctx.textAlign='left';}
   // dash + charge
   const ready=P.dashCdT<=0,best=captures.filter(c=>c.cinchT<0).reduce((a,c)=>c.charge>a.charge?c:a,{charge:0});
   let bx,by,br,x0,cy2;
@@ -2881,7 +3223,7 @@ function titleScreen(W,H){
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
   const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
   fitFont(TX('tagline',verL()),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',verL()),W/2,tg);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
@@ -3233,7 +3575,7 @@ function renderSfx(name,a,sec){const sr=44100,oac=new OfflineAudioContext(1,Math
     w(0,'RIFF');d.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,sr,true);d.setUint32(28,sr*2,true);d.setUint16(32,2,true);d.setUint16(34,16,true);w(36,'data');d.setUint32(40,n*2,true);
     for(let i=0;i<n;i++)d.setInt16(44+i*2,Math.max(-1,Math.min(1,x[i]))*32767,true);let bin='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
     return{wav:btoa(bin),peak:pk,rms:Math.sqrt(s2/n),rmsHi:Math.sqrt(h2/n)};});}
-window.__g={get splash(){return SPL;},renderSfx,get death(){return DEATH?{n:DEATH.n,cut:DEATH.cut,pop:DEATH.pop}:null;},get shk(){return{x:SHK[0],y:SHK[1],a:shake,dir:shakeA};},setShake(a,dir){shake=a;if(dir!==undefined){shakeA=dir;shakeDirSet=true;}},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
+window.__g={get pit(){return PIT;},get splash(){return SPL;},renderSfx,get death(){return DEATH?{n:DEATH.n,cut:DEATH.cut,pop:DEATH.pop}:null;},get shk(){return{x:SHK[0],y:SHK[1],a:shake,dir:shakeA};},setShake(a,dir){shake=a;if(dir!==undefined){shakeA=dir;shakeDirSet=true;}},get husks(){return husks.length;},get goo(){return goo.length;},get msg(){return{banner:!!banner,evt:evtMsg?evtMsg.s:null,hitstop:+hitstop.toFixed(3)};},get s(){return{state,T,kills,bestCombo,enemies:enemies.length,orbs:orbs.length,lvl:P.lvl,hp:P.hp,captures:captures.length,
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
