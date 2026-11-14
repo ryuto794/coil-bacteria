@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.3',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.4',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -853,6 +853,9 @@ const STR={
  pit_bite:['噛まれた！','Bitten!'],
  pit_grow:['吸収 +{0}','Absorbed +{0}'],
  ev_fall:['群れが落ちてくる！','A swarm is sliding in!'],
+ pit_fall:['足もとが崩れる！','The ground gives way!'],
+ pit_in:['巣に落ちた！','Fell in!'],
+ pit_in_s:['アリジゴクの巣だ！ 上へ逃げて、落ちてくる虫を巻け','An antlion\'s pit! Climb, and coil what falls in'],
  ev_fall_s:['逃げようともがいて、落ちてくる。尾で受け止めて巻け','They scramble and slide down. Catch them in a coil'],
  tip_giant:['巨人の国','The Land of Giants'],
  tip_giant_s:['体のどこに触れても痛い。大きく回って巻く','They hurt anywhere along the body. Coil wide'],
@@ -1189,6 +1192,7 @@ const SFX={
  level:()=>arp([523,659,784,1047],0.12,0.2,0.07),
  hurt:()=>{tone(180,70,0.22,0.4,'sawtooth');noise(0.12,0.25,900,300,1);},
  crack:()=>{tone(1800,900,0.08,0.2,'square');noise(0.08,0.2,5000,2500,2);},
+ slide:()=>{for(let i=0;i<7;i++)noise(0.2,0.16,1400-i*90,500,0.9,i*0.17);noise(1.4,0.14,320,110,0.7);tone(60,40,1.2,0.25,'sawtooth');}, // v38.4 the sand gives way (the way into the antlion's pit)
  boss:()=>{tone(70,55,0.9,0.5,'sawtooth');tone(105,82,0.9,0.3,'sawtooth');},
  bossdown:()=>{tone(120,30,0.8,0.7);noise(0.7,0.5,2500,150,0.6);arp([392,523,659,784],0.16,0.2,0.09,0.25);},
  stage:()=>{tone(200,800,0.5,0.25,'sawtooth');noise(0.5,0.2,400,4000,1);},
@@ -1368,7 +1372,7 @@ function reset(start){
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   resetBubbles();
-  if(start)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
+  if(start&&!PIT)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
   if(start&&Q.has('toxin')&&TOXIN_T[0])for(let i=0;i<2;i++)spawnToxin();
   if(start&&Q.has('titan'))spawnTitan();
   if(start&&Q.has('rush'))startRush();
@@ -1633,8 +1637,18 @@ function drawItems(){const S=P.S;
 // screen). Above it the sand gives way: near the edge the head slips down (not while dashing). At the edge the antlion's jaws bite and throw the head back up.
 // Everything else slides down the slope (PIT_SLIDE), and what goes over the edge is eaten: no kill, no XP. Now and then the antlion rises a little and flicks
 // a fan of sand at the player (the tail stops it). When the tail is long enough the antlion comes out of the sand to fight (alionMove), and the pit falls away.
-function pitNew(){return{jr:PIT_BOSS[0].r*0.96,y:P.y+H*(0.5+CAMY)*P.S*0.7+PIT_BOSS[0].r*0.96,v:0,jx:P.x,bite:0,snap:0,fT:7,fq:0,fw:0,kb:0};}
+function pitNew(){return{intro:2.8,dur:2.8,jr:PIT_BOSS[0].r*0.96,y:P.y+H*(0.5+CAMY)*P.S*0.7+PIT_BOSS[0].r*0.96,v:0,jx:P.x,bite:0,snap:0,fT:7,fq:0,fw:0,kb:0};}
 function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: how far below the head can be seen)
+  // v38.4 the way in (the owner: "from nothing, all of a sudden, zazazazaza, as if you were being dropped in"): 2.8 s. Flat sand with nothing on it;
+  // it trembles (0.8 s); then the sand gives way and pours downhill, taking the player with it, faster than it can walk (1.3 s); then the jaws come up from below
+  if(PIT.intro>0){const t=PIT.dur-PIT.intro;PIT.intro-=dt;P.inv=Math.max(P.inv,0.6);calmUntil=Math.max(calmUntil,T+0.6);PIT.jx=P.x;
+    if(t<0.8){shake=Math.max(shake,1+5*t);PIT.y=P.y+half*3+B.r;if(QL>=1&&Math.random()<0.5)burst(P.x+rand(-1,1)*W*0.4*S,P.y+rand(-0.3,0.6)*H*S,1,'#d8b47a',30,0.5,2);}
+    else if(t<2.1){const k=Math.min(1,(t-0.8)/0.45);P.y+=P.spd*S*3.2*k*dt;PIT.y=P.y+half*3+B.r;shake=Math.max(shake,6+7*k);
+      if(!PIT.said){PIT.said=1;evt(TX('pit_fall'),'',1.6);sfx('slide');vib([40,30,40,30,60]);}}
+    else{if(!PIT.up){PIT.up=1;PIT.y=P.y+half*1.2+PIT.jr;PIT.snap=0.3;shake=Math.max(shake,20);sfx('boss');sfx('crack');vib(120);burst(P.x,P.y+half*0.9,30,'#d8b47a',420,0.8,4);}
+      PIT.y+=(P.y+half*0.5+PIT.jr-PIT.y)*Math.min(1,dt*7);}
+    return;}
+  if(!PIT.go){PIT.go=1;banner={t:2.6,max:2.6,title:TX('pit_in'),sub:TX('pit_in_s')};for(let i=0;i<2;i++)spawnCluster(8);calmUntil=T+0.8;} // the way in is over: the first of them come tumbling down
   if(P.boss||P.clearAt||state!=='play')PIT.y+=(PIT.y-P.y<half*1.15?90:20)*S*dt; // the antlion is out (or the stage is won): the pit sinks away
   else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,T/300));PIT.v=base+Math.max(0,gap-half*1.12)*2;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws. v38.1, the owner: "race up and you should be able to open the gap a little more": it catches up only past 1.12 screens below, so the jaws may drop out of sight; the bottom edge glows while they come)
   PIT.jx+=(P.x-PIT.jx)*Math.min(1,dt*1.3); // the jaws follow along under the player, a little behind
@@ -1655,6 +1669,9 @@ function pitJaw(x,y){const R=PIT_BOSS[0].r,qx=(x-PIT.jx)/(R*0.48),qy=(y-PIT.y+R*
 function pitEat(e){e.dead=true;burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;} // over the edge: eaten
 // the slope giving way above the edge (a warm haze, sand running down), the pit (sand going down into the dark), and the antlion buried to its jaws (world space)
 function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,B=PIT_BAND*S,tips=y-r*0.96;
+  if(PIT.intro>0){const t=PIT.dur-PIT.intro,k=t<0.8?0:t<2.1?Math.min(1,(t-0.8)/0.45):Math.max(0,1-(t-2.1)/0.5),h=vy1-vy0; // v38.4 the way in: the sand pouring down past the player
+    if(k>0){ctx.fillStyle=`rgba(150,110,60,${(0.22*k).toFixed(3)})`;ctx.fillRect(vx0,vy0,w,h);ctx.fillStyle=`rgba(232,200,140,${(0.6*k).toFixed(3)})`;
+      for(let i=0;i<70;i++){const u=(i*0.618034)%1,f=((i*0.37-T*1.6)%1+1)%1,len=(30+60*((i*0.29)%1))*S*k;ctx.fillRect(vx0+u*w,vy0+f*h,2.4*S,len);}}}
   if(tips>vy1-100*S&&!P.boss&&!P.clearAt){const k=Math.max(0,Math.min(1,1-(tips-vy1)/(H*0.9*S))),h=(60+70*k)*S,gr=ctx.createLinearGradient(0,vy1-h,0,vy1);gr.addColorStop(0,'rgba(255,70,40,0)');gr.addColorStop(1,`rgba(255,${90-50*k|0},40,${(0.12+0.35*k).toFixed(3)})`);ctx.fillStyle=gr;ctx.fillRect(vx0,vy1-h,w,h);} // v38.1 the jaws are below, out of sight: the bottom edge glows as they come
   if(y>vy1+r*2)return;
   const near=Math.max(0,Math.min(1,1-(y-P.y)/B));let gr=ctx.createLinearGradient(0,y-B,0,y);gr.addColorStop(0,'rgba(255,170,90,0)');gr.addColorStop(1,`rgba(255,${(150-100*near)|0},80,${(0.14+0.24*near).toFixed(3)})`);ctx.fillStyle=gr;ctx.fillRect(vx0,y-B,w,B);
