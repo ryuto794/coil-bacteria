@@ -113,12 +113,13 @@ const ETYPES=[
  {k:'volvd',look:'volvd',n:['娘群体','Daughter Colony'],st:1,r:14,hp:3,spd:120,dmg:8,xp:3,col:'#8cf08a',core:'#0f5a20',glow:'rgba(130,240,130,0.5)',spin:1.6},
  // v35: a Hydra's bud. They grow round the Hydra on stalks; while any is on, the Hydra's shells will not crack. Coiled and squeezed, one comes off (see spawnBoss, budOff)
  {k:'hbud',look:'hydra',n:['子ヒドラ','Hydra Bud'],st:1,sh:1,r:30,hp:16,spd:0,dmg:16,xp:40,col:'#e8bd80',core:'#6a3a10',glow:'rgba(235,190,120,0.5)',arms:2,reach:7,bud:1},
- // stage 2, scale 3 (tardigrades, v34). tun: held in a coil that is only standing for this many seconds, it curls up into a hard tun (tardt: two more shells,
- // brittle, so a dash squeeze breaks it) and uncurls 5 s after it is free. zig: lashes along in a zigzag. slime: leaves a trail that slows the player (not in a dash)
+ // stage 2, scale 3 (tardigrades, v34; the tardigrade made over in v36). immune: nothing but a squeeze touches it (no pulse, spikes, shock, fire, ice or blast).
+ // revive: squeezed, it does not die but goes dormant (tardt, a tun) and comes back to life after this many seconds; crushed with the head or squeezed again while dormant, it dies.
+ // zig: lashes along in a zigzag. slime: leaves a trail that slows the player (not in a dash)
  {k:'plan', n:['プラナリア','Planarian'],st:2,L:62,w:23,r:29,hp:9,spd:72,dmg:14,xp:8,col:'#c9a37a',core:'#4a2a10',glow:'rgba(215,170,120,0.45)',rot:1,split:['planh',2]},
  {k:'planh',look:'plan',n:['プラナリアの半分','Half Planarian'],st:2,L:40,w:16,r:20,hp:4,spd:98,dmg:10,xp:4,col:'#d8b58a',core:'#4a2a10',glow:'rgba(215,170,120,0.45)',rot:1},
- {k:'tard', n:['クマムシ','Tardigrade'],st:2,sh:1,r:42,hp:12,spd:52,dmg:15,xp:14,col:'#e6c9a0',core:'#7a5230',glow:'rgba(235,205,160,0.45)',rot:1,fr:4,tun:0.9,brittle:1},
- {k:'tardt',n:['乾眠中のクマムシ','Tardigrade (tun)'],st:2,sh:3,r:42,hp:12,spd:20,dmg:10,xp:14,col:'#c9a070',core:'#5a3415',glow:'rgba(215,170,110,0.45)',spin:1.4,brittle:1},
+ {k:'tard', n:['クマムシ','Tardigrade'],st:2,r:42,hp:12,spd:52,dmg:15,xp:16,col:'#e6c9a0',core:'#7a5230',glow:'rgba(235,205,160,0.45)',rot:1,fr:4,immune:1,revive:6},
+ {k:'tardt',n:['乾眠中のクマムシ','Tardigrade (dormant)'],st:2,r:42,hp:12,spd:20,dmg:0,xp:16,col:'#c9a070',core:'#5a3415',glow:'rgba(215,170,110,0.45)',rot:1,immune:1},
  {k:'chiro',n:['ユスリカの幼虫','Bloodworm'],st:2,L:84,w:11,r:21,hp:8,spd:150,dmg:13,xp:9,col:'#ff4a5a',core:'#7a0a14',glow:'rgba(255,80,90,0.5)',rot:1,fr:8,mv:'zig'},
  {k:'asel', n:['ミズムシ','Water Louse'],st:2,L:50,w:27,r:33,hp:10,spd:122,dmg:14,xp:10,col:'#9aa6b8',core:'#3a4250',glow:'rgba(160,175,200,0.45)',rot:1,fr:4,mv:'run'},
  {k:'snail',n:['モノアラガイ','Pond Snail'],st:2,sh:2,r:50,hp:16,spd:34,dmg:14,xp:18,col:'#c8b48a',core:'#5a4220',glow:'rgba(210,190,140,0.45)',rot:1,slime:1},
@@ -161,7 +162,7 @@ let TITAN_T=[
 // stage 2's boss and titan for its first scale. The titan is a creature of the scale to come (a Water Flea), as in stage 1
 const POND_BOSS=[{k:'stentor',st:0,r:48,hp:44,spd:46,dmg:18,xp:150,col:'#5ab8ff',core:'#0a2a66',glow:'rgba(90,180,255,0.5)',name:['ラッパムシ','Stentor'],sh:3,rot:1,pull:1},
   {k:'hydra',st:1,r:64,hp:120,spd:16,dmg:22,xp:380,col:'#e0b070',core:'#6a3a10',glow:'rgba(235,190,120,0.5)',name:['ヒドラ','Hydra'],sh:4,arms:6}, // arms: see armsTick
-  {k:'ontard',look:'tard',st:2,r:165,hp:280,spd:40,dmg:28,xp:950,col:'#e0a070',core:'#6a2a10',glow:'rgba(235,160,110,0.5)',name:['オニクマムシ','Predatory Tardigrade'],sh:5,rot:1,fr:4}], // v34: curls up and rolls at the player (bossMove)
+  {k:'ontard',look:'tard',st:2,r:165,hp:280,spd:40,dmg:28,xp:950,col:'#e0a070',core:'#6a2a10',glow:'rgba(235,160,110,0.5)',name:['オニクマムシ','Predatory Tardigrade'],sh:0,naps:3,immune:1,rot:1,fr:4}], // v34: curls up and rolls at the player (bossMove). v36: nothing hurts it; squeezed it goes dormant, and is crushed with the head, naps times
  // v29.1: the Water Flea with its shell broken. It is red and comes at the player in lunges (rageMove). A type of its own, for the colour, the name and the damage
  DAPH_R={k:'daph',st:0,L:290,w:140,r:140,hp:36,spd:125,dmg:28,xp:160,sh:0,res:1,col:'#ff5a4a',core:'#5a0a0a',glow:'rgba(255,90,70,0.4)',name:['怒ったミジンコ','Raging Water Flea'],rot:1},
  // home: while it is on its way in it turns toward the player, this many rad/s. hop: it swims in strokes. rage: what it becomes when its last shell breaks
@@ -362,9 +363,22 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
     g.strokeStyle=core;g.globalAlpha=fl?0:0.35;g.lineWidth=r*0.06;for(let i=0;i<3;i++){g.beginPath();g.ellipse(-r*0.5+i*r*0.42,0,r*0.12,r*0.6,0,-Math.PI/2,Math.PI/2);g.stroke();}g.globalAlpha=1;
     g.fillStyle=col;circ(g,r*1.02,0,r*0.3);g.fill();g.fillStyle=fl?'#fff':core;circ(g,r*1.2,0,r*0.09);g.fill();
     g.fillStyle=fl?'#fff':'#222';for(const sg of[-1,1]){circ(g,r*0.82,sg*r*0.24,r*0.07);g.fill();}break;}
-  case 'tardt':{const r=t.r;g.fillStyle=col;circ(g,0,0,r*0.95);g.fill(); // v34 a tun: dried into a hard little barrel, the legs drawn in
-    g.strokeStyle=core;g.globalAlpha=fl?0:0.5;g.lineWidth=r*0.08;for(let i=-1;i<=1;i++){g.beginPath();g.ellipse(i*r*0.4,0,r*0.16,r*0.9,0,0,TAU);g.stroke();}g.globalAlpha=1;
-    g.fillStyle=fl?'#fff':'rgba(255,255,255,0.35)';circ(g,-r*0.3,-r*0.35,r*0.22);g.fill();break;}
+  case 'tardt':{ // v36 a tun, drawn again (the owner: "the dormant one is drawn far too badly"): dried and shrunk into a little barrel, legs drawn in, the skin in folds
+    const L=r*1.02,W=r*0.64,NS=5;g.lineJoin='round';g.lineCap='round'; // a tun: dried and shrunk into a little barrel, legs drawn in, the skin in folds
+  const half=x=>{const u=Math.min(1,Math.abs(x)/L),env=Math.pow(Math.max(0,1-u*u),0.42),sp=(x+L)/(2*L)*NS,bump=1+0.05*Math.cos((sp%1)*TAU);return W*env*bump;}; // how far the body reaches from the middle line at x: tapered ends, a bulge to each segment
+  const N=72,top=[];for(let i=0;i<=N;i++){const x=-L+2*L*i/N;top.push([x,-half(x)]);}
+  const outline=()=>{g.beginPath();top.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));for(let i=N;i>=0;i--)g.lineTo(top[i][0],-top[i][1]);g.closePath();};
+  g.fillStyle=fl?'#fff':core;for(let i=0;i<4;i++){const x=-L*0.55+i*L*0.37;for(const sg of[-1,1]){circ(g,x,sg*half(x)*1.02,r*0.1);g.fill();}} // the legs, pulled in: small knobs along both sides
+  const gr=g.createLinearGradient(0,-W,0,W);gr.addColorStop(0,fl?'#fff':'#e6c99a');gr.addColorStop(0.5,col);gr.addColorStop(1,fl?'#fff':'#7a5530');
+  outline();g.fillStyle=gr;g.fill();g.strokeStyle=fl?'#fff':'rgba(55,32,14,0.95)';g.lineWidth=r*0.075;g.stroke();
+  if(!fl){g.save();outline();g.clip();
+    for(let i=1;i<NS;i++){const x=-L+2*L*i/NS,h=half(x); // a fold between segments: a dark crease, and the next segment's lit rim
+      g.strokeStyle='rgba(60,34,12,0.7)';g.lineWidth=r*0.07;g.beginPath();g.moveTo(x,-h);g.quadraticCurveTo(x+r*0.13,0,x,h);g.stroke();
+      g.strokeStyle='rgba(255,236,200,0.35)';g.lineWidth=r*0.05;g.beginPath();g.moveTo(x+r*0.08,-h*0.92);g.quadraticCurveTo(x+r*0.2,0,x+r*0.08,h*0.92);g.stroke();}
+    g.fillStyle='rgba(255,248,230,0.28)';g.beginPath();g.ellipse(-L*0.08,-W*0.55,L*0.6,W*0.14,0,0,TAU);g.fill(); // a dull sheen on top
+    g.restore();
+    g.fillStyle='rgba(55,32,14,0.85)';g.beginPath();g.ellipse(L*0.93,0,r*0.05,r*0.1,0,0,TAU);g.fill();}
+    break;}
   case 'chiro':{const L=t.L,w=t.w,p=ph||0,N=26,Y=x=>Math.sin(x/L*3.4-p)*w*1.5*(0.4+0.6*(1-(x+L)/(2*L))); // v34 a bloodworm: a red body in segments that lashes in an S, a dark head in front
     g.lineCap='round';g.lineJoin='round';g.strokeStyle=col;g.lineWidth=w*2;g.beginPath();for(let i=0;i<=N;i++){const x=-L+i/N*2*L*0.94;i?g.lineTo(x,Y(x)):g.moveTo(x,Y(x));}g.stroke();
     g.strokeStyle=core;g.globalAlpha=fl?0:0.55;g.lineWidth=w*0.35;for(let i=1;i<11;i++){const x=-L+i/11*2*L*0.92,y=Y(x),dy=(Y(x+1)-Y(x-1))/2,nn=Math.hypot(1,dy);g.beginPath();g.moveTo(x-dy/nn*w*0.9,y+1/nn*w*0.9);g.lineTo(x+dy/nn*w*0.9,y-1/nn*w*0.9);g.stroke();}g.globalAlpha=1;
@@ -445,7 +459,7 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   }
   g.globalAlpha=1;
 }
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='tard'?t.r*1.55:k==='tardt'?t.r*1.15:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
 const ALLT=[...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...BODY_RUSH];
 //#FULL
 ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH);
@@ -488,7 +502,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v35',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v36.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -643,19 +657,27 @@ const STR={
  srare:['Sレア','S-RARE'],
  lvup:['LEVEL UP！ 強化をえらぶ','LEVEL UP! Pick an upgrade'],
 //#FULL // (v35: words of the full game only: the demo build leaves them out)
- tun:['乾眠！','Tun!'],
- tip_tun:['クマムシは丸まって固くなる','Tardigrades curl up hard'],
- tip_tun_s:['巻いたまま待つと乾眠する。ダッシュ締めなら一度で割れる','Left in a coil it curls up. A dash squeeze breaks it at once'],
+ tun:['乾眠！','Dormant!'],
+ tip_tun:['クマムシは死なない','Tardigrades cannot be killed'],
+ tip_tun_s:['締めると乾眠する。頭で潰してとどめ','Squeeze it dormant, then crush it with your head'],
+ immune:['効かない','No effect'],
+ revive:['復活！','Revived!'],
+ finish:['とどめ！','Finished!'],
+ boss_in_t:['{0}：締めて乾眠させ、頭で潰す（{1} 回）','{0}: squeeze it dormant, crush it with your head ({1} times)'],
+ boss_hud_t:['ボス {0}　あと {1} 回潰す','Boss: {0}   Crushes to go: {1}'],
+ boss_nap:['乾眠した！ 頭で潰せ','Dormant! Crush it!'],
+ boss_wake:['目を覚ました！','It woke up!'],
+ boss_crush:['とどめ！ あと {0} 回','Crushed! {0} to go'],
  tip_slime:['ねばねばで遅くなる','Slime slows you'],
  tip_slime_s:['モノアラガイの通った跡。ダッシュなら抜けられる','A snail\'s trail. Dash to get through'],
  bk_plan:['倒すと 2 匹に分かれる。半分でも生きている','Splits in two when beaten. Each half lives on'],
  bk_planh:['プラナリアの半分。小さくて速い','Half a planarian. Small and quick'],
- bk_tard:['巻いたまま待つと丸まって固くなる。ダッシュ締めで割れる','Left in a coil it curls up hard. A dash squeeze breaks it'],
+ bk_tard:['何も効かない。締めると乾眠し、頭で潰せば倒せる','Nothing hurts it. Squeeze it dormant, crush it with your head'],
  bk_chiro:['赤い体をくねらせ、左右に跳ねながら来る','Lashes its red body from side to side as it comes'],
  bk_asel:['平たい体でまっすぐ走り抜け、向きを変えてまた来る','Scuttles straight past, turns, and comes again'],
  bk_snail:['遅いが殻が固い。ねばねばの跡を踏むと遅くなる','Slow, with a hard shell. Its slime trail slows you'],
  bk_mosqs:['止まっては体をくねらせて跳ぶ','Hangs still, then wriggles off in a jump'],
- bk_ontard:['このスケールのボス。丸まって転がってくる。尾で跳ね返る','The boss of this scale. Curls up and rolls at you. Your tail bounces it'],
+ bk_ontard:['このスケールのボス。締めて乾眠させ、頭で潰す。転がってくる','Boss of this scale. Squeeze it dormant, crush it. It rolls at you'],
  bk_tadp:['巨大。ここでは巻けない。次の世界の住人','Huge. Cannot be coiled here. One of the next world'],
 //#/FULL
  boss_ate:['食べて殻が戻った！','It ate, and a shell grew back!'],
@@ -1117,7 +1139,7 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0];let slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0];let KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
@@ -1395,12 +1417,13 @@ function maybeShell(e){const t=e.t;
   if(e.sh)tip('shell');}
 function spawnBoss(){
   const t=BOSS_T[P.stage],Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
+  if(t.naps){e.naps=e.napsMax=Math.min(5,t.naps+P.bossN);} // v36
   if(t.k==='hydra'&&!OLDB){const n=Math.min(6,4+P.bossN);e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
-  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -1438,8 +1461,10 @@ function bossTick(e,dt){
 // Each move is shown before it comes (a red line, a swelling ring, a red disc, a dotted arc) and leaves an opening after it. None of it while it is held in a coil:
 // catching it is the answer. e.bq: 0 coming / 1 getting ready / 2 the move / 3 the opening; e.bT: time left in that.
 function bossRing(e,n,spd,dmg){const a0=Math.random()*TAU,v=spd*P.S;for(let i=0;i<n;i++){const a=a0+i/n*TAU;shots.push({x:e.x+Math.cos(a)*e.r,y:e.y+Math.sin(a)*e.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:3.4,dmg,by:e.t});}}
-function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;if(e.cap||e.frz>0||P.freezeT>0)return false;
-  e.bT=(e.bT===undefined?2.2:e.bT)-dt;const half=e.sh<=e.shMax/2;
+function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
+  if(e.sleepT>0){e.sleepT-=dt;MV[0]=MV[1]=0;e.ang+=dt*1.5;if(e.sleepT<=0)bossWake(e);return true;} // v36 dormant: it lies still
+  if(e.cap||e.frz>0||P.freezeT>0)return false;
+  e.bT=(e.bT===undefined?2.2:e.bT)-dt;const half=e.napsMax?e.naps<=e.napsMax/2:e.sh<=e.shMax/2;
   if(k==='blob'){ // Giant Germ: winds up (a red line), charges along it, then is dizzy. The tail stops it
     if(!e.bq){if(e.bT<=0&&d<520*S){e.bq=1;e.bT=0.75;e.cdx=dx/d;e.cdy=dy/d;sfx('latch');}return false;}
     if(e.bq===1){MV[0]=MV[1]=0;if(e.bT<=0){e.bq=2;e.bT=0.6;sfx('dash');}return true;}
@@ -1462,7 +1487,7 @@ function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;if(e.cap||e.frz>0||P.freezeT>0
   if(k==='ontard'){ // v34 Predatory Tardigrade: curls into a ball (it spins; a red line), rolls fast along it (the tail bounces it back), then uncurls out of breath
     if(!e.bq){if(e.bT<=0&&d<640*S){e.bq=1;e.bT=0.75;e.cdx=dx/d;e.cdy=dy/d;e.alt=ET.tardt;sfx('crack');}return false;}
     if(e.bq===1){MV[0]=MV[1]=0;e.ang+=dt*8;if(e.bT<=0){e.bq=2;e.bT=half?1.6:1.2;e.freeT=T+e.bT+0.1;sfx('dash');}return true;}
-    if(e.bq===2){const v=P.spd*S*1.5;MV[0]=e.cdx*v;MV[1]=e.cdy*v;e.ang+=dt*12;if(e.bT<=0){e.bq=3;e.bT=1.8;e.alt=null;
+    if(e.bq===2){const v=P.spd*S*(1.5+0.12*Math.min(3,e.angry||0));MV[0]=e.cdx*v;MV[1]=e.cdy*v;e.ang+=dt*12;if(e.bT<=0){e.bq=3;e.bT=1.8;e.alt=null;
       if(half&&enemies.length<CAP-20)spawnQ.push(['tard',3,e.x,e.y,e.r,1]);}return true;} // at half its shells, it leaves young behind as it uncurls
     MV[0]=MV[1]=0;e.lastCrack=T;if(e.bT<=0){e.bq=0;e.bT=rand(3,4.2)*(half?0.7:1);}return true;}
   return false;}
@@ -1614,8 +1639,9 @@ function pushOut(o,r){for(const b of bub.act){if(b.a<0.95)continue;const dx=o.x-
   if(dx>m||dx<-m||dy>m||dy<-m)continue;const d2=dx*dx+dy*dy;if(d2<m*m){const d=Math.sqrt(d2)||0.01;o.x=b.x+dx/d*m;o.y=b.y+dy/d*m;return b;}}return null;}
 
 // ---------- combat ----------
-function hurt(e,d,xpMul,grp){if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
+function hurt(e,d,xpMul,grp){if(e.t.immune){immuneMark(e);return false;}if(e.sh>0){e.flash=0.06;return false;}e.hp-=P.absz&&e.frz>0?d*2:d;e.flash=0.1;if(e.hp<=0&&!e.dead){kill(e,xpMul===undefined?1:xpMul,grp);return true;}return false;}
 function kill(e,xpMul,grp){ // grp: the chain this kill belongs to, if any (see boom())
+  if(e.t.immune&&!KILLOK){immuneMark(e);return;} // v36: a tardigrade dies only of a squeeze or the head (see explode, tunCrush)
   if(e.bud)budOff(e); // v35
   e.dead=true;if(HUSK&&!e.boss&&!e.titan&&husks.length<160){const d=Math.hypot(e.x-HUSK.x,e.y-HUSK.y);husks.push({e,x:e.x,y:e.y,cx:HUSK.x,cy:HUSK.y,d:Math.min(0.1,0.1*d/HUSK.R),age:0,dsh:HUSK.dsh});}
   else burst(e.x,e.y,e.boss?70:6,e.t.col,e.boss?440:140,e.boss?1.1:0.45,e.boss?5:3);if(e.tr)for(let i=0;i<e.tr.length;i+=3)burst(e.tr[i].x,e.tr[i].y,1,e.t.col,90,0.45,2.5);kills++;sfx('pop');dropTick(e);
@@ -1649,11 +1675,26 @@ function boomTick(dt){
     rings.push({x:b.x,y:b.y,r:b.r*0.2,R:b.r,life:0.35,max:0.35,col:'#ffd27a',w:7*S});burst(b.x,b.y,26,'#ffb020',420,0.6,4);burst(b.x,b.y,10,'#ffffff',260,0.4,3);
     shake=Math.max(shake,9);sfx('boom',8);
     for(const e of enemies){if(e.dead)continue;const dx=e.x-b.x,dy=e.y-b.y,rr=b.r+e.r;if(dx*dx+dy*dy>rr*rr)continue;
-      if(e.hunter||e.titan)continue;if(e.sh>0)crackShell(e,1);else if(e.boss)hurt(e,8*(1+P.stage),b.xpMul,g);else{kill(e,b.xpMul,g);g.n++;}}
+      if(e.hunter||e.titan||e.t.immune)continue;if(e.sh>0)crackShell(e,1);else if(e.boss)hurt(e,8*(1+P.stage),b.xpMul,g);else{kill(e,b.xpMul,g);g.n++;}}
     if(g.live<=0&&g.n>0){const tot=g.base+g.n;text(b.x,b.y-30*S,TX('chain',g.n),22+Math.min(24,g.n),'#ffd27a',1.2);
       bestCombo=Math.max(bestCombo,tot);if(tot>=20)mission('c20');if(tot>=50)mission('c50');vib(25);}}
   compact(booms,b=>!b.done);
 }
+// v36 the tardigrade, made over (the owner: "it does not use what a tardigrade is: the strongest creature there is. A shell is not the idea"). Real ones live through heat, cold,
+// radiation and drying out: dried, they curl into a tun and wait, and come back with water. So: nothing hurts it but a squeeze; a squeeze does not kill it but sends it dormant;
+// dormant, the head crushes it (double XP) or another squeeze finishes it; left 6 s, it comes back to life.
+let IMG=0;function immuneMark(e){if(!(e.imT>T)&&T>IMG){e.imT=T+3;IMG=T+0.4;text(e.x,e.y-e.r-6*P.S,TX('immune'),13,'#d6dce8',0.6);}e.flash=0.04;} // (not too often: the pulse finds them every second)
+function tunOf(e){e.tun=1;e.t=ET.tardt;e.tunT=e.tunMax=e.t.revive||6;if(ET.tard.revive)e.tunT=e.tunMax=ET.tard.revive;e.cap=null;e.spd0=e.spd0||e.spd;e.spd=e.spd0*0.3;e.flash=0.2;
+  text(e.x,e.y-e.r-6*P.S,TX('tun'),15,'#ffe6b0',0.9);tip('tun');sfx('crack');}
+function tunWake(e){e.tun=0;e.t=ET.tard;e.spd=e.spd0||e.spd;e.flash=0.3;e.cap=null;text(e.x,e.y-e.r-6*P.S,TX('revive'),15,'#ffb0a0',0.9);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.2,life:0.35,max:0.35,col:'#ffc8a0',w:4*P.S});}
+function tunCrush(e){KILLOK=true;kill(e,2);KILLOK=false;text(e.x,e.y-e.r-6*P.S,TX('finish'),16,'#fff3c4',0.9);burst(e.x,e.y,12,'#ffe6b0',220,0.5,3);hitstop=Math.max(hitstop,0.05);sfx('crack');}
+// the Predatory Tardigrade: a squeeze sends it dormant for 3.5 s (it lies still, harmless); the head crushes it once each time. Not crushed in time, it wakes with a shockwave, angrier
+function bossNap(e){e.sleepT=e.sleepMax=3.5;e.alt=ET.tardt;e.bq=0;e.bT=99;e.cap=null;e.freeT=T+3.6;e.flash=0.3;text(e.x,e.y-e.r-14*P.S,TX('boss_nap'),24,'#fff3c4',1.2);tip('tun');sfx('crack');shake=Math.max(shake,8);}
+function bossWake(e){const S=P.S;e.sleepT=0;e.alt=null;e.bq=0;e.bT=0.9;e.angry=(e.angry||0)+1;e.flash=0.3;text(e.x,e.y-e.r-14*S,TX('boss_wake'),22,'#ffb0a0',1.1);sfx('boss');shake=Math.max(shake,12);
+  rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.4,life:0.45,max:0.45,col:'#ff8a7a',w:8*S});if(Math.hypot(P.x-e.x,P.y-e.y)<e.r*2.4)hitHead(e.t.dmg,e.t);}
+function bossCrush(e){const S=P.S;e.naps--;hitstop=Math.max(hitstop,0.15);shake=Math.max(shake,18);burst(e.x,e.y,40,'#ffe6b0',380,0.8,4);rings.push({x:e.x,y:e.y,r:e.r*0.5,R:e.r*2,life:0.4,max:0.4,col:'#fff3c4',w:8*S});vib(60);
+  if(e.naps<=0){KILLOK=true;kill(e,1);KILLOK=false;return;}
+  text(e.x,e.y-e.r-14*S,TX('boss_crush',e.naps),26,'#fff3c4',1.2);sfx('bossdown');e.sleepT=0;e.alt=null;e.bq=0;e.bT=0.8;e.angry=(e.angry||0)+1;e.freeT=T+1.2;P.inv=Math.max(P.inv,0.8);}
 function crackShell(e,n){if(budsOn(e)){if(!(e.gT>T)){e.gT=T+1.2;text(e.x,e.y-e.r-12*P.S,TX('guarded'),18,'#ffe6b0',0.9);tip('buds');}return;} // v35: its buds guard the Hydra
   const k=Math.min(n,e.sh);if(k<=0)return;e.sh-=k;e.lastCrack=T;e.regenT=0;
   burst(e.x,e.y,10+k*6,'#d8f4ff',220*(e.boss?1.6:1),0.55,3);shake=Math.max(shake,e.boss?6:3);sfx('crack');
@@ -1729,15 +1770,17 @@ function onLoop(poly,old){
 function explode(cap){
   const poly=cap.poly,b=bbox(poly),c=cap.c,ch=cap.charge,dsh=cap.dash,S=P.S;
   const lk=Math.min(5,cap.link|0); // place in a chain of squeezes (0 = first)
-  const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0;
+  const xpMul=(dsh?2:1)*(1+0.35*(ch-1))*(1+LINK_XP*lk),grp={n:0,base:0,live:0};let n=0,heal=0,kept=0,dorm=0;
   HUSK={x:c.x,y:c.y,R:cap.rad*1.3+60*S,dsh}; // v31: what this squeeze kills is held for the stop (kill() reads this)
   for(const e of enemies){if(e.dead)continue;
     if(e.cap===cap||(!cap.inf&&!(e.freeT>T)&&e.x>=b.x0&&e.x<=b.x1&&e.y>=b.y0&&e.y<=b.y1&&inPoly(e.x,e.y,poly))){ // (the blast of a figure eight holds nothing: it only hurts; nor does a coil hold what has just slipped it)
       if(e.sh>0&&e.t.brittle){if(dsh&&!e.pr){crackShell(e,e.sh);text(e.x,e.y-e.r-6*S,TX('snapped'),14,'#fff3c4',0.8);}else tip('brittle');} // a seed shrimp: a dash squeeze breaks the whole shell at once
       if(e.sh>0){kept++;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy)+1;e.vx+=dx/d*220*S;e.vy+=dy/d*220*S;
         if(!e.boss&&kept<=2)text(e.x,e.y-e.r-6*S,TX('shell_left',e.sh),14,'#bfe9ff',0.7);continue;}
+      if(e.t.revive&&!e.tun){tunOf(e);dorm++;continue;} // v36 a tardigrade: squeezed, it does not die, it goes dormant
+      if(e.naps){if(!(e.sleepT>0)){bossNap(e);dorm++;}continue;} // v36 the Predatory Tardigrade: squeezed, it goes dormant (crush it with the head)
       if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
-      kill(e,xpMul,grp);n++;if(dsh&&P.devour)heal++;}}
+      KILLOK=true;kill(e,xpMul,grp);KILLOK=false;n++;if(dsh&&P.devour)heal++;}}
   const R=((55+26*ch)*P.blast*(dsh?DASH_R:1)*S+cap.rad*0.6)*(1+LINK_R*lk),dmg=(1+ch)*(dsh?DASH_D:1)*P.blast*(1+P.stage)*(1+LINK_D*lk);
   for(const b of shots){const dx=b.x-c.x,dy=b.y-c.y;if(dx*dx+dy*dy<R*R)b.life=0;} // a squeeze clears the shots around it
   for(const e of enemies){if(e.dead)continue;const dx=e.x-c.x,dy=e.y-c.y,d=Math.hypot(dx,dy);
@@ -1768,7 +1811,7 @@ function explode(cap){
     hitstop=Math.max(hitstop,0.05+Math.min(0.13,n*0.004)+(dsh?0.03:0));
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));shakeA=Math.atan2(P.y-c.y,P.x-c.x)||0;shakeDirSet=true;P.boomAt=T; // (v31: no whole-screen flash at a squeeze: the flash is the core at the squeeze, see cores)
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
-  else if(!lk&&!cap.inf){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
+  else if(!lk&&!cap.inf&&!dorm){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
 }
 // the outline of the region closed by a crossing at `hit` on trail segment j: along the trail from there to the head.
@@ -1994,11 +2037,7 @@ function update(dt){
         if(e.eT>=e.t.esc){let qx=e.x-c.c.x,qy=e.y-c.c.y,q=Math.hypot(qx,qy);if(q<1){const a=Math.random()*TAU;qx=Math.cos(a);qy=Math.sin(a);q=1;}
           const v=c.rad*3.4+420*S;e.cap=null;e.eT=0;e.vx=qx/q*v;e.vy=qy/q*v;text(e.x,e.y-e.r-6*S,TX('escaped'),14,'#bfeaff',0.7);tip('esc');sfx('latch');}}}
     else if(e.eT)e.eT=0;
-    if(e.t.tun&&e.cap&&!e.pr){const c=e.cap; // v34 a tardigrade left in a coil that is only standing curls up into a hard tun (squeeze it with a dash)
-      if(c.cinchT<0&&!(c.hold>0)&&!(e.frz>0)){e.tT=(e.tT||0)+dt;if(e.tT>e.t.tun-0.25)e.flash=0.05;
-        if(e.tT>=e.t.tun){e.tT=0;e.t=ET.tardt;e.sh=Math.min(3,(e.sh||0)+2);e.shMax=Math.max(e.shMax||0,e.sh);e.tunT=5;e.spd0=e.spd;e.spd*=0.4;text(e.x,e.y-e.r-6*S,TX('tun'),15,'#ffe6b0',0.9);tip('tun');sfx('crack');}}}
-    else if(e.tT)e.tT=0;
-    if(e.tunT>0&&!e.cap){e.tunT-=dt;if(e.tunT<=0){e.t=ET.tard;e.sh=Math.min(e.sh,1);e.shMax=Math.max(1,e.sh);if(e.spd0)e.spd=e.spd0;}} // free a while: it uncurls
+    if(e.tun){e.tunT-=dt;if(e.tunT<=0)tunWake(e);} // v36 a dormant tardigrade comes back to life
     if(e.t.slime&&!e.pr){e.slT=(e.slT||rand(0,0.4))-dt;if(e.slT<=0){e.slT=0.45;if(slime.length<90)slime.push({x:e.x,y:e.y,r:e.r*0.95,life:4.5,max:4.5});}} // v34 a snail leaves a trail
     if(e.sT>0&&!e.cap){e.sT-=dt;ax=e.sdx*s*1.3;ay=e.sdy*s*1.3;} // stream events cross the screen first
     if(e.t.k==='toxin'){e.puffT-=dt;if(e.puffT<=0){e.puffT=0.6;puff(e.x,e.y,e.r*1.8,3.5);}}
@@ -2018,6 +2057,8 @@ function update(dt){
     if(e.titan){if(!(e.bite>0)&&capD(e,P.x,P.y)<e.t.w+headR&&hitHead(e.t.dmg,e.t))e.bite=0.8;continue;} // a titan hurts along its whole body, and a dash is no help
     if(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr?crushR:headR)){ // a long body is hit anywhere along it
       if(e.pr){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown: run over, no harm done
+      if(e.tun){tunCrush(e);continue;} // v36 a dormant tardigrade: the head crushes it (no harm done)
+      if(e.naps&&e.sleepT>0){bossCrush(e);continue;} // v36 the Predatory Tardigrade, dormant: the head crushes it
       if(P.iceage&&e.frz>0&&!e.sh&&!e.boss&&!e.hunter){kill(e,1);burst(e.x,e.y,8,'#d6f4ff',200,0.4,3);continue;} // Ice Age: a frozen enemy shatters under the head
       if(e.hunter){if(!(e.bite>0)&&hitHead(e.t.dmg,e.t))e.bite=1.2;continue;} // the hunter bites (dashing does not save you), then stops for a moment
       if(P.dashT>0){if(!hurt(e,2*(1+P.stage)*(1+P.ram)*(P.phase?3:1),1)){e.vx-=dx/d*300*S;e.vy-=dy/d*300*S;}}
@@ -2063,8 +2104,8 @@ function tailTouch(dt,S){if(!(P.spike||P.cilia||P.ember||P.rime))return;P.tailTi
 // ---------- v16: fire and ice ----------
 // Burning (e.burn s left): a tick of damage every 0.5 s. A shell does not burn. Frozen (e.frz): it cannot move. Chilled (e.chill): slowed.
 // Bosses, the hunter and titans do not freeze: they are chilled instead.
-function ignite(e,t){if(e.dead||e.sh>0)return;if(!(e.burn>0))e.bT=0.5;e.burn=Math.max(e.burn||0,t||3);}
-function freeze(e,t){if(e.dead)return;if(e.boss||e.hunter||e.titan){e.chill=Math.max(e.chill||0,t);return;}if(!(e.frz>=t)){e.frz=t;e.frzMax=t;}} // frzMax: how long this freeze was to begin with (for the ring that runs down)
+function ignite(e,t){if(e.dead||e.sh>0||e.t.immune)return;if(!(e.burn>0))e.bT=0.5;e.burn=Math.max(e.burn||0,t||3);}
+function freeze(e,t){if(e.dead||e.t.immune)return;if(e.boss||e.hunter||e.titan){e.chill=Math.max(e.chill||0,t);return;}if(!(e.frz>=t)){e.frz=t;e.frzMax=t;}} // frzMax: how long this freeze was to begin with (for the ring that runs down)
 function fireTick(dt){if(!fires.length)return;for(const f of fires)f.life-=dt;compact(fires,f=>f.life>0);P.fireTk=(P.fireTk||0)-dt;if(P.fireTk>0)return;P.fireTk=0.25;
   for(const f of fires)for(const e of enemies){if(e.dead||e.sh>0)continue;const dx=e.x-f.x,dy=e.y-f.y,rr=f.r+e.r;if(dx*dx+dy*dy<rr*rr)ignite(e,3);}}
 // ---------- stronger enemies: chargers, shooters, splitters ----------
@@ -2554,6 +2595,8 @@ function render(){
     if(e.frz>0){const k=Math.min(1,e.frz/(e.frzMax||e.frz)),end=e.frz<0.7; // frozen: cased in ice that shrinks as it melts, with a ring that runs down; it flickers in the last moments
       ctx.fillStyle=`rgba(170,225,255,${end?0.18+0.3*(0.5+0.5*Math.sin(T*36)):0.28+0.27*k})`;circ(ctx,e.x,e.y,e.r*(0.78+0.3*k));ctx.fill();
       ctx.strokeStyle='rgba(240,251,255,0.95)';ctx.lineWidth=2.4*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.08+3*S,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
+    else if(e.tun||e.sleepT>0){const k=e.tun?Math.max(0,e.tunT/e.tunMax):Math.max(0,e.sleepT/e.sleepMax),R=e.r*1.2+4*S; // v36 dormant: how long until it wakes (it blinks at the end)
+      ctx.strokeStyle=`rgba(255,236,190,${k<0.25?0.5+0.45*Math.sin(T*30):0.85})`;ctx.lineWidth=(e.boss?5:2.6)*S;ctx.beginPath();ctx.arc(e.x,e.y,R,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();}
     else if(e.chill>0&&QL>=1){ctx.strokeStyle='rgba(150,215,255,0.55)';ctx.lineWidth=1.5*S;circ(ctx,e.x,e.y,e.r*1.1);ctx.stroke();}
     if(e.sh>0||e.boss)drawShell(e,S);
     if(e.lat){ctx.strokeStyle=`rgba(255,90,70,${0.6+0.35*Math.sin(T*18)})`;ctx.lineWidth=3.5*S;ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*S,0,TAU);ctx.stroke();ctx.setLineDash([6*S,7*S]);ctx.lineWidth=2*S;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(P.x,P.y);ctx.stroke();ctx.setLineDash([]);} // clamped on: the ring closes as the next injection nears
@@ -2709,7 +2752,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
     ctx.fillText(p,x,sy);x+=ws[i];});
   // boss name + shells, or progress toward this scale's boss
-  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
+  if(P.boss){const b=P.boss,nb=budsOn(b),t=b.livesMax?TX('boss_hud_k',b.t.name,b.lives):b.napsMax?TX('boss_hud_t',b.t.name,b.naps):nb?TX('boss_hud_b',b.t.name,nb):TX('boss_hud',b.t.name,b.sh,b.shMax);ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#ffd86a';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
