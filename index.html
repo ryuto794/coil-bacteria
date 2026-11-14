@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.8',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.9',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1760,13 +1760,13 @@ function maybeShell(e){const t=e.t;
 function spawnBoss(){
   const t=BOSS_T[P.stage];if(!t)return; // (v37.1: the pit has a boss at its last scale only)
   const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare?0:Math.min(8,t.sh+P.bossN); // endless: each return has one more shell (or life) and more HP
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
-  if(t.naps){e.naps=e.napsMax=Math.min(5,t.naps+P.bossN);} // v36
+  if(t.naps){e.naps=e.napsMax=P.endless?Math.min(5,t.naps+P.bossN):t.naps-1;} // v36 (v38.9: two crushes before the clear, three and more in endless)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
-  if(t.k==='hydra'&&!OLDB){const n=Math.min(6,4+P.bossN);e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
+  if(t.k==='hydra'&&!OLDB){const n=P.endless?Math.min(6,4+P.bossN):3; /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
   banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
@@ -1798,7 +1798,7 @@ function bossTick(e,dt){
   if(e.buds)budVolley(e,dt);
   if(e.lives>1&&e.hp<=e.hp0*(e.lives-1)/e.livesMax)kingHit(e); // plain damage takes its lives too: one for each share of its HP
   if(e.t.pull&&!e.cap){const S=P.S,dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.01;if(d<330*S&&P.dashT<=0){P.x-=dx/d*70*S*dt;P.y-=dy/d*70*S*dt;e.pl=0.2;}} // Stentor: a strong whirlpool
-  if(e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}}
+  if(P.endless&&e.sh<e.shMax&&T-e.lastCrack>5){e.regenT+=dt;if(e.regenT>=3.5){e.regenT=0;e.sh++;text(e.x,e.y-e.r-12*P.S,TX('regen'),18,'#9fc9e8',0.8);}} // (v38.9: shells grow back only in endless)
   e.minT-=dt;if(e.minT<=0){e.minT=9;spawnCluster(P.stage===0?6:5,{x:e.x,y:e.y,r:e.r});}
 }
 // v33: what each boss does besides coming at you (the owner: "the mid bosses are weak (Hydra)", "the round ones are monotonous, little to get excited about").
@@ -1871,7 +1871,7 @@ function budOff(b){const m=b.bud;b.bud=null;if(!m||m.dead)return;const S=P.S,lef
   m.flash=0.25;hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,12);sfx('crack');
   if(left>0)text(m.x,m.y-m.r-16*S,TX('bud_off',left),22,'#ffe6b0',1.1);else{m.bareAt=T;m.regenT=0;text(m.x,m.y-m.r-16*S,TX('hydra_bare'),28,'#fff3c4',1.4);rings.push({x:m.x,y:m.y,r:m.r,R:m.r*2.6,life:0.5,max:0.5,col:'#ffe6b0',w:6*S});}}
 function budTick(){const m=P.boss;if(!m||m.dead||!m.buds||m.t.k!=='hydra')return; // (outside the loop over the living: a new bud is added here)
-  if(!budsOn(m)&&m.regrown<2&&m.bareAt!==undefined&&T-m.bareAt>15&&!m.cap){m.regrown++;m.bareAt=undefined;const b=hydraBud(m,Math.random()*TAU);b.flash=0.4;text(m.x,m.y-m.r-16*P.S,TX('bud_grow'),20,'#ffb0a0',1.1);sfx('brood');}}
+  if(!budsOn(m)&&m.regrown<(P.endless?2:1)&&m.bareAt!==undefined&&T-m.bareAt>15&&!m.cap){m.regrown++;m.bareAt=undefined;const b=hydraBud(m,Math.random()*TAU);b.flash=0.4;text(m.x,m.y-m.r-16*P.S,TX('bud_grow'),20,'#ffb0a0',1.1);sfx('brood');}}
 function budVolley(m,dt){ // every 6 s the buds reach out all together, each with the arm that faces the head's way
   m.vT=(m.vT===undefined?4:m.vT)-dt;if(m.vT>0||budsOn(m)<2||Math.hypot(P.x-m.x,P.y-m.y)>m.r*8)return;m.vT=6;const S=P.S,px=P.x+Math.cos(P.a)*P.spd*S*0.6,py=P.y+Math.sin(P.a)*P.spd*S*0.6;
   for(const b of m.buds){if(b.dead||!b.arms||b.cap)continue;const ax=px-b.x,ay=py-b.y,ad=Math.hypot(ax,ay)+0.01,R1=b.r*(b.t.reach||4.6);if(ad>R1+40*S)continue;
