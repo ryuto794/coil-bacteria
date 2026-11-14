@@ -721,7 +721,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v39.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v40',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -937,6 +937,12 @@ const STR={
  bk_wdrop:['影が広がった所に、上から降ってくる','Drops from above where its shadow spreads'],
  bk_wfly:['網にかかった虫。巻いて XP にする','Caught in a web. Coil it up for XP'],
  bk_jorou:['ボス。糸を扇に吐き、網を張る。締めると子グモが散る','Boss. Fans silk, spins webs; squeezed, spiderlings scatter'],
+ br_in:['ボス {0} / {1}','Boss {0} of {1}'],
+ br_hud:['次のボス {0} / {1}','Next boss: {0} of {1}'],
+ br_next:['ひと息つける。次のボスが来る','A breather. The next boss is coming'],
+ goal_b:['{0} 体のボスを続けて倒すとクリア','Beat {0} bosses in a row to win'],
+ tip_brush:['ボスラッシュ','Boss Rush'],
+ tip_brush_s:['今までのボスが次々に来る。合間に回復とカプセル','The bosses, one after another. Healing and capsules between'],
  bk_ant:['いちばん多い。砂の坂を転がり落ちてくる','The most common. They come tumbling down the slope'],
  bk_antl:['アリの行列。先頭がうねり、後ろがついてくる','A column of ants. The leader snakes, the rest follow'],
  bk_sprg:['止まっては、尾のばねで跳ねる','Sits still, then springs off with its tail'],
@@ -1428,7 +1434,7 @@ function reset(start){
      spike:0,cilia:false,enzyme:0,helix:false,devour:false,zap:false,pulseLv:0,blastLv:0,flag:0,memb:0,rareMiss:0,
      boss:null,tailTick:0,st0:tl,clearAt:0,lv:{},bigcoil:false,waveKey:'',waveT:0.5,gasT:0,gasTick:0,loops:0,
      regen:0,captT:CAPT_TIME,xpMul:1,anti:0,ram:0,revive:0,revived:false,shatter:false,reroll:2,dropIn:35,freezeT:0,gasEver:false,killer:null,
-     endless:false,bossN:0,nextBoss:0,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
+     endless:false,bossN:0,nextBoss:0,brN:0,brT:4,cleared:false,counted:false,dnaPaid:0,timePaid:0,killsPaid:0,
      horn:0,needle:0,volt:0,arc:0,spine:false,oni:false,storm:false,voltT:0.8,magT:20,magDue:false,dashN:1,hunter:null,
      armor:0,guardLv:0,guard:0,guardT:0,ember:0,spread:0,blaze:false,inferno:false,fireT:0,frost:0,rime:0,glacier:false,absz:false,lineAsk:0,asura:false,raijin:false,sun:false,iceage:false,asT:2,rjT:4,
      vortex:false,phase:false,chainR:false,colossus:false,leech:false,leechN:0,sip:0,sipN:0,overdrive:false,srMiss:0,rushT:0,rushSp:0,rushDue:false};
@@ -1444,6 +1450,7 @@ function reset(start){
   WEBS=start&&STAGES[CS].web?webNew():null; // v39
 //#/FULL
   if(start&&APART)tip('giant'); // v38
+  if(start&&BRUSH)tip('brush'); // v40
   if(start&&STAGES[CS].hp0)P.hp=P.maxHp=STAGES[CS].hp0; // v38.5 the Land of Giants: the player starts big and strong (the owner: "start us off huge and strong")
   resetBubbles();
   if(start&&!PIT)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
@@ -1572,12 +1579,20 @@ const STAGES=[
   tiers:[[['spdl',0,8,0],['wjump',15,2.4,40],['wsilk',30,2,50],['wdrop',45,1.5,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.35),...w.slice(2)]),boss:WEB_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:WEB_RUSH,
   book:[[0,'spdl','spdl'],[0,'wjump','wjump'],[0,'wsilk','wsilk'],[0,'wdrop','wdrop'],[0,'wfly','wfly'],[0,WEB_RUSH[0],'rush'],[0,WEB_BOSS[0],'jorou']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'brush',n:['ボスラッシュ','Boss Rush'],wip:1,brush:1,tail0:1600,gate:3200,hp0:200,names:[['決戦場','The Arena']], // v40: nine bosses one after another (BR_LIST), with a breather between; the player starts big and strong
+  tiers:[[['germ',0,6,0],['halt',30,2,40],['ppara',60,2,40]]],
+  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.5),w[2]]),boss:[null],hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
+  book:[[0,BOSS_T[0],'boss0'],[0,POND_BOSS[0],'stentor'],[0,BOSS_T[1],'boss1'],[0,WEB_BOSS[0],'jorou'],[0,POND_BOSS[1],'hydra'],[0,JAR_BOSS[0],'kinb'],[0,GIANT_BOSS[0],'yago'],[0,BOSS_T[2],'boss2'],[0,POND_BOSS[2],'ontard']]},
 //#/FULL
-//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1}, // in the demo: names only, shown as in the full game
+//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1}, // in the demo: names only, shown as in the full game
 ];
 loc(STAGES,'n');
-let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
-function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;PREY_L=d.prey||null;PREY_XP_S=d.preyXp||PREY_XP;return true;}
+let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3,BRUSH=false,BR_LIST=[]; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
+//#FULL
+// v40 the Boss Rush (stage 7): the bosses of the stages before, the light ones first (the antlion stays in its pit: it needs one)
+BR_LIST=[STAGES[0].boss[0],POND_BOSS[0],STAGES[0].boss[1],WEB_BOSS[0],POND_BOSS[1],JAR_BOSS[0],GIANT_BOSS[0],STAGES[0].boss[2],POND_BOSS[2]];
+//#/FULL
+function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;BRUSH=!!d.brush;PREY_L=d.prey||null;PREY_XP_S=d.preyXp||PREY_XP;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i){if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
 function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&((bestOf(i-1).clears||0)>0||FORCE_STG===i));} // a stage opens when the one before it has been cleared
@@ -1922,7 +1937,7 @@ function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
   if(e.sh)tip('shell');}
 function spawnBoss(){
-  const t=BOSS_T[P.stage];if(!t)return; // (v37.1: the pit has a boss at its last scale only)
+  const t=BRUSH?BR_LIST[P.brN%BR_LIST.length]:BOSS_T[P.stage];if(!t)return; // (v40: in the Boss Rush, the next on the list) // (v37.1: the pit has a boss at its last scale only)
   const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
   const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare||t.molts||t.hits?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
@@ -1933,7 +1948,7 @@ function spawnBoss(){
   if(t.hits){e.hits=e.hitsMax=P.endless?Math.min(4,t.hits+P.bossN):t.hits;e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
   if(t.k==='hydra'&&!OLDB){const n=P.endless?Math.min(6,4+P.bossN):3; /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
-  banner={t:3,max:3,title:TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX('boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  banner={t:3,max:3,title:BRUSH?TX('br_in',P.brN%BR_LIST.length+1,BR_LIST.length):TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX('boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -2050,6 +2065,8 @@ function bossDown(e){
   P.boss=null;bossKills++;banner=null;hitstop=Math.max(hitstop,0.18);shake=Math.max(shake,24);flashT=0.4;P.inv=Math.max(P.inv,2);sfx('bossdown');vib([80,40,120]);
   text(e.x,e.y,TX('boss_down',e.t.name),40,'#ffe680',1.6);
   if(CS===0)mission(['boss1','boss2','clear'][P.stage]);
+  if(BRUSH&&(P.endless||P.brN<BR_LIST.length-1)){P.brN++;if(P.endless){if(P.brN%BR_LIST.length===0)P.bossN++;P.nextBoss=T+8;}else P.brT=T+3.5;dropChest(e.x,e.y,P.brN%2===0); // v40 the Boss Rush: the next boss after a breather (a capsule each time, an evolution every other)
+    if(items.length<4){const S=P.S;items.push({x:P.x+Math.cos(P.a)*150*S,y:P.y+Math.sin(P.a)*150*S,k:'heal',life:22,ph:Math.random()*TAU});}evt(TX('br_next'));return;}
   if(P.stage<STAGE_N.length-1){dropChest(e.x,e.y,true);stageUp();} // the last scale's boss ends the stage
   else if(P.endless){P.bossN++;P.nextBoss=T+75;dropChest(e.x,e.y,true);}
   else{P.clearAt=T+1.4;calmUntil=1e9;}
@@ -2085,7 +2102,7 @@ function die(by){
 // in the full game (the demo: the button says so and cannot be pressed), -1 if there is none (the last stage, or one still being made).
 function nextStage(){const i=CS+1;if(i>=STAGES.length)return -1;const d=STAGES[i];return d.full?-2:d.soon?-1:i;}
 function goNext(){const i=nextStage();if(state!=='clear'||overT<0.6||i<0||!stageOpen(i))return;stgIdx=i;META.stg=STAGES[i].id;saveMeta();reset(true);} // it becomes the stage chosen on the title screen too
-function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
+function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;if(BRUSH){P.brN=0;P.nextBoss=T+10;}calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('endless'),sub:TX('endless_s')};}
 function endRun(clear){if(runRes)return;
   const b=bestOf(CS),total=Math.floor(kills/25)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0),dna=total-P.dnaPaid,rec=[];
@@ -2529,7 +2546,7 @@ function update(dt){
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
   updateBubbles(dt);
   // boss gate + clear
-  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:P.tailLen>=gateLen())){if(PIT&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
+  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:BRUSH?T>=P.brT:P.tailLen>=gateLen())){if(PIT&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
   // spawn: VS-style waves with peaks, lulls and events
   waveTick(dt);rushTick(dt);ecapTick(dt);
@@ -2946,8 +2963,9 @@ const BGS=[[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{bas
   [{base:'#03161b',mote:'rgba(150,240,210,0.12)',k:'light',a:0.11},{base:'#04171a',mote:'rgba(190,240,170,0.12)',k:'light',a:0.1},{base:'#051611',mote:'rgba(200,230,150,0.12)',k:'light',a:0.1}],
   [{base:'#100906',mote:'rgba(255,180,120,0.09)',k:'clay',a:0.5}],
   [{base:'#22170b',mote:'rgba(255,215,150,0.1)',k:'sand',a:0.26}], // v37 the pit: ripples in the sand
-  [{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}],
-  [{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}]]; // v39 the Spider Web: a dark garden at night (the webs are drawn over it) // v38 the Land of Giants: deep green water, the net of light from far above
+  [{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}], // v38 the Land of Giants: deep green water, the net of light from far above
+  [{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}],
+  [{base:'#150a12',mote:'rgba(255,190,150,0.09)',k:'clay',a:0.32}]]; // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
 function bgOf(){const L=BGS[CS]||BGS[0];return L[Math.min(L.length-1,P?P.stage|0:0)];}
 // the whole background (ground, tiles, and the jar's shade) is drawn small, at half the screen's size, then stretched over the screen in one go:
 // the tiles are soft, so they lose nothing, and the screen is filled once, as the plain ground was before (filling it two or three times was slow on fine screens)
@@ -3336,9 +3354,9 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
   else if(P.rushT>0){const t=TX('rush_hud',Math.ceil(P.rushT));ctx.textAlign='center';fitFont(t,NARROW?15:16,900,W-20);ctx.fillStyle=Math.floor(T*4)%2?'#ffb0a0':'#ff7a66';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.hunter){const h=P.hunter,t=TX('hunt_hud',h.t.name,h.sh,Math.ceil(h.life));ctx.textAlign='center';fitFont(t,NARROW?14:15,900,W-20);ctx.fillStyle='#e6efff';ctx.fillText(t,W/2,sy+21);ctx.textAlign='left';}
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
-  else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
+  else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=BRUSH?P.brN/BR_LIST.length:clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
     ctx.fillStyle='rgba(90,140,170,0.35)';ctx.fillRect(W/2-tw/2,sy+12,tw,3);ctx.fillStyle='#7dffb0';ctx.fillRect(W/2-tw/2,sy+12,tw*f,3);
-    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX(PIT&&P.stage<STAGE_N.length-1?'gate_p':'gate'),W/2,sy+25);ctx.textAlign='left';}
+    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(BRUSH?TX('br_hud',Math.min(P.brN+1,BR_LIST.length),BR_LIST.length):TX(PIT&&P.stage<STAGE_N.length-1?'gate_p':'gate'),W/2,sy+25);ctx.textAlign='left';}
   // dash + charge
   const ready=P.dashCdT<=0,best=captures.filter(c=>c.cinchT<0).reduce((a,c)=>c.charge>a.charge?c:a,{charge:0});
   let bx,by,br,x0,cy2;
@@ -3461,7 +3479,7 @@ function titleScreen(W,H){
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
   const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
   fitFont(TX('tagline',verL()),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',verL()),W/2,tg);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
@@ -3750,7 +3768,7 @@ function endScreen(W,H,clear){
   ctx.fillStyle=clear?'rgba(2,10,20,0.78)':'rgba(2,8,22,0.76)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   const L=endLayout(W,H),y0=L.y0,tight=L.tight,R=runRes,y=y0+(tight?44:78),by=P.killer;
   ctx.font=`900 ${Math.min(tight?36:50,W/7.5)|0}px ${FONT}`;ctx.fillStyle=clear?'#eaffb0':'#ff6070';ctx.fillText(clear?TX('clear'):'GAME OVER',W/2,y0);
-  if(!tight){const sub=clear?TX('clear_s',BOSS_T[BOSS_T.length-1].name):by==='gas'?TX('cause_gas'):by?TX('cause',by.name||by.n):'';
+  if(!tight){const sub=clear?TX('clear_s',(BRUSH?BR_LIST[BR_LIST.length-1]:BOSS_T[BOSS_T.length-1]).name):by==='gas'?TX('cause_gas'):by?TX('cause',by.name||by.n):'';
     if(sub){fitFont(sub,15,'bold',W-24);ctx.fillStyle=clear?'#b6ffd2':'#ffb3bb';ctx.fillText(sub,W/2,y0+40);}}
   const l1=TX('end1',fmtT(T),kills,P.lvl);fitFont(l1,NARROW?16:19,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
   const l2=TX('end2',bestCombo,stageName(P.stage),bossKills);fitFont(l2,NARROW?15:17,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+(tight?26:30));
