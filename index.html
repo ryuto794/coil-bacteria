@@ -217,8 +217,8 @@ const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
- PIT_WAVES=[[0,16,1.0],[20,24,0.9,'stream'],[50,32,0.8],[80,14,1.1],[100,40,0.75,'stream'],[135,18,1.0],[160,50,0.7,'stream'],[195,20,1.0],
-  [220,60,0.65,'stream'],[255,24,0.9],[285,70,0.6,'stream'],[320,28,0.9],[350,80,0.6,'stream'],[390,32,0.9],[420,90,0.55,'stream'],[460,36,0.9]];
+ PIT_WAVES=[[0,30,0.7],[12,40,0.6,'stream'],[35,52,0.55],[60,34,0.65,'stream'],[80,62,0.5,'stream'],[110,40,0.65],[125,72,0.45,'stream'],[155,46,0.6,'stream'],
+  [170,82,0.45,'stream'],[200,52,0.6],[215,92,0.4,'stream'],[245,58,0.6,'stream'],[260,102,0.4,'stream'],[290,64,0.6],[305,112,0.4,'stream'],[335,70,0.6,'stream']]; // v38.1 (the owner: "more and more from above"): denser, falls often, shallow lulls
 //#/FULL
 function mk(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w|0);c.height=Math.max(1,h|0);return c;}
 function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2d'),gr=g.createRadialGradient(r,r,0,r,r,r);
@@ -1362,7 +1362,7 @@ function reset(start){
   state=start?'play':'title';
   PIT=null;
 //#FULL
-  if(start&&STAGES[CS].pit)PIT=pitNew(); // v37 (the full game only)
+  if(start&&STAGES[CS].pit){PIT=pitNew();P.magT=6;} // v37 (the full game only)
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   resetBubbles();
@@ -1430,6 +1430,7 @@ function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, 
     if(!prey&&Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);
     if(PIT)a=-Math.PI/2+rand(-1.2,1.2); // v37 in the pit, everything comes from above
     const d=Math.hypot(W,H)/2*Sx+40*Sx+Math.random()*80*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=(24+Math.sqrt(n)*12)*Sx*(prey?1.7:1);}
+  if(PIT&&!at){cx=P.x+rand(-0.42,0.42)*W*Sx;cy=P.y-H*(0.5-CAMY)*Sx-spread-rand(30,110)*Sx;} // v38.1 in the pit: just above the top of the screen, anywhere across it (they arrive at once)
   for(let i=0;i<n&&enemies.length<CAP;i++){
     let t=prey?pickPrey():pickType();
     if(APART&&!at&&!prey){let a=Math.random()*TAU;if(Math.abs(angDiff(P.a,a))<0.8)a=P.a+(Math.random()<0.5?1:-1)*rand(1.1,Math.PI);const d=Math.hypot(W,H)/2*Sx+(t.L||t.r)+rand(40,140)*Sx;cx=P.x+Math.cos(a)*d;cy=P.y+Math.sin(a)*d;spread=1;} // v38 a giant comes on its own, from its own side
@@ -1481,7 +1482,7 @@ const STAGES=[
   tiers:[[['ant',0,8,0],['sprg',12,3,40],['antl',20,1.2,30],['pill',30,2.2,40]],
          [['grass',0,5,0],['spid',8,2.4,40],['beet',16,2.2,40]],
          [['centi',0,1.2,0],['mantis',8,2.4,40]]],
-  waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.7,0.55],rush:[null,null,null],
+  waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.85,0.75],rush:[null,null,null],
   book:[[0,'ant','ant'],[0,'antl','antl'],[0,'sprg','sprg'],[0,'pill','pill'],[1,'grass','grass'],[1,'spid','spid'],[1,'beet','beet'],[2,'centi','centi'],[2,'mantis','mantis'],[2,PIT_BOSS[0],'alion']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:900,gate:1600,apart:1,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
   tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
@@ -1505,7 +1506,8 @@ function waveTick(dt){
   if(key!==P.waveKey){const prev=P.waveMin;P.waveMin=w[1];P.waveKey=key;
     // v20: the turn of the tide is felt. Into a lull: nothing new arrives for 7 s, a line says so, and a heal is left ahead if HP is under 70%.
     // Into a peak with no event of its own: a line warns of it.
-    if(prev!==undefined&&w[1]<prev*0.75){calmUntil=Math.max(calmUntil,T+7);evt(TX('ev_lull'),TX('ev_lull_s'),3);sfx('item');
+    if(prev!==undefined&&w[1]<prev*0.75){calmUntil=Math.max(calmUntil,T+(PIT?2:7)); // (v38.1: the pit only pauses for 2 s)
+      evt(TX('ev_lull'),TX('ev_lull_s'),3);sfx('item');
       if(P.hp/P.maxHp<0.7&&items.length<3){const S=P.S;items.push({x:P.x+Math.cos(P.a)*170*S,y:P.y+Math.sin(P.a)*170*S,k:'heal',life:22,ph:Math.random()*TAU});}}
     else if(prev!==undefined&&w[1]>prev*1.3&&!w[3])evt(TX('ev_peak'),TX('ev_peak_s'),3);
     if(w[3])waveEvent(w[3]);if(w[4])waveEvent(w[4]);} // a row may bring two things
@@ -1629,10 +1631,10 @@ function drawItems(){const S=P.S;
 // screen). Above it the sand gives way: near the edge the head slips down (not while dashing). At the edge the antlion's jaws bite and throw the head back up.
 // Everything else slides down the slope (PIT_SLIDE), and what goes over the edge is eaten: no kill, no XP. Now and then the antlion rises a little and flicks
 // a fan of sand at the player (the tail stops it). When the tail is long enough the antlion comes out of the sand to fight (alionMove), and the pit falls away.
-function pitNew(){return{jr:PIT_BOSS[0].r*0.96,y:P.y+H*(0.5+CAMY)*P.S*0.62+PIT_BOSS[0].r*0.96,v:0,jx:P.x,bite:0,snap:0,fT:7,fq:0,fw:0,kb:0};}
+function pitNew(){return{jr:PIT_BOSS[0].r*0.96,y:P.y+H*(0.5+CAMY)*P.S*0.7+PIT_BOSS[0].r*0.96,v:0,jx:P.x,bite:0,snap:0,fT:7,fq:0,fw:0,kb:0};}
 function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: how far below the head can be seen)
   if(P.boss||P.clearAt||state!=='play')PIT.y+=(PIT.y-P.y<half*1.15?90:20)*S*dt; // the antlion is out (or the stage is won): the pit sinks away
-  else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,T/300));PIT.v=base+Math.max(0,gap-half*0.62)*2.5;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws: they are always in sight at the bottom)
+  else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,T/300));PIT.v=base+Math.max(0,gap-half*1.12)*2;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws. v38.1, the owner: "race up and you should be able to open the gap a little more": it catches up only past 1.12 screens below, so the jaws may drop out of sight; the bottom edge glows while they come)
   PIT.jx+=(P.x-PIT.jx)*Math.min(1,dt*1.3); // the jaws follow along under the player, a little behind
   if(PIT.bite>0)PIT.bite-=dt;if(PIT.snap>0)PIT.snap-=dt;
   const g=PIT.y-P.y;
@@ -1649,7 +1651,9 @@ function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: ho
 function pitJaw(x,y){const R=PIT_BOSS[0].r,qx=(x-PIT.jx)/(R*0.48),qy=(y-PIT.y+R*0.42)/(R*0.55);return qx*qx+qy*qy<1;} // v37.1 inside the antlion's open jaws (they stand up out of the sand, as tall as it is big)
 function pitEat(e){e.dead=true;burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;} // over the edge: eaten
 // the slope giving way above the edge (a warm haze, sand running down), the pit (sand going down into the dark), and the antlion buried to its jaws (world space)
-function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,B=PIT_BAND*S;if(y>vy1+r*2)return;
+function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,B=PIT_BAND*S,tips=y-r*0.96;
+  if(tips>vy1-100*S&&!P.boss&&!P.clearAt){const k=Math.max(0,Math.min(1,1-(tips-vy1)/(H*0.9*S))),h=(60+70*k)*S,gr=ctx.createLinearGradient(0,vy1-h,0,vy1);gr.addColorStop(0,'rgba(255,70,40,0)');gr.addColorStop(1,`rgba(255,${90-50*k|0},40,${(0.12+0.35*k).toFixed(3)})`);ctx.fillStyle=gr;ctx.fillRect(vx0,vy1-h,w,h);} // v38.1 the jaws are below, out of sight: the bottom edge glows as they come
+  if(y>vy1+r*2)return;
   const near=Math.max(0,Math.min(1,1-(y-P.y)/B));let gr=ctx.createLinearGradient(0,y-B,0,y);gr.addColorStop(0,'rgba(255,170,90,0)');gr.addColorStop(1,`rgba(255,${(150-100*near)|0},80,${(0.14+0.24*near).toFixed(3)})`);ctx.fillStyle=gr;ctx.fillRect(vx0,y-B,w,B);
   ctx.fillStyle='rgba(225,190,130,0.5)';for(let i=0;i<70;i++){const u=(i*0.618034)%1,f=(T*0.55+i*0.37)%1;ctx.fillRect(vx0+u*w,y-B+f*B,2.2*S,(3+5*f)*S);}
   gr=ctx.createLinearGradient(0,y,0,y+H*S*0.6);gr.addColorStop(0,'#9a7444');gr.addColorStop(0.08,'#5a3e20');gr.addColorStop(1,'#120a04');ctx.fillStyle=gr;ctx.fillRect(vx0,y,w,Math.max(0,vy1-y));
@@ -2309,7 +2313,7 @@ function update(dt){
       c.sort((a,b)=>(b.sh||0)-(a.sh||0)||b.r-a.r);for(let i=0;i<6&&i<c.length;i++){const e=c[i];bolt(e.x+rand(-40,40)*S,e.y-520*S,e.x,e.y);if(e.sh>0)crackShell(e,1);else shock(e,8*(1+P.stage),e.x,e.y-60*S);}
       if(c.length){flashT=Math.max(flashT,0.08);sfx('zap');}}}
   if(P.freezeT>0)P.freezeT-=dt;
-  if(T>150&&(P.magT-=dt)<=0){P.magT=Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s
+  if((PIT||T>150)&&(P.magT-=dt)<=0){P.magT=PIT?10:Math.max(12,40-T/25);P.magDue=true;} // later on an XP magnet is due every 34 s, down to every 12 s (v38.1: in the pit from the start, every 10 s: XP left behind is lost there)
   if(DEMO&&captures.some(c=>c.cinchT<0&&c.charge>=2))dash();
   advanceTrail(dt);
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
