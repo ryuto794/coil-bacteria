@@ -118,7 +118,7 @@ const ETYPES=[
  // zig: lashes along in a zigzag. slime: leaves a trail that slows the player (not in a dash)
  {k:'plan', n:['プラナリア','Planarian'],st:2,L:62,w:23,r:29,hp:9,spd:72,dmg:14,xp:8,col:'#c9a37a',core:'#4a2a10',glow:'rgba(215,170,120,0.45)',rot:1,split:['planh',2]},
  {k:'planh',look:'plan',n:['プラナリアの半分','Half Planarian'],st:2,L:40,w:16,r:20,hp:4,spd:98,dmg:10,xp:4,col:'#d8b58a',core:'#4a2a10',glow:'rgba(215,170,120,0.45)',rot:1},
- {k:'tard', n:['クマムシ','Tardigrade'],st:2,r:42,hp:12,spd:52,dmg:15,xp:16,col:'#e6c9a0',core:'#7a5230',glow:'rgba(235,205,160,0.45)',rot:1,fr:4,immune:1,revive:6},
+ {k:'tard', n:['クマムシ','Tardigrade'],st:2,r:42,hp:12,spd:52,dmg:15,xp:16,col:'#e6c9a0',core:'#7a5230',glow:'rgba(235,205,160,0.45)',rot:1,fr:4,immune:1,revive:12}, // (v38.7: dormant for 12 s, was 6. The owner: "tardigrades come back too soon")
  {k:'tardt',n:['乾眠中のクマムシ','Tardigrade (dormant)'],st:2,r:42,hp:12,spd:20,dmg:0,xp:16,col:'#c9a070',core:'#5a3415',glow:'rgba(215,170,110,0.45)',rot:1,immune:1},
  {k:'chiro',n:['ユスリカの幼虫','Bloodworm'],st:2,L:84,w:11,r:21,hp:8,spd:150,dmg:13,xp:9,col:'#ff4a5a',core:'#7a0a14',glow:'rgba(255,80,90,0.5)',rot:1,fr:8,mv:'zig'},
  {k:'asel', n:['ミズムシ','Water Louse'],st:2,L:50,w:27,r:33,hp:10,spd:122,dmg:14,xp:10,col:'#9aa6b8',core:'#3a4250',glow:'rgba(160,175,200,0.45)',rot:1,fr:4,mv:'run'},
@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.6',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.7',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -951,19 +951,19 @@ const STR={
  lock_btn:['公式の場所へ','Go to the official site'],
  tip_pull:['渦に引き寄せられる','A whirlpool is dragging you'],
  tip_pull_s:['ワムシの近くは引かれる。巻いて倒せ','Rotifers pull you in when you are near. Coil them'],
- tip_esc:['ケンミジンコは跳んで逃げる','Copepods jump out of coils'],
- tip_esc_s:['囲んだら、すぐダッシュで締めろ','Squeeze with a dash before they jump'],
+ tip_esc:['ケンミジンコは囲みの中で暴れる','Copepods thrash inside a coil'],
+ tip_esc_s:['尾は破れない。そのまま締めればいい','They can\'t break through your tail. Just squeeze'],
  tip_brittle:['カイミジンコの殻','Seed Shrimp shells'],
  tip_brittle_s:['ダッシュ締めなら、殻ごと一度で割れる','A dash squeeze smashes the whole shell at once'],
 //#FULL // (the Hydra is in the full game only)
  tip_arms:['ヒドラの腕','Hydra arms'],
 //#/FULL
  tip_arms_s:['赤い線の先へ伸びてくる。向きを変えてかわせ','They shoot out along the red line. Turn away'],
- escaped:['逃げた！','Got away!'],
+ held:['出られない！','Can\'t get out!'],
  snapped:['殻ごと割れた！','Shell smashed!'],
  bk_kick:['水をかいて、ぐいぐい寄ってくる','Rows toward you, stroke by stroke'],
  bk_wedge:['V 字の編隊で通り過ぎる。先頭を倒すとばらける','Sweeps past in a V. Take out the leader and it breaks up'],
- bk_skip:['左右に跳ねて寄る。囲むと跳んで逃げるので、すぐ締める','Darts in from side to side. Jumps out of a coil, so squeeze fast'],
+ bk_skip:['左右に跳ねて寄る。囲むと中で暴れる','Darts in from side to side. Thrashes inside a coil'],
  bk_whip:['長い体でうねりながら来る。体のどこに触れても痛い','A long body that snakes in. It hurts anywhere along it'],
  bk_brittle:['殻 2 枚。ダッシュ締めなら殻ごと一度で割れる','Two shells. A dash squeeze smashes them both at once'],
  bk_volv:['倒すと 4 つの娘群体に分かれる','Breaks into four daughter colonies'],
@@ -2041,7 +2041,7 @@ function tunOf(e){e.tun=1;e.t=ET.tardt;e.tunT=e.tunMax=e.t.revive||6;if(ET.tard.
 function tunWake(e){e.tun=0;e.t=ET.tard;e.spd=e.spd0||e.spd;e.flash=0.3;e.cap=null;text(e.x,e.y-e.r-6*P.S,TX('revive'),15,'#ffb0a0',0.9);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.2,life:0.35,max:0.35,col:'#ffc8a0',w:4*P.S});}
 function tunCrush(e){KILLOK=true;kill(e,2);KILLOK=false;text(e.x,e.y-e.r-6*P.S,TX('finish'),16,'#fff3c4',0.9);burst(e.x,e.y,12,'#ffe6b0',220,0.5,3);hitstop=Math.max(hitstop,0.05);sfx('crack');}
 // the Predatory Tardigrade: a squeeze sends it dormant for 3.5 s (it lies still, harmless); the head crushes it once each time. Not crushed in time, it wakes with a shockwave, angrier
-function bossNap(e){e.sleepT=e.sleepMax=3.5;e.alt=ET.tardt;e.bq=0;e.bT=99;e.cap=null;e.freeT=T+3.6;e.flash=0.3;text(e.x,e.y-e.r-14*P.S,TX('boss_nap'),24,'#fff3c4',1.2);tip('tun');sfx('crack');shake=Math.max(shake,8);}
+function bossNap(e){e.sleepT=e.sleepMax=5;e.alt=ET.tardt;e.bq=0;e.bT=99;e.cap=null;e.freeT=T+5.1;e.flash=0.3;text(e.x,e.y-e.r-14*P.S,TX('boss_nap'),24,'#fff3c4',1.2);tip('tun');sfx('crack');shake=Math.max(shake,8);}
 function bossWake(e){const S=P.S;e.sleepT=0;e.alt=null;e.bq=0;e.bT=0.9;e.angry=(e.angry||0)+1;e.flash=0.3;text(e.x,e.y-e.r-14*S,TX('boss_wake'),22,'#ffb0a0',1.1);sfx('boss');shake=Math.max(shake,12);
   rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.4,life:0.45,max:0.45,col:'#ff8a7a',w:8*S});if(Math.hypot(P.x-e.x,P.y-e.y)<e.r*2.4)hitHead(e.t.dmg,e.t);}
 function bossCrush(e){const S=P.S;e.naps--;hitstop=Math.max(hitstop,0.15);shake=Math.max(shake,18);burst(e.x,e.y,40,'#ffe6b0',380,0.8,4);rings.push({x:e.x,y:e.y,r:e.r*0.5,R:e.r*2,life:0.4,max:0.4,col:'#fff3c4',w:8*S});vib(60);
@@ -2397,10 +2397,11 @@ function update(dt){
     else if(e.boss&&!OLDB&&bossMove(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];} // v33: each boss's moves
     else if(e.t.mv&&!e.cap&&mover(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
     else if((e.t.charge||e.t.shoot)&&!e.cap&&special(e,dx,dy,d,s,dt,S)){ax=MV[0];ay=MV[1];}
-    if(e.t.esc&&e.cap&&!e.pr){const c=e.cap; // a copepod does not wait to be squeezed: in a coil that is only standing, it jumps clear
+    if(e.t.esc&&e.cap&&!e.pr){const c=e.cap; // a copepod in a coil that is only standing throws itself at the wall (v38.7: the tail holds it; it used to jump clear through. The owner: "going through my body is a pain")
+      if(e.ram>0)e.ram-=dt;
       if(c.cinchT<0&&!(c.hold>0)&&!(e.frz>0)&&P.freezeT<=0){e.eT=(e.eT||0)+dt;if(e.eT>e.t.esc-0.25)e.flash=0.05;
         if(e.eT>=e.t.esc){let qx=e.x-c.c.x,qy=e.y-c.c.y,q=Math.hypot(qx,qy);if(q<1){const a=Math.random()*TAU;qx=Math.cos(a);qy=Math.sin(a);q=1;}
-          const v=c.rad*3.4+420*S;e.cap=null;e.eT=0;e.vx=qx/q*v;e.vy=qy/q*v;text(e.x,e.y-e.r-6*S,TX('escaped'),14,'#bfeaff',0.7);tip('esc');sfx('latch');}}}
+          const v=Math.min(c.rad*5.5,720*S);e.eT=rand(-0.3,0);e.ram=0.45;e.vx=qx/q*v;e.vy=qy/q*v;sfx('latch');}}}
     else if(e.eT)e.eT=0;
     if(e.tun){e.tunT-=dt;if(e.tunT<=0)tunWake(e);} // v36 a dormant tardigrade comes back to life
     if(e.t.slime&&!e.pr){e.slT=(e.slT||rand(0,0.4))-dt;if(e.slT<=0){e.slT=0.45;if(slime.length<90)slime.push({x:e.x,y:e.y,r:e.r*0.95,life:4.5,max:4.5});}} // v34 a snail leaves a trail
@@ -2413,6 +2414,7 @@ function update(dt){
     if(e.frz>0&&!e.cap){ax=0;ay=0;} // frozen solid, whatever its way of moving
     if(e.cap){const cx=e.cap.c.x-e.x,cy=e.cap.c.y-e.y;ax+=cx*0.8;ay+=cy*0.8;}
     e.x+=(ax+e.vx)*dt+sx*0.35;e.y+=(ay+e.vy)*dt+sy*0.35;if(PIT&&!e.boss&&!e.cap&&!(e.frz>0))e.y+=PIT_SLIDE*S*(e.scr?3.4:1)*dt; /* (v38.2: under a scrambling one the sand gives way: it slides three and a half times as fast) */ // v37 the sand slides down
+    if(e.ram>0&&e.cap){const c=e.cap;if(!inPoly(c.c.x+(e.x-c.c.x)/0.82,c.c.y+(e.y-c.c.y)/0.82,c.poly)){e.ram=0;e.x=c.c.x+(e.x-c.c.x)*0.9;e.y=c.c.y+(e.y-c.c.y)*0.9;e.vx*=-0.3;e.vy*=-0.3;e.flash=0.1;burst(e.x,e.y,6,'#d8ccff',140,0.25,2);shake=Math.max(shake,2);if(!e.held){e.held=1;text(e.x,e.y-e.r-6*S,TX('held'),14,'#bfeaff',0.7);tip('esc');}}} // v38.7 a thrashing copepod hits the inside of the coil and bounces back
     if(!e.hunter&&!e.lead&&!e.titan&&!e.t.thru&&!e.hide){const bb=pushOut(e,e.r*0.9);if(bb&&e.bq===2&&e.t.k==='ontard'){const nx=e.x-bb.x,ny=e.y-bb.y,nl=Math.hypot(nx,ny)+0.01,dt2=e.cdx*nx/nl+e.cdy*ny/nl;if(dt2<0){e.cdx-=2*dt2*nx/nl;e.cdy-=2*dt2*ny/nl;shake=Math.max(shake,9);sfx('crack');}} // v34 the rolling boss bounces off the tail
       if(bb){let tx=-(e.y-bb.y),ty=e.x-bb.x;const tl=Math.hypot(tx,ty)+0.01;tx/=tl;ty/=tl;if(tx*dx+ty*dy<0){tx=-tx;ty=-ty;}e.x+=tx*s*dt*0.9;e.y+=ty*s*dt*0.9;}}
     e.vx*=Math.pow(0.02,dt);e.vy*=Math.pow(0.02,dt);
