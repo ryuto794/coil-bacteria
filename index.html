@@ -136,8 +136,8 @@ const ETYPES=[
   {k:'antl',look:'ant',n:['アリの行列','Ant Column'],st:0,r:10,hp:2,spd:96,dmg:6,xp:2,col:'#d0563c',core:'#3a0e08',glow:'rgba(230,100,70,0.5)',rot:1,fr:4,mv:'weave',chain:7},
   {k:'pill',n:['ダンゴムシ','Pill Bug'],st:0,sh:1,r:15,hp:6,spd:46,dmg:9,xp:8,col:'#8d98ad',core:'#2a303c',glow:'rgba(160,170,190,0.45)',rot:1,fr:4,mv:'roll'}, // roll: it comes tumbling down rolled up (drawn as pillb), then opens out and walks
   {k:'pillb',n:['丸まったダンゴムシ','Pill Bug (rolled)'],st:0,sh:1,r:15,hp:6,spd:0,dmg:9,xp:8,col:'#8d98ad',core:'#2a303c',glow:'rgba(160,170,190,0.45)'},
-  {k:'spid',n:['ハエトリグモ','Jumping Spider'],st:1,sh:1,r:24,hp:14,spd:58,dmg:14,xp:10,col:'#2e2a30',core:'#f0ece4',glow:'rgba(240,235,220,0.45)',rot:1,fr:4,charge:1},
-  {k:'beet',n:['オサムシ','Ground Beetle'],st:1,sh:1,r:28,hp:16,spd:84,dmg:15,xp:10,col:'#7d6cf0',core:'#1a1440',glow:'rgba(150,130,255,0.45)',rot:1,fr:4,mv:'run'},
+  {k:'spid',n:['ハエトリグモ','Jumping Spider'],st:1,sh:0,r:24,hp:14,spd:58,dmg:14,xp:10,col:'#2e2a30',core:'#f0ece4',glow:'rgba(240,235,220,0.45)',rot:1,fr:4,charge:1}, // (v40.1: no shell, nor the beetle's: the owner, "the middle of the pit needs no shells")
+  {k:'beet',n:['オサムシ','Ground Beetle'],st:1,sh:0,r:28,hp:16,spd:84,dmg:15,xp:10,col:'#7d6cf0',core:'#1a1440',glow:'rgba(150,130,255,0.45)',rot:1,fr:4,mv:'run'},
   {k:'grass',n:['バッタ','Grasshopper'],st:1,r:28,hp:10,spd:70,dmg:12,xp:8,col:'#d4b448',core:'#5a4a10',glow:'rgba(220,190,90,0.45)',rot:1,fr:4,mv:'hop'}, // v37.1 the scales of the pit: the slope (1) and the rim (2)
   {k:'mantis',n:['カマキリ','Praying Mantis'],st:2,sh:2,r:60,hp:34,spd:62,dmg:22,xp:26,col:'#7cc04a',core:'#2a4a18',glow:'rgba(140,210,90,0.4)',rot:1,fr:4,charge:1},
   {k:'centi',n:['ムカデ','Centipede'],st:2,r:30,hp:6,spd:100,dmg:16,xp:4,col:'#4a5a8a',core:'#1a2240',glow:'rgba(100,120,190,0.45)',rot:1,fr:4,mv:'weave',chain:11,hd:'centh'}, // hd: the one in front is drawn as this (its head)
@@ -721,7 +721,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v40',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v40.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -906,6 +906,7 @@ const STR={
  goal_p:['吸収して大きくなり、アリジゴクを倒すとクリア','Take them in, grow, and beat the Antlion to win'],
  pit_bite:['噛まれた！','Bitten!'],
  pit_grow:['吸収 +{0}','Absorbed +{0}'],
+ pit_xp:['落ちた分 +{0} XP','Fell away: +{0} XP'],
  ev_fall:['群れが落ちてくる！','A swarm is sliding in!'],
  pit_fall:['足もとが崩れる！','The ground gives way!'],
  pit_in:['巣に落ちた！','Fell in!'],
@@ -1756,10 +1757,14 @@ function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: ho
     if(PIT.fq===1){PIT.fw-=dt;if(PIT.fw<=0){PIT.fq=0;PIT.fT=Math.max(3.5,rand(6,8.5)-T/120);const x0=PIT.jx,y0=PIT.y-B.r*0.95,a=Math.atan2(P.y-y0,P.x-x0),n=T>180?7:5,v=250*S;
       for(let i=0;i<n;i++){const b=a+(i/(n-1)-0.5)*0.9;shots.push({x:x0,y:y0,vx:Math.cos(b)*v,vy:Math.sin(b)*v,life:3,dmg:8,by:B});}burst(x0,y0,18,'#d8b47a',260,0.6,3);sfx('brood');}}}
   PIT.mT=(PIT.mT===undefined?2.5:PIT.mT)-dt;if(PIT.mT<=0&&!P.clearAt){PIT.mT=5;items.push({x:P.x+rand(-0.38,0.38)*W*S,y:P.y-H*(0.5-CAMY)*S-24*S,k:'mag',life:40,ph:Math.random()*TAU,fall:1});} // v38.3 an XP magnet falls in from the top every 5 s
-  for(const it of items){if(it.fall){it.y+=80*S*dt;it.x+=Math.sin(T*1.6+it.ph)*24*S*dt;if(it.y>PIT.y)it.life=0;}else if(it.y>PIT.y-30*S)it.y=PIT.y-30*S;} // what falls slides down with the sand (missed, it is lost); the rest rides up in front of the edge
+  PIT.hT=(PIT.hT===undefined?9:PIT.hT)-dt;if(PIT.hT<=0&&!P.clearAt){if(P.hp<P.maxHp*0.9){PIT.hT=P.hp<P.maxHp*0.5?6:11;items.push({x:P.x+rand(-0.3,0.3)*W*S,y:P.y-H*(0.5-CAMY)*S-24*S,k:'heal',life:40,ph:Math.random()*TAU,fall:1});}else PIT.hT=3;} // v40.1 a heal falls in too, when hurt: every 11 s (6 s under half HP). The owner: "I want healing"
+  const bot=P.y+H*(0.5+CAMY)*S-70*S;
+  for(const it of items){if(it.fall){it.y+=80*S*dt;it.x+=Math.sin(T*1.6+it.ph)*24*S*dt;if(it.k==='heal'&&it.y>bot){it.fall=0;it.y=bot;}else if(it.y>PIT.y)it.life=0;}else if(it.y>Math.min(PIT.y-30*S,bot))it.y=Math.min(PIT.y-30*S,bot);} // what falls slides down with the sand (a missed magnet is lost; a missed heal stops at the bottom of the screen); the rest rides up in front of the edge
+  if(PIT.xpS>=1&&!(PIT.xpT>T)){PIT.xpT=T+1.6;text(P.x,P.y+H*(0.5+CAMY)*S-150*S,TX('pit_xp',Math.round(PIT.xpS)),14,'#bfeaff',1.1);PIT.xpS=0;} // v40.1 what fell away, picked up // what falls slides down with the sand (missed, it is lost); the rest rides up in front of the edge
   for(const c of chests)if(c.y>PIT.y-40*S)c.y=PIT.y-40*S;}
 function pitJaw(x,y){const R=PIT_BOSS[0].r,qx=(x-PIT.jx)/(R*0.48),qy=(y-PIT.y+R*0.42)/(R*0.55);return qx*qx+qy*qy<1;} // v37.1 inside the antlion's open jaws (they stand up out of the sand, as tall as it is big)
-function pitEat(e){e.dead=true;burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;} // over the edge: eaten
+function pitEat(e,quiet){e.dead=true;if(!quiet){burst(e.x,PIT.y,6,'#d8b47a',140,0.4,3);if(Math.abs(e.x-PIT.jx)<220*P.S&&!P.boss)PIT.snap=0.22;}} // over the edge, or out of sight below: gone (v40.1: out of sight below too, the owner: "let what falls away vanish". It gives no XP: there are so many that it was a card screen every 9 s. Its XP orbs are picked up, though: see orbs)
+function pitXP(v){if(v<=0)return;addXP(v);PIT.xpS=(PIT.xpS||0)+v;} // v40.1 XP picked up from what fell away (shown now and then at the bottom: pitTick)
 // the slope giving way above the edge (a warm haze, sand running down), the pit (sand going down into the dark), and the antlion buried to its jaws (world space)
 function drawPit(vx0,vx1,vy0,vy1){const S=P.S,y=PIT.y,r=PIT_BOSS[0].r,w=vx1-vx0,B=PIT_BAND*S,tips=y-r*0.96;
   if(PIT.intro>0){const t=PIT.dur-PIT.intro,k=t<0.8?0:t<2.1?Math.min(1,(t-0.8)/0.45):Math.max(0,1-(t-2.1)/0.5),h=vy1-vy0; // v38.4 the way in: the sand pouring down past the player
@@ -2357,7 +2362,7 @@ function explode(cap){
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));shakeA=Math.atan2(P.y-c.y,P.x-c.x)||0;shakeDirSet=true;P.boomAt=T; // (v31: no whole-screen flash at a squeeze: the flash is the core at the squeeze, see cores)
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
   else if(!lk&&!cap.inf&&!dorm){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
-  if(PIT&&n>0&&!P.boss){const g=n*[1.1,0.9,0.55][Math.min(2,P.stage)];growTail(1+g/P.tailLen);if(n>=4)text(c.x,ny+(60+Math.min(1,tot/40)*20)*S,TX('pit_grow',Math.round(g)),15,'#b6ffd2',1);} // (v38.6: set by scale, not rising with it; a bigger tail already takes in many more at once) // v37 in the pit what is squeezed is taken in: the tail grows a little for each
+  if(PIT&&n>0&&!P.boss){const g=n*[1.1,0.7,0.55][Math.min(2,P.stage)]; /* (v40.1: the middle 0.9 -> 0.7: with no shells there it is squeezed faster) */growTail(1+g/P.tailLen);if(n>=4)text(c.x,ny+(60+Math.min(1,tot/40)*20)*S,TX('pit_grow',Math.round(g)),15,'#b6ffd2',1);} // (v38.6: set by scale, not rising with it; a bigger tail already takes in many more at once) // v37 in the pit what is squeezed is taken in: the tail grows a little for each
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
 }
 // the outline of the region closed by a crossing at `hit` on trail segment j: along the trail from there to the head.
@@ -2572,7 +2577,7 @@ function update(dt){
     const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy)+0.001;
     if(d>far+(e.titan?e.t.L:0)&&!e.cap){if(e.boss||e.hunter||e.bud){const k=far*0.55/d;e.x=P.x-dx*k;e.y=P.y-dy*k;}else{e.dead=true;continue;}}
 //#FULL
-    if(PIT&&!e.boss&&e.y>PIT.y+e.r*0.4){pitEat(e);continue;} // v37 over the edge of the pit: eaten (v37.1: not in its jaws: they stand right under the player, and would take everything that came)
+    if(PIT&&!e.boss&&!e.cap&&(e.y>PIT.y+e.r*0.4||e.y>P.y+H*(0.5+CAMY)*S+e.r+60*S)){pitEat(e,e.y<=PIT.y+e.r*0.4);continue;} // v37 over the edge of the pit: eaten (v37.1: not in its jaws: they stand right under the player, and would take everything that came)
 //#/FULL
     if(e.slowT>0)e.slowT-=dt;
     const s=e.spd*Math.max(0.8,S/STAGE_S[e.t.st])*(e.cap?0.22:1)*(e.slowT>0?0.5:1)*(P.freezeT>0?0.08:1)*(e.frz>0?0:e.chill>0?(e.boss||e.hunter?0.8:0.75-0.1*P.frost):1);let ax=dx/d*s,ay=dy/d*s;
@@ -2641,7 +2646,7 @@ function update(dt){
   shotTick(dt,S);splitTick();budTick();fireTick(dt);
   compact(enemies,e=>!e.dead);
   const mag=P.magnet*S;
-  for(const o of orbs){if(PIT){if(o.y>PIT.y){o.dead=true;continue;}o.y+=14*S*dt;} // v37 they slide too, and the pit eats them
+  for(const o of orbs){if(PIT){if(o.y>PIT.y||o.y>P.y+H*(0.5+CAMY)*S+40*S){o.dead=true;pitXP(o.v);continue;}o.y+=14*S*dt;} // v37 they slide too, and the pit eats them (v40.1: but what is lost so is picked up)
     const dx=P.x-o.x,dy=P.y-o.y,d=Math.hypot(dx,dy)+0.001;
     if(d<mag){const s=(520*(1-d/mag)+160)*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;}
     else if(o.pull){const s=900*S;o.vx+=dx/d*s*dt*6;o.vy+=dy/d*s*dt*6;} // pulled in by the magnet pickup
