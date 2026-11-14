@@ -667,7 +667,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v38.5',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v38.6',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -848,7 +848,7 @@ const STR={
  tip_pit_s:['縁に近づくと滑り落ちて噛まれる。上へ逃げろ','Near the edge you slide in and get bitten. Go up'],
  boss_in_p:['{0}が巣から出てきた！ 体ごと巻いて締めろ','The {0} is out of its pit! Coil all the way round it'],
  boss_hud_p:['ボス {0}　体ごと巻いて締める','Boss: {0}   Coil all the way round it'],
- gate_p:['尾が伸びると大きくなる','Grow your tail to grow bigger'],
+ gate_p:['巻いて吸収すると大きくなる','Coil them in to grow bigger'], // (v38.6: in the pit, taking in is the main way to grow)
  goal_p:['吸収して大きくなり、アリジゴクを倒すとクリア','Take them in, grow, and beat the Antlion to win'],
  pit_bite:['噛まれた！','Bitten!'],
  pit_grow:['吸収 +{0}','Absorbed +{0}'],
@@ -2164,7 +2164,7 @@ function explode(cap){
     shake=Math.max(shake,Math.min(26,5+n*0.45+(dsh?6:0)));shakeA=Math.atan2(P.y-c.y,P.x-c.x)||0;shakeDirSet=true;P.boomAt=T; // (v31: no whole-screen flash at a squeeze: the flash is the core at the squeeze, see cores)
   }else if(kept){text(c.x,c.y,TX('shell_held'),18,'#bfe9ff',0.8);sfx('miss');shake=Math.max(shake,3);}
   else if(!lk&&!cap.inf&&!dorm){text(c.x,c.y,TX('miss'),18,'#8fb3a0',0.7);sfx('miss');shake=Math.max(shake,3);} // a later link of a chain that finds nothing left says nothing
-  if(PIT&&n>0&&!P.boss){const g=n*1.2*(1+0.75*P.stage);growTail(1+g/P.tailLen);if(n>=4)text(c.x,ny+(60+Math.min(1,tot/40)*20)*S,TX('pit_grow',Math.round(g)),15,'#b6ffd2',1);} // (bigger creatures, more to take in) // v37 in the pit what is squeezed is taken in: the tail grows a little for each
+  if(PIT&&n>0&&!P.boss){const g=n*[1.1,0.9,0.55][Math.min(2,P.stage)];growTail(1+g/P.tailLen);if(n>=4)text(c.x,ny+(60+Math.min(1,tot/40)*20)*S,TX('pit_grow',Math.round(g)),15,'#b6ffd2',1);} // (v38.6: set by scale, not rising with it; a bigger tail already takes in many more at once) // v37 in the pit what is squeezed is taken in: the tail grows a little for each
   if(heal>0){P.hp=Math.min(P.maxHp,P.hp+heal*0.6);text(P.x,P.y-54*S,'+'+Math.ceil(heal*0.6)+' HP',18,'#9dffc4',0.9);}
 }
 // the outline of the region closed by a crossing at `hit` on trail segment j: along the trail from there to the head.
@@ -2275,12 +2275,13 @@ const INF=[FALLBACK,
 function oneLine(d){return d.replace(/([ぁ-んァ-ヶ一-龠ー])\n([ぁ-んァ-ヶ一-龠ー])/g,'$1$2').replace('\n',' ');}
 const CARD=id=>UPG.find(u=>u.id===id)||RARE.find(u=>u.id===id)||SUPER.find(u=>u.id===id);
 function avail(u){return (P.lv[u.id]||0)<u.max;}
+const LV_GROW=()=>PIT?1.01:1.06; // v38.6 the tail growth that comes with each level. Next to none in the pit: there you grow by taking in (the owner: "in the pit you get big far too easily"). The 1% keeps a build that kills without coiling from stalling
 function applyCard(u){u.f();if(u.id)P.lv[u.id]=(P.lv[u.id]||0)+1;if(u.id==='spike'&&P.lv.spike>=u.max)mission('spikemax');if(u.id==='volt'&&P.lv.volt>=u.max)mission('voltmax');if(u.id==='ember'&&P.lv.ember>=u.max)mission('embermax');if(u.id==='frost'&&P.lv.frost>=u.max)mission('frostmax');}
 function evoCan(e){return (e.pre?EVO.find(x=>x.id===e.pre).has():(P.lv[e.base]||0)>=CARD(e.base).max)&&(P.lv[e.need]||0)>=(e.full?CARD(e.need).max:1);}
 function cardHint(u){if(!u.id)return'';for(const e of EVO){if(e.has())continue;if(e.base&&u.id===e.base)return TX('evo_base',e.n);if(u.id===e.need)return TX('evo_need',e.n);}return'';}
 const DEFC=['memb','armor','guard','regen','sip'],LINES={spk:1,elc:1,fir:1,ice:1},LINE0=['spike','volt','ember','frost']; // the four lines and the card each one starts with
 function rollChoices(){
-  choices=[];const com=UPG.filter(avail),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false;
+  choices=[];const com=UPG.filter(c=>avail(c)&&!(PIT&&c.id==='tail')),rare=RARE.filter(c=>META.unlocked.includes(c.id)&&avail(c));let got=false; // (v38.6: no Longer Tail card in the pit, where you grow by taking in)
   // v16: once, early on, the level-up is a choice of line: three of the four first cards (Spike, Electric, Fire, Ice). A reroll draws again from the four.
   if(P.lineAsk<2&&P.lvl>=3){const st=LINE0.map(CARD).filter(c=>rare.includes(c));if(st.length>=3){P.lineAsk=1;while(choices.length<3)choices.push(st.splice(Math.random()*st.length|0,1)[0]);return;}P.lineAsk=2;}
   // cards of a line the player already has come up three times as often, so a build keeps to its line
@@ -2297,9 +2298,9 @@ function rollChoices(){
 function openLevel(){rollChoices();state='level';sfx(choices.some(c=>c&&c.r===3)?'chest':'level');if(DEMO)pick(Math.random()*choices.length|0);}
 function reroll(){if(state!=='level'||P.reroll<=0)return;P.reroll--;rollChoices();} // two per run
 // skip: take no card. There are no card slots to protect, so a plain skip would never be worth it; it heals a little instead.
-function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(1.06);text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
+function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(LV_GROW());text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
 function pick(i){if(!choices||!choices[i])return;sfx('ui');if(P.lineAsk===1)P.lineAsk=2;applyCard(choices[i]);pendingLv--;choices=null;state='play';
-  growTail(1.06); // tail grows a little every level
+  growTail(LV_GROW()); // tail grows a little every level (v38.6: hardly at all in the pit, where you grow by taking in)
   text(P.x,P.y-40*P.S,'LEVEL UP!',24,'#ffe680',1);burst(P.x,P.y,30,'#ffe680',260,0.7,3);}
 function cardRects(W,H){
   if(NARROW){const cw=Math.min(380,W-28),ch=90,gap=12,x=W/2-cw/2,y0=H/2-(ch*3+gap*2)/2+20;return[0,1,2].map(i=>({x,y:y0+i*(ch+gap),w:cw,h:ch}));}
