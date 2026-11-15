@@ -157,11 +157,11 @@ const ETYPES=[
   {k:'wdrop',n:['アシダカグモ','Huntsman Spider'],st:0,sh:1,r:30,hp:18,spd:80,dmg:16,xp:12,col:'#7a6450',core:'#2a1e14',glow:'rgba(200,170,130,0.4)',rot:1,fr:4,mv:'drop'}, // drops from above where its shadow spreads
   {k:'wfly',n:['網にかかった虫','Caught Fly'],st:0,r:14,hp:1,spd:0,dmg:0,xp:4,col:'#8a9aa8',core:'#1a1e24',glow:'rgba(220,235,255,0.4)',fr:4,mv:'stuck'}, // stuck in a web; harmless
   // stage 8 (v42, the Deep Sea): dark water; most of what lives here makes its own light. lum: how far round it its light shows (x r), lc: its colour, lb: how fast it pulses
-  {k:'hotaru',n:['ホタルイカ','Firefly Squid'],st:0,r:11,hp:3,spd:118,dmg:4,xp:1,col:'#4d63c8',core:'#c8e4ff',glow:'rgba(110,170,255,0.45)',rot:1,mv:'kick',lum:2.6,lc:'#5fb4ff'},
-  {k:'lantf',n:['ハダカイワシ','Lanternfish'],st:0,r:14,hp:4,spd:122,dmg:6,xp:2,col:'#5a6a80',core:'#e8f4ff',glow:'rgba(180,215,255,0.4)',rot:1,mv:'run',wedge:5,lum:2.2,lc:'#a8e0ff'}, // a school in a V, as the Bosmina's
-  {k:'jelly',n:['カムリクラゲ','Atolla Jelly'],st:0,sh:1,r:28,hp:10,spd:38,dmg:9,xp:8,col:'#9a2848',core:'#ffb0c8',glow:'rgba(120,140,255,0.4)',mv:'cruise',kick:1,lum:1.9,lc:'#6f8cff',lb:1.3}, // drifts its own way; caught or hurt, it sets off its alarm: a wide ring of light (lumOf)
-  {k:'siph',n:['クダクラゲ','Siphonophore'],st:0,r:12,hp:4,spd:96,dmg:6,xp:3,col:'#7fe0ff',core:'#eaffff',glow:'rgba(140,240,255,0.5)',mv:'weave',chain:5,lum:2.3,lc:'#8ff0ff',lb:2.6},
-  {k:'dragf',n:['ホウライエソ','Viperfish'],st:0,sh:1,r:20,hp:10,spd:66,dmg:14,xp:9,col:'#1c1a26',core:'#ff3a50',glow:'rgba(255,60,80,0.35)',rot:1,mv:'sentry',sense:250,lum:0.9,lc:'#7aa0ff'}, // waits in the dark (only its lure shows); come close and it glows red and strikes
+  {k:'hotaru',n:['ホタルイカ','Firefly Squid'],st:0,r:13,hp:3,spd:118,dmg:4,xp:1,col:'#5a46c8',core:'#e8d8ff',glow:'rgba(150,110,255,0.45)',rot:1,mv:'kick',lum:2.6,lc:'#9a7cff',crush:1}, // v42.1 crush: the head runs it over, no harm done (the owner: "something that scatters them")
+  {k:'lantf',n:['ハダカイワシ','Lanternfish'],st:0,r:16,hp:4,spd:122,dmg:6,xp:2,col:'#5a6276',core:'#fff0c8',glow:'rgba(255,215,140,0.4)',rot:1,mv:'run',wedge:5,lum:2.2,lc:'#ffd27a'}, // a school in a V, as the Bosmina's
+  {k:'jelly',n:['カムリクラゲ','Atolla Jelly'],st:0,sh:1,r:28,hp:10,spd:38,dmg:9,xp:8,col:'#9a2848',core:'#ffb0c8',glow:'rgba(180,140,255,0.4)',mv:'cruise',kick:1,lum:1.9,lc:'#b48cff',lb:1.3}, // drifts its own way; caught or hurt, it sets off its alarm: a wide ring of light (lumOf)
+  {k:'siph',n:['クダクラゲ','Siphonophore'],st:0,r:12,hp:4,spd:96,dmg:6,xp:3,col:'#ff7fd0',core:'#fff0fa',glow:'rgba(255,130,210,0.5)',mv:'weave',chain:5,lum:2.3,lc:'#ff7ad0',lb:2.6},
+  {k:'dragf',n:['ホウライエソ','Viperfish'],st:0,sh:1,r:20,hp:10,spd:66,dmg:14,xp:9,col:'#1c1a26',core:'#ff3a50',glow:'rgba(255,60,80,0.35)',rot:1,mv:'sentry',sense:250,lum:0.9,lc:'#ff8a5a'}, // waits in the dark (only its lure shows); come close and it glows red and strikes
   {k:'isopod',n:['ダイオウグソクムシ','Giant Isopod'],st:0,sh:2,r:30,hp:18,spd:44,dmg:12,xp:12,col:'#c9c0d4',core:'#4a4058',glow:'rgba(220,210,235,0.3)',rot:1,fr:4}, // no light of its own: it shows only where light falls on it (slow, so that is fair)
  //#/FULL
 ];
@@ -231,8 +231,8 @@ const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col
   {k:'dfly',st:0,L:200,w:30,r:60,hp:320,spd:150,dmg:24,xp:900,col:'#46b8e8',core:'#103048',glow:'rgba(110,210,255,0.5)',name:['トンボ','Dragonfly'],sh:0,rot:1,fr:4}], // v38.10 the nymph, emerged (dflyMove)
  WEB_BOSS=[{k:'jorou',st:0,r:62,hp:300,spd:62,dmg:22,xp:900,col:'#e8c440',core:'#1a1408',glow:'rgba(240,200,80,0.45)',name:['ジョロウグモ','Joro Spider'],sh:0,hits:2,rot:1,fr:4}], // v39 squeezed twice (hits); each squeeze sets spiderlings loose (spiderHit)
  WEB_RUSH=[{k:'rush',look:'spdl',st:0,r:9,hp:1,spd:0,dmg:4,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',name:['子グモの群れ','Spiderling Swarm'],rot:1,fr:4}],
- DEEP_BOSS=[{k:'angler',st:0,r:68,hp:320,spd:58,dmg:24,xp:900,col:'#3b2a22',core:'#d8fff4',glow:'rgba(150,255,230,0.3)',name:['チョウチンアンコウ','Anglerfish'],sh:0,hits:2,turn:1}], // v42: in the dark only its lure shows; it lunges at light (a standing coil); squeezed twice (hits). turn: anglerMove sets which way it faces
- DEEP_RUSH=[{k:'rush',look:'hotaru',st:0,r:11,hp:1,spd:0,dmg:4,xp:1,col:'#4d63c8',core:'#c8e4ff',glow:'rgba(110,170,255,0.45)',name:['ホタルイカの群れ','Firefly Squid Swarm'],rot:1,lum:2.6,lc:'#5fb4ff'}],
+ DEEP_BOSS=[{k:'angler',st:0,r:68,hp:320,spd:58,dmg:24,xp:900,col:'#3b2a22',core:'#fff0c0',glow:'rgba(255,225,150,0.3)',name:['チョウチンアンコウ','Anglerfish'],sh:0,hits:2,turn:1,thru:1}], // v42.1 thru: bubbles do not stop it (a lunge at light has to land). v42: in the dark only its lure shows; it lunges at light (a standing coil); squeezed twice (hits). turn: anglerMove sets which way it faces
+ DEEP_RUSH=[{k:'rush',look:'hotaru',st:0,r:13,hp:1,spd:0,dmg:4,xp:1,col:'#5a46c8',core:'#e8d8ff',glow:'rgba(150,110,255,0.45)',name:['ホタルイカの群れ','Firefly Squid Swarm'],rot:1,lum:2.6,lc:'#9a7cff'}],
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -669,32 +669,32 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
   case 'hotaru':{ // a firefly squid: a pointed mantle behind with fins, short arms in front, blue lights at their tips
     g.fillStyle=col;g.beginPath();g.moveTo(-r*1.25,0);g.quadraticCurveTo(-r*0.9,-r*0.5,-r*0.1,-r*0.42);g.lineTo(r*0.25,-r*0.3);g.lineTo(r*0.25,r*0.3);g.lineTo(-r*0.1,r*0.42);g.quadraticCurveTo(-r*0.9,r*0.5,-r*1.25,0);g.fill();
     g.beginPath();g.moveTo(-r*1.25,0);g.lineTo(-r*0.85,-r*0.6);g.lineTo(-r*0.65,0);g.lineTo(-r*0.85,r*0.6);g.closePath();g.fill();
-    g.strokeStyle=fl?'#fff':'#7a8ae0';g.lineWidth=Math.max(1,r*0.13);g.lineCap='round';g.beginPath();for(let i=0;i<4;i++){const a=(i-1.5)*0.3;g.moveTo(r*0.25,0);g.lineTo(r*0.25+Math.cos(a)*r*0.9,Math.sin(a)*r*0.9);}g.stroke();
-    if(!fl){g.fillStyle='#c8ecff';for(let i=0;i<4;i++){const a=(i-1.5)*0.3;circ(g,r*0.25+Math.cos(a)*r*0.95,Math.sin(a)*r*0.95,r*0.14);g.fill();}
+    g.strokeStyle=fl?'#fff':'#9a86e8';g.lineWidth=Math.max(1,r*0.13);g.lineCap='round';g.beginPath();for(let i=0;i<4;i++){const a=(i-1.5)*0.3;g.moveTo(r*0.25,0);g.lineTo(r*0.25+Math.cos(a)*r*0.9,Math.sin(a)*r*0.9);}g.stroke();
+    if(!fl){g.fillStyle='#e2d4ff';for(let i=0;i<4;i++){const a=(i-1.5)*0.3;circ(g,r*0.25+Math.cos(a)*r*0.95,Math.sin(a)*r*0.95,r*0.14);g.fill();}
       for(const [x,y] of[[-0.6,0],[-0.3,-0.2],[-0.3,0.2]]){circ(g,r*x,r*y,r*0.09);g.fill();}g.fillStyle='#0a0a20';for(const sg of[-1,1]){circ(g,r*0.12,sg*r*0.22,r*0.1);g.fill();}}break;}
   case 'lantf':{ // a lanternfish: a slim silver body, big eyes, a row of lights down each side
     g.fillStyle=fl?'#fff':'#3e4c60';g.beginPath();g.moveTo(-r*0.85,0);g.lineTo(-r*1.45,-r*0.45);g.lineTo(-r*1.28,0);g.lineTo(-r*1.45,r*0.45);g.closePath();g.fill();
     g.fillStyle=col;g.beginPath();g.ellipse(0,0,r*1.0,r*0.36,0,0,TAU);g.fill();g.fillStyle=fl?'#fff':'#93a6bc';g.beginPath();g.ellipse(r*0.1,0,r*0.75,r*0.13,0,0,TAU);g.fill();
-    if(!fl){g.fillStyle='#d8f2ff';for(let i=0;i<6;i++){const x=r*(0.55-i*0.27);for(const sg of[-1,1]){circ(g,x,sg*r*0.29,r*0.065);g.fill();}}
-      g.fillStyle='#0a0e18';for(const sg of[-1,1]){circ(g,r*0.68,sg*r*0.21,r*0.13);g.fill();}g.fillStyle='rgba(200,230,255,0.8)';for(const sg of[-1,1]){circ(g,r*0.71,sg*r*0.19,r*0.05);g.fill();}}break;}
+    if(!fl){g.fillStyle='#ffe9b0';for(let i=0;i<6;i++){const x=r*(0.55-i*0.27);for(const sg of[-1,1]){circ(g,x,sg*r*0.29,r*0.065);g.fill();}}
+      g.fillStyle='#0a0e18';for(const sg of[-1,1]){circ(g,r*0.68,sg*r*0.21,r*0.13);g.fill();}g.fillStyle='rgba(255,240,210,0.8)';for(const sg of[-1,1]){circ(g,r*0.71,sg*r*0.19,r*0.05);g.fill();}}break;}
   case 'jelly':{ // a crown jelly (Atolla): a deep red bell, a ring of lights round it, long fine tentacles
     g.strokeStyle=fl?'#fff':'rgba(255,170,200,0.45)';g.lineWidth=Math.max(1,r*0.035);g.beginPath();
     for(let i=0;i<20;i++){const a=i/20*TAU,w=Math.sin(i*1.7)*0.15;g.moveTo(Math.cos(a)*r*0.9,Math.sin(a)*r*0.9);g.quadraticCurveTo(Math.cos(a+w)*r*1.25,Math.sin(a+w)*r*1.25,Math.cos(a-w)*r*1.55,Math.sin(a-w)*r*1.55);}g.stroke();
     g.fillStyle=fl?'#fff':'#5a1028';circ(g,0,0,r*0.95);g.fill();g.fillStyle=col;circ(g,0,0,r*0.72);g.fill();
     if(!fl){g.strokeStyle='rgba(255,150,180,0.45)';g.lineWidth=r*0.04;g.beginPath();for(let i=0;i<12;i++){const a=i/12*TAU;g.moveTo(Math.cos(a)*r*0.3,Math.sin(a)*r*0.3);g.lineTo(Math.cos(a)*r*0.7,Math.sin(a)*r*0.7);}g.stroke();
-      g.fillStyle=core;circ(g,0,0,r*0.28);g.fill();g.fillStyle='#bcd0ff';for(let i=0;i<16;i++){const a=(i+0.5)/16*TAU;circ(g,Math.cos(a)*r*0.83,Math.sin(a)*r*0.83,r*0.05);g.fill();}}break;}
+      g.fillStyle=core;circ(g,0,0,r*0.28);g.fill();g.fillStyle='#d8bcff';for(let i=0;i<16;i++){const a=(i+0.5)/16*TAU;circ(g,Math.cos(a)*r*0.83,Math.sin(a)*r*0.83,r*0.05);g.fill();}}break;}
   case 'siph':{ // a link of a siphonophore: a clear bell with a light in it
-    g.fillStyle=fl?'#fff':'rgba(140,230,255,0.35)';g.beginPath();g.ellipse(0,0,r,r*0.8,0,0,TAU);g.fill();
+    g.fillStyle=fl?'#fff':'rgba(255,140,215,0.32)';g.beginPath();g.ellipse(0,0,r,r*0.8,0,0,TAU);g.fill();
     g.strokeStyle=col;g.lineWidth=Math.max(1,r*0.12);g.beginPath();g.ellipse(0,0,r*0.95,r*0.75,0,0,TAU);g.stroke();
-    if(!fl){g.fillStyle=core;circ(g,0,0,r*0.32);g.fill();g.strokeStyle='rgba(200,250,255,0.6)';g.lineWidth=r*0.07;g.beginPath();g.arc(0,0,r*0.6,-2.4,-0.8);g.stroke();}break;}
+    if(!fl){g.fillStyle=core;circ(g,0,0,r*0.32);g.fill();g.strokeStyle='rgba(255,225,245,0.6)';g.lineWidth=r*0.07;g.beginPath();g.arc(0,0,r*0.6,-2.4,-0.8);g.stroke();}break;}
   case 'dragf':{ // a viperfish: long and black, fangs too big for its mouth, a lure on a long ray over its head
     g.fillStyle=fl?'#fff':'#2a2638';g.beginPath();g.moveTo(-r*1.6,0);g.lineTo(-r*1.9,-r*0.3);g.lineTo(-r*1.82,0);g.lineTo(-r*1.9,r*0.3);g.closePath();g.fill();
     g.fillStyle=col;g.beginPath();g.ellipse(-r*0.35,0,r*1.3,r*0.3,0,0,TAU);g.fill();g.beginPath();g.ellipse(r*0.75,0,r*0.42,r*0.36,0,0,TAU);g.fill();
     g.strokeStyle=fl?'#fff':'#e8eef8';g.lineWidth=Math.max(1,r*0.07);g.lineCap='round';
     for(const sg of[-1,1]){g.beginPath();g.moveTo(r*1.0,sg*r*0.2);g.quadraticCurveTo(r*1.4,sg*r*0.3,r*1.35,sg*r*0.02);g.stroke();g.beginPath();g.moveTo(r*0.9,sg*r*0.28);g.quadraticCurveTo(r*1.2,sg*r*0.45,r*1.25,sg*r*0.2);g.stroke();}
     if(!fl){g.fillStyle='#ff4a5c';for(const sg of[-1,1]){circ(g,r*0.82,sg*r*0.22,r*0.08);g.fill();}
-      g.fillStyle='rgba(120,160,255,0.85)';for(let i=0;i<7;i++){const x=-r*(1.3-i*0.28);for(const sg of[-1,1]){circ(g,x,sg*r*0.21,r*0.04);g.fill();}}
-      g.strokeStyle='rgba(180,200,230,0.6)';g.lineWidth=r*0.04;g.beginPath();g.moveTo(r*0.3,0);g.quadraticCurveTo(r*0.8,-r*0.12,r*1.55,0);g.stroke();g.fillStyle='#c8dcff';circ(g,r*1.58,0,r*0.09);g.fill();}break;}
+      g.fillStyle='rgba(255,140,110,0.85)';for(let i=0;i<7;i++){const x=-r*(1.3-i*0.28);for(const sg of[-1,1]){circ(g,x,sg*r*0.21,r*0.04);g.fill();}}
+      g.strokeStyle='rgba(180,200,230,0.6)';g.lineWidth=r*0.04;g.beginPath();g.moveTo(r*0.3,0);g.quadraticCurveTo(r*0.8,-r*0.12,r*1.55,0);g.stroke();g.fillStyle='#ffc0a0';circ(g,r*1.58,0,r*0.09);g.fill();}break;}
   case 'isopod':{const p=ph||0; // a giant isopod: pale plates over a long oval, short legs under it, long feelers
     g.strokeStyle=fl?'#fff':'#8a8098';g.lineWidth=Math.max(1,r*0.06);g.lineCap='round';g.beginPath();
     for(let i=0;i<7;i++){const x=r*(0.55-i*0.2),sw=Math.sin(p+i*0.9)*r*0.08;for(const sg of[-1,1]){g.moveTo(x,sg*r*0.5);g.lineTo(x+sw,sg*r*0.8);}}
@@ -712,7 +712,7 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
       g.fillStyle='#f4ecdc';for(let i=0;i<9;i++){const a=-1.25+i*0.31,x=r*0.72+Math.cos(a)*r*0.24,y=Math.sin(a)*r*0.6;g.beginPath();g.moveTo(x,y-r*0.035);g.lineTo(x-r*0.14,y);g.lineTo(x,y+r*0.035);g.fill();}
       g.fillStyle='#d8e8a0';for(const sg of[-1,1]){circ(g,r*0.42,sg*r*0.42,r*0.06);g.fill();}g.fillStyle='#000';for(const sg of[-1,1]){circ(g,r*0.43,sg*r*0.42,r*0.03);g.fill();}}
     g.strokeStyle=fl?'#fff':'#6a5040';g.lineWidth=Math.max(1.5,r*0.05);g.lineCap='round';g.beginPath();g.moveTo(r*0.35,0);g.quadraticCurveTo(r*0.95,-r*0.25,r*1.4,0);g.stroke();
-    g.fillStyle=fl?'#fff':'#eafffa';circ(g,r*1.45,0,r*0.1);g.fill();break;}
+    g.fillStyle=fl?'#fff':'#fff6d0';circ(g,r*1.45,0,r*0.1);g.fill();break;}
 //#/FULL
   case 'virion':{g.strokeStyle=col;g.lineWidth=Math.max(1.5,r*.12);g.fillStyle=fl?'#fff':'#eafff6'; // a small six-sided particle with a knob on each corner
     for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);g.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);g.stroke();circ(g,Math.cos(a)*r*1.2,Math.sin(a)*r*1.2,r*.13);g.fill();}
@@ -778,7 +778,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v42',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v42.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1001,15 +1001,15 @@ const STR={
  goal_b:['{0} 体のボスを続けて倒すとクリア','Beat {0} bosses in a row to win'],
  tip_brush:['ボスラッシュ','Boss Rush'],
  tip_brush_s:['今までのボスが次々に来る。合間に回復とカプセル','The bosses, one after another. Healing and capsules between'],
- tip_deep:['深海','The Deep Sea'],
+ tip_deep:['深海：トゲの体で始まる','The Deep Sea: you start spiked'],
  tip_deep_s:['真っ暗。巻くと輪の中が明るくなる','Pitch dark. A coil lights up what is in it'],
  boss_in_a:['{0}：{1} 回締める。光った輪に食いつく','{0}: squeeze it {1} times. It lunges at a lit coil'],
  ang_bait:['輪に食いついた！ 締めろ！','It bit the coil! Squeeze!'],
  ang_dark:['光が消えた！','Its light went out!'],
  ang_wary:['光を警戒した！','Wary of light now!'],
  ang_wary_s:['もう輪に食いつかない。突っ込んだ隙に巻け','It won\'t bite a coil now. Coil it after a lunge'],
- bk_hotaru:['青く光る小さなイカ。水をけって寄ってくる','Small squid that glow blue, jetting in'],
- bk_lantf:['光の列を持つ魚。5 匹の編隊で通り過ぎる','Fish with rows of lights; pass by in fives'],
+ bk_hotaru:['光る小さなイカ。頭でぶつかれば蹴散らせる','Small glowing squid. Ram them with your head'],
+ bk_lantf:['金色の光の列を持つ魚。5 匹の編隊で通り過ぎる','Fish with gold lights; they pass by in fives'],
  bk_jelly:['ゆっくり漂う。捕まると光って周りを照らす','Drifts slowly; caught, it lights up all around'],
  bk_siph:['光る鐘がつながった群体。うねって来る','A chain of glowing bells, weaving in'],
  bk_dragf:['暗がりで待ち、近づくと赤く光って飛んでくる','Waits in the dark; come close, it glows red and strikes'],
@@ -1525,6 +1525,7 @@ function reset(start){
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   if(start&&BRUSH)tip('brush'); // v40
+  if(start&&STAGES[CS].spk)for(let i=0;i<STAGES[CS].spk;i++){const c=CARD('spike');if(c)applyCard(c);} // v42.1 the Deep Sea: the snake starts spiked (the owner: "bigger from the start, or spiky")
   if(start&&STAGES[CS].hp0)P.hp=P.maxHp=STAGES[CS].hp0; // v38.5 the Land of Giants: the player starts big and strong (the owner: "start us off huge and strong")
   resetBubbles();
   if(start&&!PIT)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
@@ -1657,7 +1658,7 @@ const STAGES=[
   tiers:[[['germ',0,6,0],['halt',30,2,40],['ppara',60,2,40]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.5),w[2]]),boss:[null],hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
   book:[[0,BOSS_T[0],'boss0'],[0,POND_BOSS[0],'stentor'],[0,BOSS_T[1],'boss1'],[0,WEB_BOSS[0],'jorou'],[0,POND_BOSS[1],'hydra'],[0,JAR_BOSS[0],'kinb'],[0,GIANT_BOSS[0],'yago'],[0,BOSS_T[2],'boss2'],[0,POND_BOSS[2],'ontard']]},
- {id:'deep',n:['深海','Deep Sea'],wip:1,dark:1,gate:1500,names:[['光の届かない海','The Lightless Deep']], // v42: dark water (drawDark): only the snake's own light, what glows, and the inside of a coil show; the Anglerfish lunges at light
+ {id:'deep',n:['深海','Deep Sea'],wip:1,dark:1,tail0:1000,gate:2000,hp0:150,spk:2,names:[['光の届かない海','The Lightless Deep']], // v42: dark water (drawDark): only the snake's own light, what glows, and the inside of a coil show; the Anglerfish lunges at light
   tiers:[[['hotaru',0,8,0],['lantf',10,1.6,30],['jelly',18,1.8,40],['siph',30,1.2,40],['dragf',40,2,50],['isopod',55,1.6,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.15),...w.slice(2)]),boss:DEEP_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:DEEP_RUSH,
   book:[[0,'hotaru','hotaru'],[0,'lantf','lantf'],[0,'jelly','jelly'],[0,'siph','siph'],[0,'dragf','dragf'],[0,'isopod','isopod'],[0,DEEP_RUSH[0],'rush'],[0,DEEP_BOSS[0],'angler']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
@@ -2060,7 +2061,7 @@ function drawDark(cx,cy,Z,vx0,vx1,vy0,vy1){const k=0.5,w=Math.max(8,Math.ceil(W*
 // over the dark: the glow of what makes light, the pickups, the boss's warnings, and marine snow drifting down
 function drawDeepTop(vx0,vx1,vy0,vy1,cx,cy,Z){const S=P.S;
   ctx.globalCompositeOperation='lighter';ctx.globalAlpha=QL>=1?0.55:0.4;
-  for(const e of enemies){const m=lumOf(e);if(m<=0||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1||(QL<2&&m<3))continue;const sp=lumSpr(e.t.mv==='sentry'&&(e.sn===1||e.sn===2)?'#ff3048':e.t.lc||'#9fd0ff'),r=e.r*Math.min(m,4)*0.75;ctx.drawImage(sp,e.x-r,e.y-r,r*2,r*2);}
+  for(const e of enemies){const m=lumOf(e);if(m<=0||e.x<vx0||e.x>vx1||e.y<vy0||e.y>vy1||(QL<2&&m<3))continue;const sp=lumSpr(e.t.mv==='sentry'&&(e.sn===1||e.sn===2)?'#ff3048':e.t.lc||'#c0a0ff'),r=e.r*Math.min(m,4)*0.75;ctx.drawImage(sp,e.x-r,e.y-r,r*2,r*2);}
   ctx.globalAlpha=1;drawOrbs(vx0,vx1,vy0,vy1,S);ctx.globalCompositeOperation='source-over';
   drawChests();drawItems();
   if(P.boss&&!P.boss.dead)drawBossFx(P.boss);
@@ -2079,14 +2080,14 @@ function anglerAim(e,half){const S=P.S,c=anglerLured(e)?anglerBait(e):null;e.bai
   e.bq=1;e.bT=c?0.45:half?0.6:0.8;sfx('latch');} // (light draws it in fast: a coil closes itself in 1.6 s)
 function anglerBite(e,half){const S=P.S,mx=e.x+Math.cos(e.ang)*e.r*0.8,my=e.y+Math.sin(e.ang)*e.r*0.8;
   for(const o of enemies){if(o===e||o.dead||o.boss||o.hunter||o.titan||o.cap)continue;if(Math.hypot(o.x-mx,o.y-my)<e.r*0.9+o.r){o.dead=true;burst(o.x,o.y,4,o.t.col,120,0.4,3);}} // what is in its mouth, it eats
-  burst(mx,my,14,'#eafffa',260,0.4,3);shake=Math.max(shake,8);sfx('crack');
-  const c=e.bait;if(c&&!c.done&&c.cinchT<0&&inPoly(e.x,e.y,c.poly)){e.cap=c;e.bq=3;e.bT=2.5;e.two=0;e.btx=text(e.x,e.y-e.r-18*S,TX('ang_bait'),24,'#eafffa',1.3);hitstop=Math.max(hitstop,0.06);return;} // it went for the light, into the coil
+  burst(mx,my,14,'#fff3d0',260,0.4,3);shake=Math.max(shake,8);sfx('crack');
+  const c=e.bait;if(c&&!c.done&&c.cinchT<0&&inPoly(e.x,e.y,c.poly)){e.cap=c;e.bq=3;e.bT=2.5;e.two=0;e.btx=text(e.x,e.y-e.r-18*S,TX('ang_bait'),24,'#fff3d0',1.3);hitstop=Math.max(hitstop,0.06);return;} // it went for the light, into the coil
   if(half&&!e.two){e.two=1;anglerAim(e,half);e.bT=0.5;return;}e.two=0;e.bq=3;e.bT=half?2.1:1.8;} // (wary, it bites twice, then is dazed a little longer: the time to coil it)
 function anglerHit(e){const S=P.S,c=e.cap;if(e.btx){e.btx.life=0;e.btx=null;}e.hits--;e.hp=Math.min(e.hp,e.hp0*e.hits/e.hitsMax);e.hitNow=0;
   if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;}
   e.cap=null;e.freeT=T+1.6;e.bq=0;e.bT=2.4;e.dim=T+2.2;e.flash=0.4;e.two=0;const a=Math.atan2(e.y-P.y,e.x-P.x);e.vx+=Math.cos(a)*380*S;e.vy+=Math.sin(a)*380*S;
-  spawnQ.push(['hotaru',10,e.x,e.y,e.r*2,true]);text(e.x,e.y-e.r-16*S,TX('ang_dark'),26,'#bfe8ff',1.3);if(e.hits>0&&!anglerLured(e))evt(TX('ang_wary'),TX('ang_wary_s'),3.2); // (on the line under the timer: over the boss it crowded the words already there)text(e.x,e.y-e.r-44*S,TX('king_left',e.hits),22,'#ffd9a8',1.4);
-  hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,16);burst(e.x,e.y,36,'#9fe8ff',360,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*3.5,life:0.5,max:0.5,col:'#9fe8ff',w:7*S});sfx('boss');}
+  spawnQ.push(['hotaru',10,e.x,e.y,e.r*2,true]);text(e.x,e.y-e.r-16*S,TX('ang_dark'),26,'#ffe6b0',1.3);if(e.hits>0&&!anglerLured(e))evt(TX('ang_wary'),TX('ang_wary_s'),3.2); // (on the line under the timer: over the boss it crowded the words already there)text(e.x,e.y-e.r-44*S,TX('king_left',e.hits),22,'#ffd9a8',1.4);
+  hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,16);burst(e.x,e.y,36,'#ffe6a0',360,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*3.5,life:0.5,max:0.5,col:'#ffe6a0',w:7*S});sfx('boss');}
 function anglerMove(e,dx,dy,d,s,dt,S,half){if(e.hitNow)anglerHit(e);const face=a=>{e.ang+=angDiff(e.ang,a)*Math.min(1,dt*6);};
   if(!e.bq){if(e.dim>T){MV[0]=-dx/d*s*1.3;MV[1]=-dy/d*s*1.3;face(Math.atan2(dy,dx));return true;} // its light out: it backs off into the dark
     const k=d>320*S?1:d<220*S?-0.5:0,w=Math.sin(T*0.7+e.ph)*0.6;MV[0]=(dx/d*k-dy/d*w)*s;MV[1]=(dy/d*k+dx/d*w)*s;face(Math.atan2(dy,dx)); // it hangs back, drifting to and fro
@@ -2098,8 +2099,8 @@ function anglerMove(e,dx,dy,d,s,dt,S,half){if(e.hitNow)anglerHit(e);const face=a
 function anglerFx(e){const S=P.S,q=e.bq;
   if(q===1){ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();circ(ctx,e.tx,e.ty,e.r*0.9);ctx.stroke();ctx.setLineDash([]);}
   if(q===3&&!e.cap){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.9,e.y-e.r*1.3+Math.sin(a)*e.r*0.25,7*S,'#ffe680');}}
-  if(!(e.dim>T)){const L=anglerLure(e),r=(q===1?36:22)*S*(1+0.15*Math.sin(T*6));ctx.globalCompositeOperation='lighter';ctx.drawImage(lumSpr('#bffff0'),L.x-r,L.y-r,r*2,r*2);ctx.globalCompositeOperation='source-over';
-    ctx.fillStyle='#f4fffc';circ(ctx,L.x,L.y,4.5*S);ctx.fill();}} // the lure: always a bright point, even in the dark
+  if(!(e.dim>T)){const L=anglerLure(e),r=(q===1?36:22)*S*(1+0.15*Math.sin(T*6));ctx.globalCompositeOperation='lighter';ctx.drawImage(lumSpr('#ffe9a0'),L.x-r,L.y-r,r*2,r*2);ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle='#fffbe8';circ(ctx,L.x,L.y,4.5*S);ctx.fill();}} // the lure: always a bright point, even in the dark
 //#/FULL
 function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
@@ -2793,8 +2794,8 @@ function update(dt){
     if(e.flash>0)e.flash-=dt;
     if(e.boss)bossTick(e,dt);
     if(e.titan){if(!(e.bite>0)&&capD(e,P.x,P.y)<e.t.w+headR&&hitHead(e.t.dmg,e.t))e.bite=0.8;continue;} // a titan hurts along its whole body, and a dash is no help
-    if(!e.hide&&(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr?crushR:headR))){ // a long body is hit anywhere along it
-      if(e.pr){kill(e,1);burst(e.x,e.y,4,'#b6ffd2',120,0.3,2);continue;} // outgrown: run over, no harm done
+    if(!e.hide&&(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr||e.t.crush?crushR:headR))){ // a long body is hit anywhere along it
+      if(e.pr||(e.t.crush&&!e.rush)){kill(e,1);burst(e.x,e.y,4,e.pr?'#b6ffd2':e.t.core,120,0.3,2);continue;} // outgrown: run over, no harm done (v42.1: and a firefly squid in the deep, scattered by the head)
       if(!e.t.dmg&&!e.tun)continue; // (v39: a fly in a web does no harm)
       if(e.tun){tunCrush(e);continue;} // v36 a dormant tardigrade: the head crushes it (no harm done)
       if(e.naps&&e.sleepT>0){bossCrush(e);continue;} // v36 the Predatory Tardigrade, dormant: the head crushes it
