@@ -166,6 +166,16 @@ const ETYPES=[
   // stage 9 (v43, the Slime Mold): the net itself is the foe. moldTick grows it from its cores, a knot at a time, toward the snake; critters of the forest floor besides
   {k:'snode',n:['粘菌の網','Slime Net'],st:0,r:14,hp:4,spd:0,dmg:3,xp:1,col:'#f2c418',core:'#ff9a1a',glow:'rgba(255,215,60,0.4)',mv:'stuck'}, // a knot of the net (e.par: the knot or core it grew from)
   {k:'smold',n:['粘菌の芯','Slime Core'],st:0,sh:2,r:34,hp:24,spd:0,dmg:8,xp:16,col:'#efb012',core:'#ff7a10',glow:'rgba(255,190,40,0.45)',mv:'stuck',fr:4}, // a core: its net grows from it (e.net); it spits spores
+  // stage 10 (v44, Earth, the last): above the clouds, then out in space; the Earth itself is the boss
+  {k:'bird',n:['鳥の群れ','Bird'],st:0,r:15,hp:3,spd:130,dmg:5,xp:2,col:'#e8eef4',core:'#3a4048',glow:'rgba(230,240,250,0.35)',rot:1,fr:4,mv:'run',wedge:5}, // a V of five, as the geese fly
+  {k:'plane',n:['飛行機','Airliner'],st:0,r:22,hp:6,spd:190,dmg:10,xp:5,col:'#f4f6fa',core:'#2a5fd0',glow:'rgba(220,230,255,0.35)',rot:1,mv:'run'}, // fast, straight through
+  {k:'balloon',n:['熱気球','Hot-Air Balloon'],st:0,sh:1,r:26,hp:10,spd:40,dmg:8,xp:8,col:'#e84a3a',core:'#ffd84a',glow:'rgba(255,150,90,0.35)',mv:'cruise'}, // drifts where the wind takes it
+  {k:'heli',n:['ヘリコプター','Helicopter'],st:0,sh:1,r:22,hp:10,spd:90,dmg:10,xp:8,col:'#5a7a3a',core:'#c8d8a0',glow:'rgba(170,200,130,0.35)',rot:1,fr:4,mv:'lunge'}, // hovers, aims, darts straight
+  {k:'junk',n:['宇宙ゴミ','Space Junk'],st:1,r:30,hp:4,spd:50,dmg:6,xp:2,col:'#9aa0aa',core:'#5a606a',glow:'rgba(200,205,215,0.3)',spin:1.2,mv:'cruise'}, // tumbles as it drifts
+  {k:'meteor',n:['隕石','Meteor'],st:1,r:36,hp:10,spd:230,dmg:14,xp:6,col:'#6a5040',core:'#ff8a30',glow:'rgba(255,140,60,0.4)',rot:1,mv:'run'}, // very fast, straight through, burning
+  {k:'sat',n:['人工衛星','Satellite'],st:1,sh:1,r:40,hp:16,spd:70,dmg:10,xp:12,col:'#c8ccd4',core:'#2a48a8',glow:'rgba(200,210,240,0.3)',rot:1,shoot:1}, // keeps its distance and shoots (the tail stops the shots)
+  {k:'ufo',n:['UFO','UFO'],st:1,sh:1,r:38,hp:14,spd:80,dmg:12,xp:12,col:'#a8b0c0',core:'#8af08a',glow:'rgba(160,240,160,0.35)',fr:4,mv:'sentry',sense:260}, // unaware till you come near; then it zips in
+  {k:'rocket',n:['ロケット','Rocket'],st:1,sh:1,r:36,hp:14,spd:120,dmg:14,xp:12,col:'#f2f2f2',core:'#e83a2a',glow:'rgba(255,170,120,0.35)',rot:1,mv:'lunge'}, // aims, then flies straight in (the Earth launches them too)
  //#/FULL
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
@@ -238,6 +248,10 @@ const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col
  DEEP_RUSH=[{k:'rush',look:'hotaru',st:0,r:13,hp:1,spd:0,dmg:4,xp:1,col:'#5a46c8',core:'#e8d8ff',glow:'rgba(150,110,255,0.45)',name:['ホタルイカの群れ','Firefly Squid Swarm'],rot:1,lum:2.6,lc:'#9a7cff'}],
  MOLD_BOSS=[{k:'physa',st:0,r:84,hp:360,spd:46,dmg:22,xp:900,col:'#f2be16',core:'#ff7a10',glow:'rgba(255,200,50,0.4)',name:['粘菌の本体','The Slime Mold'],sh:0,hits:2,turn:1,thru:1,fr:4}], // v43: reaches out, then flows along the arm; squeezed, it splits (physaMove)
  MOLD_RUSH=[{k:'rush',look:'ant',st:0,r:10,hp:1,spd:0,dmg:5,xp:1,col:'#d0563c',core:'#3a0e08',glow:'rgba(230,100,70,0.5)',name:['アリの大群','Ant Swarm'],rot:1,fr:4}],
+ EARTH_BOSS=[null,{k:'earth',st:1,r:190,res:0.5,hp:900,spd:22,dmg:20,xp:2000,col:'#2a6fd6',core:'#3fae4a',glow:'rgba(120,160,255,0.35)',name:['地球','Earth'],sh:0,hits:3,spin:0.12,thru:1}], // v44 the last boss: the Moon guards it, it calls meteors down, it launches rockets (earthMove); squeezed three times
+ EARTH_RUSH=[{k:'rush',look:'bird',st:0,r:15,hp:1,spd:0,dmg:4,xp:1,col:'#e8eef4',core:'#3a4048',glow:'rgba(230,240,250,0.35)',name:['鳥の大群','Flock of Birds'],rot:1,fr:4},
+  {k:'rush',look:'meteor',st:1,r:30,hp:2,spd:0,dmg:8,xp:2,col:'#6a5040',core:'#ff8a30',glow:'rgba(255,140,60,0.4)',name:['流星群','Meteor Shower'],rot:1}],
+ EARTH_MOON={k:'moonx',name:['月','Moon'],r:44,dmg:14}, // the Moon: no sprite of its own (earthFx draws it); only a name for what hit the head
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -747,6 +761,61 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
       g.fillStyle=core;g.globalAlpha=0.85;circ(g,0,0,r*(big?0.24:0.3));g.fill();if(big)for(const [x,y,z] of[[0.3,-0.25,0.1],[-0.3,0.2,0.09],[0.15,0.35,0.08]]){circ(g,r*x,r*y,r*z);g.fill();}g.globalAlpha=1;
       g.fillStyle='rgba(255,252,210,0.55)';g.beginPath();g.ellipse(-r*0.3,-r*0.35,r*0.28,r*0.14,-0.6,0,TAU);g.fill();}break;}
 
+// v44 Earth: above the clouds and in space (from above)
+  case 'bird':{const f=Math.sin(ph||0); // a gull: swept wings that beat, dark tips
+    g.fillStyle=col;for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.25,sg*r*0.12);g.quadraticCurveTo(-r*0.05,sg*r*(0.85+0.25*f),-r*0.65,sg*r*(1.2+0.3*f));g.quadraticCurveTo(-r*0.35,sg*r*0.45,-r*0.3,sg*r*0.1);g.closePath();g.fill();}
+    g.beginPath();g.ellipse(0,0,r*0.75,r*0.22,0,0,TAU);g.fill();g.beginPath();g.moveTo(-r*0.65,0);g.lineTo(-r*1.0,-r*0.17);g.lineTo(-r*1.0,r*0.17);g.closePath();g.fill();
+    if(!fl){g.fillStyle=core;for(const sg of[-1,1]){g.beginPath();g.ellipse(-r*0.55,sg*r*(1.1+0.28*f),r*0.14,r*0.08,sg*0.6,0,TAU);g.fill();}
+      g.fillStyle='#ffb020';g.beginPath();g.moveTo(r*0.72,-r*0.06);g.lineTo(r*1.02,0);g.lineTo(r*0.72,r*0.06);g.closePath();g.fill();}break;}
+  case 'plane':{ // an airliner: a long body, swept wings with engines, a small tail
+    g.fillStyle=fl?'#fff':'#d8dce4';for(const sg of[-1,1]){g.beginPath();g.moveTo(r*0.25,sg*r*0.12);g.lineTo(-r*0.35,sg*r*1.15);g.lineTo(-r*0.55,sg*r*1.15);g.lineTo(-r*0.25,sg*r*0.12);g.closePath();g.fill();
+      g.beginPath();g.moveTo(-r*0.85,sg*r*0.08);g.lineTo(-r*1.1,sg*r*0.42);g.lineTo(-r*1.2,sg*r*0.42);g.lineTo(-r*1.05,sg*r*0.06);g.closePath();g.fill();}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.1,0,r*1.15,r*0.15,0,0,TAU);g.fill();
+    if(!fl){g.fillStyle=core;g.fillRect(-r*1.0,-r*0.03,r*1.9,r*0.06);g.fillStyle='#8a90a0';for(const sg of[-1,1]){g.beginPath();g.ellipse(-r*0.15,sg*r*0.55,r*0.16,r*0.07,0,0,TAU);g.fill();}g.fillStyle='#2a3040';g.beginPath();g.ellipse(r*0.9,0,r*0.1,r*0.08,0,0,TAU);g.fill();}break;}
+  case 'balloon':{ // a hot-air balloon from above: coloured gores round a dark crown
+    for(let i=0;i<10;i++){const a0=i/10*TAU,a1=(i+1)/10*TAU;g.fillStyle=fl?'#fff':i%2?core:col;g.beginPath();g.moveTo(0,0);g.arc(0,0,r,a0,a1);g.closePath();g.fill();}
+    if(!fl){g.strokeStyle='rgba(60,20,10,0.35)';g.lineWidth=Math.max(1,r*0.04);circ(g,0,0,r);g.stroke();g.fillStyle='#4a2a14';circ(g,0,0,r*0.18);g.fill();g.fillStyle='rgba(255,255,255,0.3)';g.beginPath();g.ellipse(-r*0.35,-r*0.4,r*0.3,r*0.15,-0.6,0,TAU);g.fill();}break;}
+  case 'heli':{const p=ph||0; // a helicopter: a rounded cabin, a tail boom, the rotor turning
+    g.fillStyle=col;g.fillRect(-r*1.45,-r*0.08,r*1.2,r*0.16);g.beginPath();g.ellipse(-r*1.45,0,r*0.1,r*0.28,0,0,TAU);g.fill();
+    g.beginPath();g.ellipse(0,0,r*0.62,r*0.42,0,0,TAU);g.fill();
+    if(!fl){g.fillStyle='rgba(180,220,255,0.75)';g.beginPath();g.ellipse(r*0.32,0,r*0.26,r*0.3,0,0,TAU);g.fill();}
+    g.strokeStyle=fl?'#fff':'rgba(40,40,40,0.75)';g.lineWidth=Math.max(1,r*0.07);g.lineCap='round';g.beginPath();for(let i=0;i<2;i++){const a=p*0.5+i*Math.PI/2;g.moveTo(-Math.cos(a)*r*1.15,-Math.sin(a)*r*1.15);g.lineTo(Math.cos(a)*r*1.15,Math.sin(a)*r*1.15);}g.stroke();
+    if(!fl){g.fillStyle='rgba(200,200,200,0.12)';circ(g,0,0,r*1.15);g.fill();}g.fillStyle=fl?'#fff':core;circ(g,0,0,r*0.1);g.fill();break;}
+  case 'junk':{ // a piece of space junk: a bent plate, rivets, a snapped-off rod
+    g.fillStyle=col;g.beginPath();g.moveTo(r*0.9,-r*0.2);g.lineTo(r*0.3,-r*0.8);g.lineTo(-r*0.6,-r*0.55);g.lineTo(-r*0.9,r*0.3);g.lineTo(-r*0.1,r*0.85);g.lineTo(r*0.7,r*0.45);g.closePath();g.fill();
+    if(!fl){g.fillStyle=core;g.beginPath();g.moveTo(r*0.3,-r*0.8);g.lineTo(-r*0.6,-r*0.55);g.lineTo(-r*0.2,0);g.lineTo(r*0.5,-r*0.1);g.closePath();g.fill();g.fillStyle='#d8dce4';for(const [x,y] of[[0.5,0.2],[-0.4,0.3],[0.1,-0.4],[-0.5,-0.2]]){circ(g,r*x,r*y,r*0.06);g.fill();}
+      g.strokeStyle='#c8a040';g.lineWidth=Math.max(1,r*0.07);g.beginPath();g.moveTo(r*0.6,r*0.3);g.lineTo(r*1.15,r*0.75);g.stroke();}break;}
+  case 'meteor':{ // a burning rock: a glowing tail behind, cracks that glow, a white-hot front
+    if(!fl){const gr=g.createLinearGradient(-r*2.1,0,-r*0.3,0);gr.addColorStop(0,'rgba(255,120,40,0)');gr.addColorStop(1,'rgba(255,170,70,0.6)');g.fillStyle=gr;g.beginPath();g.moveTo(-r*0.3,-r*0.75);g.lineTo(-r*2.1,0);g.lineTo(-r*0.3,r*0.75);g.closePath();g.fill();}
+    g.fillStyle=col;g.beginPath();for(let i=0;i<=11;i++){const a=i/11*TAU,q=r*(0.8+0.18*Math.sin(i*2.9+1));i?g.lineTo(Math.cos(a)*q,Math.sin(a)*q):g.moveTo(q,0);}g.closePath();g.fill();
+    if(!fl){g.strokeStyle=core;g.lineWidth=Math.max(1,r*0.07);g.beginPath();g.moveTo(r*0.4,-r*0.3);g.lineTo(-r*0.1,-r*0.05);g.lineTo(-r*0.45,-r*0.35);g.moveTo(-r*0.1,-r*0.05);g.lineTo(-r*0.2,r*0.45);g.stroke();
+      g.fillStyle='rgba(255,220,150,0.8)';g.beginPath();g.arc(0,0,r*0.82,-0.7,0.7);g.arc(0,0,r*0.6,0.7,-0.7,true);g.closePath();g.fill();}break;}
+  case 'sat':{ // a satellite: a gold box, two long blue solar wings, a dish in front
+    for(const sg of[-1,1]){g.fillStyle=fl?'#fff':core;g.fillRect(-r*0.35,sg>0?r*0.3:-r*1.25,r*0.7,r*0.95);
+      if(!fl){g.strokeStyle='rgba(160,190,255,0.6)';g.lineWidth=Math.max(1,r*0.03);g.beginPath();for(let i=1;i<4;i++){const y=(sg>0?r*0.3:-r*1.25)+i*r*0.95/4;g.moveTo(-r*0.35,y);g.lineTo(r*0.35,y);}g.moveTo(0,sg>0?r*0.3:-r*1.25);g.lineTo(0,sg>0?r*1.25:-r*0.3);g.stroke();}}
+    g.fillStyle=fl?'#fff':'#d8b040';g.fillRect(-r*0.4,-r*0.3,r*0.8,r*0.6);
+    if(!fl){g.strokeStyle='rgba(120,90,20,0.6)';g.lineWidth=Math.max(1,r*0.03);g.strokeRect(-r*0.4,-r*0.3,r*0.8,r*0.6);}
+    g.fillStyle=col;g.beginPath();g.ellipse(r*0.55,0,r*0.12,r*0.3,0,0,TAU);g.fill();break;}
+  case 'ufo':{const p=ph||0; // a flying saucer from above: a grey disk, a glass dome, lights blinking round its rim
+    g.fillStyle=fl?'#fff':'#6a7080';circ(g,0,0,r);g.fill();g.fillStyle=col;circ(g,0,0,r*0.85);g.fill();
+    if(!fl){g.strokeStyle='rgba(60,64,80,0.5)';g.lineWidth=Math.max(1,r*0.04);circ(g,0,0,r*0.62);g.stroke();
+      const L=['#ff5a4a','#ffd84a','#8af08a'];for(let i=0;i<10;i++){const a=i/10*TAU;g.fillStyle=L[(i+Math.round(p*1.6))%3];circ(g,Math.cos(a)*r*0.74,Math.sin(a)*r*0.74,r*0.07);g.fill();}
+      const gr=g.createRadialGradient(-r*0.12,-r*0.12,r*0.05,0,0,r*0.42);gr.addColorStop(0,'#eaffea');gr.addColorStop(1,core);g.fillStyle=gr;circ(g,0,0,r*0.42);g.fill();}break;}
+  case 'rocket':{ // a rocket: a white body, a red nose and fins, a round window, flame at the back
+    if(!fl){g.fillStyle='rgba(255,170,60,0.85)';g.beginPath();g.moveTo(-r*0.9,-r*0.2);g.lineTo(-r*1.55,0);g.lineTo(-r*0.9,r*0.2);g.closePath();g.fill();g.fillStyle='rgba(255,240,180,0.9)';g.beginPath();g.moveTo(-r*0.9,-r*0.1);g.lineTo(-r*1.25,0);g.lineTo(-r*0.9,r*0.1);g.closePath();g.fill();}
+    g.fillStyle=fl?'#fff':core;for(const sg of[-1,1]){g.beginPath();g.moveTo(-r*0.4,sg*r*0.22);g.lineTo(-r*0.9,sg*r*0.55);g.lineTo(-r*0.9,sg*r*0.22);g.closePath();g.fill();}
+    g.fillStyle=col;g.beginPath();g.ellipse(-r*0.05,0,r*0.85,r*0.24,0,0,TAU);g.fill();
+    g.fillStyle=fl?'#fff':core;g.beginPath();g.moveTo(r*0.55,-r*0.19);g.quadraticCurveTo(r*1.05,0,r*0.55,r*0.19);g.closePath();g.fill();
+    if(!fl){g.fillStyle='#3a5a8a';circ(g,r*0.2,0,r*0.1);g.fill();}break;}
+  case 'earth':{const R=r; // the Earth: blue ocean, green and brown land, white clouds, a blue rim of air
+    if(!fl){const ga=g.createRadialGradient(0,0,R*0.95,0,0,R*1.12);ga.addColorStop(0,'rgba(140,180,255,0.55)');ga.addColorStop(1,'rgba(140,180,255,0)');g.fillStyle=ga;circ(g,0,0,R*1.12);g.fill();}
+    {const go=g.createRadialGradient(0,0,R*0.2,0,0,R);go.addColorStop(0,fl?'#fff':'#3f86ea');go.addColorStop(1,fl?'#fff':'#1a48a8');g.fillStyle=go;}circ(g,0,0,R);g.fill(); // (it turns slowly, so no fixed light or night side on it)
+    if(!fl){g.save();circ(g,0,0,R);g.clip();
+      const land=(cx,cy,sz,seed,colr,sq)=>{const p=[];for(let i=0;i<16;i++){const a=i/16*TAU,q=sz*(0.78+0.2*Math.sin(a*2+seed)+0.12*Math.sin(a*3+seed*1.7));p.push([cx+Math.cos(a)*q,cy+Math.sin(a)*q*(sq||1)]);} // a smooth blob: a curve through the midpoints
+        g.fillStyle=colr;g.beginPath();for(let i=0;i<16;i++){const a=p[i],b=p[(i+1)%16],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;i?g.quadraticCurveTo(a[0],a[1],mx,my):g.moveTo(mx,my);}g.quadraticCurveTo(p[0][0],p[0][1],(p[0][0]+p[1][0])/2,(p[0][1]+p[1][1])/2);g.closePath();g.fill();};
+      land(-R*0.38,-R*0.22,R*0.4,1,'#3fae4a',0.85);land(-R*0.2,R*0.42,R*0.24,2.5,'#3fae4a',1.2);land(R*0.42,-R*0.12,R*0.32,4,'#46b04a',1.1);land(R*0.38,R*0.5,R*0.16,5.5,'#3fae4a');land(-R*0.42,-R*0.28,R*0.15,8,'#c2a465',0.8);land(R*0.46,-R*0.2,R*0.13,7,'#c2a465');
+      g.fillStyle='rgba(255,255,255,0.78)';for(const [x,y,w,h,a] of[[-0.1,-0.62,0.42,0.08,0.2],[0.2,0.18,0.48,0.07,-0.3],[-0.58,0.12,0.28,0.06,0.5],[0.05,0.72,0.38,0.07,0],[0.62,-0.45,0.24,0.06,0.8]]){g.beginPath();g.ellipse(R*x,R*y,R*w,R*h,a,0,TAU);g.fill();}
+      g.restore();g.strokeStyle='rgba(200,225,255,0.55)';g.lineWidth=R*0.03;circ(g,0,0,R*0.985);g.stroke();}break;}
 //#/FULL
   case 'virion':{g.strokeStyle=col;g.lineWidth=Math.max(1.5,r*.12);g.fillStyle=fl?'#fff':'#eafff6'; // a small six-sided particle with a knob on each corner
     for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);g.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);g.stroke();circ(g,Math.cos(a)*r*1.2,Math.sin(a)*r*1.2,r*.13);g.fill();}
@@ -769,10 +838,10 @@ function alionHead(g,r,open,fl){g.lineCap='round';g.lineJoin='round';
       g.fillStyle=fl?'#fff':'#1a0e06';circ(g,r*0.52,sg*r*0.3,r*0.06);g.fill();}
 }
 //#/FULL
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='snode'?t.r*1.05:k==='smold'?t.r*1.3:k==='physa'?t.r*1.3:k==='hotaru'?t.r*1.4:k==='lantf'?t.r*1.55:k==='jelly'?t.r*1.6:k==='siph'?t.r*1.1:k==='dragf'?t.r*2.0:k==='isopod'?t.r*1.6:k==='angler'?t.r*1.62:k==='yago'?t.L*1.12:k==='dfly'?t.L*1.1:k==='spdl'?t.r*1.9:k==='wsilk'?t.r*1.75:k==='wdrop'?t.r*2.05:k==='wfly'?t.r*1.6:k==='jorou'?t.r*2.9:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='dragf'?(t.r*0.62+8)*2:k==='yago'?(t.w*1.45+8)*2:k==='dfly'?(t.L*1.02+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='bird'?t.r*1.3:k==='plane'?t.r*1.3:k==='heli'?t.r*1.55:k==='junk'?t.r*1.3:k==='meteor'?t.r*2.15:k==='sat'?t.r*1.3:k==='rocket'?t.r*1.6:k==='earth'?t.r*1.14:k==='snode'?t.r*1.05:k==='smold'?t.r*1.3:k==='physa'?t.r*1.3:k==='hotaru'?t.r*1.4:k==='lantf'?t.r*1.55:k==='jelly'?t.r*1.6:k==='siph'?t.r*1.1:k==='dragf'?t.r*2.0:k==='isopod'?t.r*1.6:k==='angler'?t.r*1.62:k==='yago'?t.L*1.12:k==='dfly'?t.L*1.1:k==='spdl'?t.r*1.9:k==='wsilk'?t.r*1.75:k==='wdrop'?t.r*2.05:k==='wfly'?t.r*1.6:k==='jorou'?t.r*2.9:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='dragf'?(t.r*0.62+8)*2:k==='yago'?(t.w*1.45+8)*2:k==='dfly'?(t.L*1.02+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
 const ALLT=[...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...BODY_RUSH];
 //#FULL
-ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS,...YAGO_FORMS,...WEB_BOSS,...WEB_RUSH,...DEEP_BOSS,...DEEP_RUSH,...MOLD_BOSS,...MOLD_RUSH);
+ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS,...YAGO_FORMS,...WEB_BOSS,...WEB_RUSH,...DEEP_BOSS,...DEEP_RUSH,...MOLD_BOSS,...MOLD_RUSH,EARTH_BOSS[1],...EARTH_RUSH);
 //#/FULL
 for(const t of ALLT){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
@@ -812,7 +881,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v43.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v44',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1060,6 +1129,24 @@ const STR={
  bk_snode:['広がる黄色い網。上は遅く、結び目は痛い','A spreading yellow net. Slows you; its knots sting'],
  bk_smold:['網の芯。殻 2 枚。倒すと網ごと枯れる','The net\'s core. Two shells. Kill it: the net withers'],
  bk_physa:['ボス。足を伸ばして流れてくる。締めると分裂','Boss. Reaches out, then flows. Squeezed, it splits'],
+ tip_earth:['地球','Earth'],
+ gate_g:['尾が伸びると大きくなる','Grow your tail to grow bigger'],
+ goal_g:['尾が伸びると大きくなる。地球を倒すとクリア','Grow and grow. Beat the Earth to win'],
+ tip_earth_s:['尾が伸びきると、もっと大きくなる','Fill out your tail and you grow again'],
+ boss_in_e:['{0}：{1} 回締める。月と隕石に気をつけて','{0}: squeeze it {1} times. Mind the Moon and meteors'],
+ earth_hit:['地球が揺れた！','The Earth shook!'],
+ earth_down:['地球を締めた！','Earth squeezed!'],
+ earth_down_s:['小さな菌から、ここまで来た','From a tiny germ, all the way here'],
+ bk_bird:['5 羽の V 字の編隊で飛んでくる','They fly in V formations of five'],
+ bk_plane:['速い。まっすぐ飛び抜けていく','Fast. Flies straight through'],
+ bk_balloon:['殻 1 枚。風まかせに漂う','One shell. Drifts where the wind takes it'],
+ bk_heli:['止まって狙い、まっすぐ突っ込む','Hovers and aims, then darts straight in'],
+ bk_junk:['回りながら漂う宇宙のゴミ','Space junk, tumbling as it drifts'],
+ bk_meteor:['とても速い。燃えながら飛び抜ける','Very fast. Streaks through, burning'],
+ bk_sat:['殻 1 枚。離れて撃つ。弾は尾で防げる','One shell. Shoots from afar; your tail blocks it'],
+ bk_ufo:['近づくまで気づかず、気づくと飛んでくる','Unaware till you come near; then it zips in'],
+ bk_rocket:['殻 1 枚。狙ってまっすぐ飛んでくる','One shell. Aims, then flies straight at you'],
+ bk_earth:['最後のボス。月が守り、隕石を呼ぶ','The last boss. The Moon guards it; it calls meteors'],
  bk_ant:['いちばん多い。砂の坂を転がり落ちてくる','The most common. They come tumbling down the slope'],
  bk_antl:['アリの行列。先頭がうねり、後ろがついてくる','A column of ants. The leader snakes, the rest follow'],
  bk_sprg:['止まっては、尾のばねで跳ねる','Sits still, then springs off with its tail'],
@@ -1288,7 +1375,7 @@ const STR={
 };
 loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(BODY_RUSH,'name');
 //#FULL
-loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(YAGO_FORMS,'name');loc(WEB_BOSS,'name');loc(WEB_RUSH,'name');loc(DEEP_BOSS,'name');loc(DEEP_RUSH,'name');loc(MOLD_BOSS,'name');loc(MOLD_RUSH,'name');loc(JAR_RUSH,'name');
+loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(YAGO_FORMS,'name');loc(WEB_BOSS,'name');loc(WEB_RUSH,'name');loc(DEEP_BOSS,'name');loc(DEEP_RUSH,'name');loc(MOLD_BOSS,'name');loc(MOLD_RUSH,'name');loc([EARTH_BOSS[1]],'name');loc(EARTH_RUSH,'name');loc([EARTH_MOON],'name');loc(JAR_RUSH,'name');
 //#/FULL
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
@@ -1534,7 +1621,7 @@ addEventListener('blur',pauseGame);
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
 const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,WEBS=null,DARK=null,MOLD=null,DQ={n:0,sx:0,sy:0,c:0,t:0},KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
-function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
+function stageOf(len){const gs=STAGES[CS]&&STAGES[CS].gates;if(gs)return Math.min(STAGE_N.length-1,gs.filter(g=>len>=g).length); /* v44 a stage's own gates */return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
 // P.tailLen stays in "base" units (gates, caps, HUD); the tail in the world is P.tailLen*P.grow long, so on screen it does not shrink when the world does.
@@ -1568,6 +1655,7 @@ function reset(start){
   WEBS=start&&STAGES[CS].web?webNew():null; // v39
   DARK=start&&STAGES[CS].dark?darkNew():null;if(DARK)tip('deep'); // v42
   MOLD=start&&STAGES[CS].mold?moldNew():null;if(MOLD){tip('mold');moldCore(P.x+40,P.y-260,12);moldCore(P.x-260,P.y+720,6);} // v43 (the first core above the snake: on a phone held upright there is room up and down, not across)
+  if(start&&STAGES[CS].id==='earth')tip('earth'); // v44
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   if(start&&BRUSH)tip('brush'); // v40
@@ -1712,8 +1800,12 @@ const STAGES=[
   tiers:[[['sprg',0,5,0],['ant',15,3,40],['antl',40,1,40]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.4),...w.slice(2)]),boss:MOLD_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:MOLD_RUSH,
   book:[[0,'snode','snode'],[0,'smold','smold'],[0,'sprg','sprg'],[0,'ant','ant'],[0,'antl','antl'],[0,MOLD_RUSH[0],'rush'],[0,MOLD_BOSS[0],'physa']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'earth',n:['地球','Earth'],wip:1,grow:1,earth:1,tail0:1000,gates:[1700],gate:2500,hp0:150,names:[['雲の上','Above the Clouds'],['宇宙','Outer Space']], // v44 the last stage: grown into, not won into (grow: at the gate the snake grows, with no boss, as in the pit); the Earth at the end
+  tiers:[[['bird',0,5,0],['plane',8,2,30],['balloon',20,1.5,40],['heli',35,1.6,40]],[['junk',0,5,0],['meteor',0,3,20],['sat',10,1.6,30],['ufo',20,1.6,40],['rocket',35,1.4,40]]],
+  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.9),...w.slice(2)]),boss:EARTH_BOSS,hunt:[null,null],titan:[null,null],toxin:[null,null],gas:[8,9],realK:[1,0.9],rush:EARTH_RUSH,
+  book:[[0,'bird','bird'],[0,'plane','plane'],[0,'balloon','balloon'],[0,'heli','heli'],[0,EARTH_RUSH[0],'rush'],[1,'junk','junk'],[1,'meteor','meteor'],[1,'sat','sat'],[1,'ufo','ufo'],[1,'rocket','rocket'],[1,EARTH_RUSH[1],'rush'],[1,EARTH_BOSS[1],'earth']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 //#/FULL
-//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1},{id:'mold',n:['粘菌','Slime Mold'],full:1}, // in the demo: names only, shown as in the full game
+//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1},{id:'mold',n:['粘菌','Slime Mold'],full:1},{id:'earth',n:['地球','Earth'],full:1}, // in the demo: names only, shown as in the full game
 ];
 loc(STAGES,'n');
 let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3,BRUSH=false,BR_LIST=[]; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
@@ -2223,6 +2315,38 @@ function physaFx(e){const S=P.S,q=e.bq;
     ctx.strokeStyle='rgba(232,184,18,0.9)';ctx.lineWidth=e.r*0.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x+ux*e.r*0.6,e.y+uy*e.r*0.6);ctx.lineTo(e.x+ux*(e.r*0.6+(D-e.r*0.6)*k),e.y+uy*(e.r*0.6+(D-e.r*0.6)*k));ctx.stroke();
     ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();circ(ctx,e.tx,e.ty,e.r*0.9);ctx.stroke();ctx.setLineDash([]);}
   if(q===3&&!e.cap){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.9,e.y-e.r*1.3+Math.sin(a)*e.r*0.25,7*S,'#ffe680');}}}
+// v44 the Earth, the last boss (the owner, of the last stage: "the Earth, yes"). It drifts toward the snake, slowly turning; the Moon circles it (earthMoon) and hurts the
+// head it meets. In turn it: calls meteors down (three red rings where the snake is going, 1.1 s; then they strike), sends the Moon out at the snake (a red line,
+// 0.7 s; the Moon flies there and drifts back: while it is away, the Earth rests, open, the time to coil it), and, past half, launches two rockets. Squeezed three
+// times (one more each return in endless, up to five): each squeeze but the last, it breaks free and shakes.
+function earthMoon(e,dt){const S=P.S,m=e.moon||(e.moon={a:Math.random()*TAU,q:0,t:0,x:e.x,y:e.y,tx:0,ty:0,vx:0,vy:0}),R=e.r*1.5,half=e.hits<e.hitsMax; // (it goes round just where a coil round the Earth would run: the coil has to slip past it)
+  if(m.q===0){m.a+=dt*(half?1.0:0.7);m.x=e.x+Math.cos(m.a)*R;m.y=e.y+Math.sin(m.a)*R;}
+  else if(m.q===1){m.t-=dt;if(m.t<=0){m.q=2;m.t=0.55;m.vx=(m.tx-m.x)/0.55;m.vy=(m.ty-m.y)/0.55;sfx('dash');}}
+  else if(m.q===2){m.t-=dt;m.x+=m.vx*dt;m.y+=m.vy*dt;if(m.t<=0){m.q=3;m.t=1.3;shake=Math.max(shake,10);burst(m.x,m.y,20,'#d8d8d0',260,0.5,3);}}
+  else{m.t-=dt;m.a+=dt*0.6;const k=Math.min(1,dt*3);m.x+=(e.x+Math.cos(m.a)*R-m.x)*k;m.y+=(e.y+Math.sin(m.a)*R-m.y)*k;if(m.t<=0)m.q=0;}
+  if(Math.hypot(P.x-m.x,P.y-m.y)<EARTH_MOON.r+10*S)hitHead(m.q===2?18:12,EARTH_MOON);}
+function earthMove(e,dx,dy,d,s,dt,S,half){if(e.hitNow)earthHit(e);const m=e.moon;
+  if(!e.bq){MV[0]=dx/d*s*0.5;MV[1]=dy/d*s*0.5;
+    if(e.bT<=0){e.k3=((e.k3||0)+1)%(half?3:2);
+      if(e.k3===1&&m&&m.q===0){const v=P.spd*S*0.4;m.q=1;m.t=0.7;m.tx=P.x+Math.cos(P.a)*v;m.ty=P.y+Math.sin(P.a)*v;e.bq=3;e.bT=2.6;sfx('latch');} // the Moon goes out; the Earth rests, open
+      else if(e.k3===2){spawnQ.push(['rocket',2,e.x,e.y,e.r,true]);e.bq=3;e.bT=1.4;sfx('brood');} // past half: two rockets
+      else{e.mt=[];const v=P.spd*S*0.6;for(let i=0;i<3;i++){const a=Math.random()*TAU,R=i?rand(70,150)*S:0;e.mt.push({x:P.x+Math.cos(P.a)*v+Math.cos(a)*R,y:P.y+Math.sin(P.a)*v+Math.sin(a)*R});}e.bq=4;e.bT=1.1;sfx('latch');}} // meteors: where they will strike
+    return true;}
+  if(e.bq===4){MV[0]=MV[1]=0;if(e.bT<=0){const R=56*S;for(const q of e.mt){burst(q.x,q.y,24,'#ffa040',300,0.6,3);rings.push({x:q.x,y:q.y,r:10*S,R:R*1.3,life:0.4,max:0.4,col:'#ffb060',w:6*S});if(Math.hypot(P.x-q.x,P.y-q.y)<R)hitHead(14,ET.meteor);}
+      shake=Math.max(shake,12);sfx('boom');e.mt=null;e.bq=3;e.bT=1.5;}return true;}
+  MV[0]=MV[1]=0;if(e.bT<=0){e.bq=0;e.bT=rand(1.8,2.6)*(half?0.75:1);}return true;}
+function earthHit(e){const S=P.S,c=e.cap;e.hits--;e.hp=Math.min(e.hp,e.hp0*e.hits/e.hitsMax);e.hitNow=0;
+  if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;}
+  e.cap=null;e.freeT=T+1.6;e.bq=3;e.bT=1.6;e.flash=0.4;e.mt=null;
+  text(e.x,e.y-e.r-16*S,TX('earth_hit'),28,'#bfe0ff',1.4);text(e.x,e.y-e.r-48*S,TX('king_left',e.hits),22,'#ffd9a8',1.4);
+  hitstop=Math.max(hitstop,0.12);shake=Math.max(shake,22);burst(e.x,e.y,40,'#9fc8ff',420,0.9,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*2.5,life:0.6,max:0.6,col:'#9fc8ff',w:8*S});sfx('boss');}
+function earthFx(e){const S=P.S,m=e.moon;
+  if(e.mt){const k=1-Math.max(0,e.bT)/1.1,a=0.5+0.4*Math.sin(T*30);for(const q of e.mt){ctx.strokeStyle=`rgba(255,70,80,${a.toFixed(3)})`;ctx.lineWidth=3*S;circ(ctx,q.x,q.y,56*S);ctx.stroke();ctx.fillStyle=`rgba(255,120,60,${(0.12+0.22*k).toFixed(3)})`;circ(ctx,q.x,q.y,56*S*k);ctx.fill();}} // where the meteors will strike
+  if(m){if(m.q===1){ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m.tx,m.ty);ctx.stroke();circ(ctx,m.tx,m.ty,EARTH_MOON.r*1.2);ctx.stroke();ctx.setLineDash([]);}
+    const R=EARTH_MOON.r;ctx.fillStyle='#c8c8c0';circ(ctx,m.x,m.y,R);ctx.fill();ctx.fillStyle='rgba(110,110,100,0.55)';
+    for(const [x,y,z] of[[0.3,-0.2,0.22],[-0.35,0.1,0.18],[0.05,0.42,0.14],[-0.1,-0.45,0.1]]){circ(ctx,m.x+x*R,m.y+y*R,z*R);ctx.fill();}
+    ctx.strokeStyle='rgba(255,255,240,0.5)';ctx.lineWidth=2*S;circ(ctx,m.x,m.y,R);ctx.stroke();}
+  if(e.bq===3&&!e.cap){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.9,e.y-e.r*1.25+Math.sin(a)*e.r*0.25,9*S,'#ffe680');}}}
 //#/FULL
 function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
@@ -2242,7 +2366,7 @@ function spawnBoss(){
 //#FULL
   if(t.k==='physa'){e.net=[];e.gT=0.5;} // v43 the Slime Mold grows a net of its own
 //#/FULL
-  banner={t:3,max:3,title:BRUSH?TX('br_in',P.brN%BR_LIST.length+1,BR_LIST.length):TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX(t.k==='angler'?'boss_in_a':t.k==='physa'?'boss_in_m':'boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+  banner={t:3,max:3,title:BRUSH?TX('br_in',P.brN%BR_LIST.length+1,BR_LIST.length):TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX(t.k==='angler'?'boss_in_a':t.k==='physa'?'boss_in_m':t.k==='earth'?'boss_in_e':'boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -2269,6 +2393,9 @@ function kingHit(e){const c=e.cap,S=P.S,a=Math.atan2(e.y-P.y,e.x-P.x);e.lives--;
   if(!e.rage)text(e.x,e.y-e.r-44*S,TX('kin_rage'),30,'#ff8a8a',1.8);text(e.x,e.y-e.r-12*S,TX('king_left',e.lives),22,'#ffd9a8',1.8);e.rage=1;
   burst(e.x,e.y,40,'#ff8a8a',380,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*5,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});shake=Math.max(shake,14);hitstop=Math.max(hitstop,0.08);sfx('boss');}
 function bossTick(e,dt){
+//#FULL
+  if(e.t.k==='earth')earthMoon(e,dt); // v44 the Moon goes round, even while the Earth is held in a coil
+//#/FULL
   if(e.t.arms)armsTick(e,dt);
   if(e.buds)budVolley(e,dt);
   if(e.lives>1&&e.hp<=e.hp0*(e.lives-1)/e.livesMax)kingHit(e); // plain damage takes its lives too: one for each share of its HP
@@ -2316,6 +2443,7 @@ function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
   if(k==='jorou')return jorouMove(e,dx,dy,d,s,dt,S,half); // v39
   if(k==='angler')return anglerMove(e,dx,dy,d,s,dt,S,half); // v42
   if(k==='physa')return physaMove(e,dx,dy,d,s,dt,S,half); // v43
+  if(k==='earth')return earthMove(e,dx,dy,d,s,dt,S,half); // v44
 //#/FULL
   return false;}
 // Hydra: tumbles head over heels (as real ones do) to a spot near the player (a dotted arc shows where), then rests a moment. Arms rest while it tumbles
@@ -2328,7 +2456,7 @@ function hydraHop(e,dx,dy,d,dt,S,half){
 function drawBossFx(e){const S=P.S,q=e.bq;if(budsOn(e)){ctx.strokeStyle=`rgba(255,220,150,${0.35+0.2*Math.sin(T*4)})`;ctx.lineWidth=4*S;ctx.setLineDash([12*S,10*S]);ctx.lineDashOffset=-T*30*S;circ(ctx,e.x,e.y,e.r*1.25);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // v35: guarded by its buds
   if(!q||OLDB)return;const k=e.t.k;
 //#FULL
-  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}if(k==='dfly'){dflyFx(e);return;}if(k==='jorou'){jorouFx(e);return;}if(k==='angler'){anglerFx(e);return;}if(k==='physa'){physaFx(e);return;}
+  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}if(k==='dfly'){dflyFx(e);return;}if(k==='jorou'){jorouFx(e);return;}if(k==='angler'){anglerFx(e);return;}if(k==='physa'){physaFx(e);return;}if(k==='earth'){earthFx(e);return;}
 //#/FULL
  
   if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
@@ -2365,7 +2493,11 @@ function bossDown(e){
     if(items.length<4){const S=P.S;items.push({x:P.x+Math.cos(P.a)*150*S,y:P.y+Math.sin(P.a)*150*S,k:'heal',life:22,ph:Math.random()*TAU});}evt(TX('br_next'));return;}
   if(P.stage<STAGE_N.length-1){dropChest(e.x,e.y,true);stageUp();} // the last scale's boss ends the stage
   else if(P.endless){P.bossN++;P.nextBoss=T+75;dropChest(e.x,e.y,true);}
-  else{P.clearAt=T+1.4;calmUntil=1e9;}
+  else{P.clearAt=T+1.4;calmUntil=1e9;
+//#FULL
+    if(e.t.k==='earth'){P.clearAt=T+2.8;banner={t:3.2,max:3.2,title:TX('earth_down'),sub:TX('earth_down_s')};} // v44 the end of the last stage
+//#/FULL
+  }
 }
 // A boss is down: the player moves up a scale. The camera pulls back by GROW and the tail grows with it, so the snake looks the same
 // and the world looks smaller. Nothing is removed: the creatures of the scale just left turn into prey, and bigger ones start to arrive.
@@ -2618,7 +2750,7 @@ function explode(cap){
       if(e.t.revive&&!e.tun){tunOf(e);dorm++;continue;} // v36 a tardigrade: squeezed, it does not die, it goes dormant
       if(e.naps){if(!(e.sleepT>0)){bossNap(e);dorm++;}continue;} // v36 the Predatory Tardigrade: squeezed, it goes dormant (crush it with the head)
 //#FULL
-      if(e.hits>1){(e.t.k==='angler'?anglerHit:e.t.k==='physa'?physaHit:spiderHit)(e);continue;} // v39 the Joro Spider: a squeeze but the last sets spiderlings loose
+      if(e.hits>1){(e.t.k==='angler'?anglerHit:e.t.k==='physa'?physaHit:e.t.k==='earth'?earthHit:spiderHit)(e);continue;} // v39 the Joro Spider: a squeeze but the last sets spiderlings loose
       if(e.molts>0){bossMolt(e);continue;} // v38.10 the Dragonfly Nymph: squeezed, it sheds its skin and slips out bigger (the last time it takes wing)
 //#/FULL
       if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
@@ -2691,7 +2823,7 @@ function advanceTrail(dt){
 }
 
 // ---------- level up ----------
-function gateLen(){return P.stage<STAGE_N.length-1?STAGE_TAIL[P.stage+1]:STAGES[CS].gate||(STAGE_N.length>1?FINAL_TAIL:STAGE_TAIL[1]);} // (a stage may set the last gate: gate)
+function gateLen(){return P.stage<STAGE_N.length-1?(STAGES[CS].gates?STAGES[CS].gates[P.stage]:STAGE_TAIL[P.stage+1]):STAGES[CS].gate||(STAGE_N.length>1?FINAL_TAIL:STAGE_TAIL[1]);} // (a stage may set the last gate: gate)
 function growTail(m){P.tailLen=Math.min(P.endless?MAX_TAIL:Math.min(MAX_TAIL,gateLen()*1.3),Math.max(P.tailLen,P.tailLen*m));}
 const UPG=[
  {id:'tail', cat:'body',max:5,n:['尾が伸びる','Longer Tail'],d:['尾の長さ +18%\nボスの出現が早まる','Tail length +18%\nThe boss comes sooner'],f:()=>growTail(1.18)},
@@ -2813,7 +2945,11 @@ function update(dt){
   let desired=P.a,kx=0,ky=0;
   if(keys.has('a')||keys.has('arrowleft'))kx--;if(keys.has('d')||keys.has('arrowright'))kx++;
   if(keys.has('w')||keys.has('arrowup'))ky--;if(keys.has('s')||keys.has('arrowdown'))ky++;
-  if(DEMO){desired=P.a+(Math.sin(T*0.3)<-0.7?0.4:2.25)*dt;if(PIT&&!P.boss&&(T%3.6>2.8||PIT.y-PIT.jr-P.y<H*0.1*S))desired=-Math.PI/2;} // (v37.1: in the pit, auto-play makes a loop, then runs up a little; and runs when the jaws are near)
+  if(DEMO){desired=P.a+(Math.sin(T*0.3)<-0.7?0.4:2.25)*dt;if(PIT&&!P.boss&&(T%3.6>2.8||PIT.y-PIT.jr-P.y<H*0.1*S))desired=-Math.PI/2; // (v37.1: in the pit, auto-play makes a loop, then runs up a little; and runs when the jaws are near)
+//#FULL
+    if(P.boss&&P.boss.t.k==='earth'&&!P.boss.cap){const B=P.boss,R=B.r*1.3,a=Math.atan2(P.y-B.y,P.x-B.x),d=Math.hypot(P.x-B.x,P.y-B.y);desired=a+Math.PI/2+clamp((d-R)/R*1.6,-0.9,0.9);} // v44 auto-play goes round the Earth (it is too big for the loops auto-play makes in place)
+//#/FULL
+  }
   else if(kx||ky)desired=Math.atan2(ky,kx);
   else{const dx=mx-W/2,dy=my-headSY();if(dx*dx+dy*dy>100)desired=Math.atan2(dy,dx);}
   const tr=P.turn*(P.dashT>0?1.3:1)*dt;P.a+=clamp(angDiff(P.a,desired),-tr,tr);
@@ -2846,7 +2982,7 @@ function update(dt){
   if(T>1.5&&!P.loops)tip('coil');tipTick();if(T>=300&&!META.done.min5)mission('min5');
   updateBubbles(dt);
   // boss gate + clear
-  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:BRUSH?T>=P.brT:P.tailLen>=gateLen())){if(PIT&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
+  if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:BRUSH?T>=P.brT:P.tailLen>=gateLen())){if((PIT||STAGES[CS].grow)&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
   // spawn: VS-style waves with peaks, lulls and events
   waveTick(dt);rushTick(dt);ecapTick(dt);
@@ -3264,9 +3400,14 @@ function sandTile(){const c=mk(256,256),g=c.getContext('2d');let q=7;const rnd=(
   g.lineCap='round';for(let i=0;i<8;i++){const y0=16+i*32,ph=i*1.7,amp=5+(i%3)*2.5,path=dy=>{g.beginPath();for(let x=0;x<=256;x+=8){const y=y0+dy+Math.sin(x/256*TAU*2+ph)*amp+Math.sin(x/256*TAU*3+ph*2.3)*2;x?g.lineTo(x,y):g.moveTo(x,y);}};
     path(3);g.strokeStyle='rgba(0,0,0,0.9)';g.lineWidth=5;g.stroke();path(0);g.strokeStyle='rgba(255,226,170,0.85)';g.lineWidth=2.2;g.stroke();}
   for(let i=0;i<500;i++){g.fillStyle=rnd()<0.5?'rgba(255,230,180,0.6)':'rgba(0,0,0,0.6)';g.fillRect(rnd()*256,rnd()*256,1.5,1.5);}return c;}
+function cloudTile(){const c=mk(256,256),g=c.getContext('2d');let q=11;const rnd=()=>(q=(q*16807)%2147483647)/2147483647; // v44 soft clouds (a few puffs each), drawn again across each edge so the tile meets itself
+  for(let i=0;i<5;i++){const cx=rnd()*256,cy=rnd()*256,n=3+(rnd()*3|0);for(let j=0;j<n;j++){const x=cx+(rnd()-0.5)*70,y=cy+(rnd()-0.5)*34,r=16+rnd()*26;
+    for(const ox of[-256,0,256])for(const oy of[-256,0,256]){const gr=g.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,r);gr.addColorStop(0,'rgba(232,240,255,0.55)');gr.addColorStop(0.6,'rgba(232,240,255,0.3)');gr.addColorStop(1,'rgba(232,240,255,0)');g.fillStyle=gr;g.fillRect(x+ox-r,y+oy-r,r*2,r*2);}}}
+  return c;}
 function bgTile(k){if(BG_T[k])return BG_T[k];let t;
   if(k==='cells')t=vorTile(256,13,11,(e,d1,r)=>{const m=Math.max(0,1-e/5),nu=d1<7+r*4?0.5:0;return[150,120,255,Math.round(255*Math.min(1,m*m*0.95+nu*0.45+0.04))];}); // a wall round each cell, a nucleus in it
   else if(k==='sand')t=sandTile(); // v37
+  else if(k==='cloud')t=cloudTile(); // v44 soft clouds below, seen from above the clouds
   else if(k==='light')t=vorTile(256,10,23,(e)=>{const m=Math.max(0,1-e/7);return[170,255,230,Math.round(255*m*m*m)];}); // the bright net of light under ripples
   else t=vorTile(256,16,37,(e,d1,r)=>e<1.4?[8,4,2,215]:e<2.6?[220,150,95,60]:[120+r*40|0,72+r*25|0,42,Math.round(26+r*34)]); // cracks, a lit edge beside them, clay a little different in each piece
   return BG_T[k]=t;}
@@ -3279,7 +3420,8 @@ const BGS=[[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{bas
   [{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}],
   [{base:'#150a12',mote:'rgba(255,190,150,0.09)',k:'clay',a:0.32}],
   [{base:'#03070f',mote:'rgba(170,200,255,0.06)',k:'sand',a:0.12}],
-  [{base:'#130c05',mote:'rgba(255,225,140,0.07)',k:'clay',a:0.34}]]; /* v42 the Deep Sea: dark silt on the floor (only where the light falls). v43 the Slime Mold: the bark of a rotting log */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
+  [{base:'#130c05',mote:'rgba(255,225,140,0.07)',k:'clay',a:0.34}],
+  [{base:'#14295a',mote:'rgba(235,245,255,0.12)',k:'cloud',a:0.2},{base:'#02030a',mote:'rgba(255,255,255,0.6)',k:'cells',a:0.02}]]; /* v44 Earth: a night sky above the clouds, then space and its stars.  v42 the Deep Sea: dark silt on the floor (only where the light falls). v43 the Slime Mold: the bark of a rotting log */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
 function bgOf(){const L=BGS[CS]||BGS[0];return L[Math.min(L.length-1,P?P.stage|0:0)];}
 // the whole background (ground, tiles, and the jar's shade) is drawn small, at half the screen's size, then stretched over the screen in one go:
 // the tiles are soft, so they lose nothing, and the screen is filled once, as the plain ground was before (filling it two or three times was slow on fine screens)
@@ -3288,7 +3430,7 @@ function drawBgLow(cx,cy,Z){const k=0.5,w=Math.max(8,Math.ceil(W*k)),h=Math.max(
   if(!BGC){BGC=document.createElement('canvas');BGX=BGC.getContext('2d');}if(BGC.width!==w||BGC.height!==h){BGC.width=w;BGC.height=h;BGVK='';}
   const g=BGX;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=b.base;g.fillRect(0,0,w,h);
   const z=k*Z,G=80*Math.pow(2,Math.floor(Math.log2(S))),TW=4*G,vx0=cx-w/2/z,vx1=cx+w/2/z,vy0=cy-h/2/z,vy1=cy+h/2/z;g.setTransform(z,0,0,z,w/2-cx*z,h/2-cy*z);
-  const tl=(ox,oy,a)=>{g.globalAlpha=a;for(let x=Math.floor((vx0-ox)/TW)*TW+ox;x<vx1;x+=TW)for(let y=Math.floor((vy0-oy)/TW)*TW+oy;y<vy1;y+=TW)g.drawImage(tile,x,y,TW+S,TW+S);};
+  const ov=b.k==='cloud'?0:S,tl=(ox,oy,a)=>{g.globalAlpha=a;for(let x=Math.floor((vx0-ox)/TW)*TW+ox;x<vx1;x+=TW)for(let y=Math.floor((vy0-oy)/TW)*TW+oy;y<vy1;y+=TW)g.drawImage(tile,x,y,TW+ov,TW+ov);}; /* (v44 the soft clouds cover the tile's edges: no overlap, or the edges show as lines) */
   if(b.k==='light'){const t=performance.now()/1000;tl((t*9*S)%TW,(t*5*S)%TW,b.a);tl(-(t*7*S)%TW+TW*0.37,(t*6*S)%TW+TW*0.61,b.a*0.8);} // two nets drifting apart: the light shimmers
   else tl(0,0,b.a);
   g.globalAlpha=1;g.setTransform(1,0,0,1,0,0);
@@ -3382,6 +3524,9 @@ function drawTailParts(tr,hu,S){const n=tr.length;
       for(let j=1;j<=8;j++){const L=j*4.5*S,wv=Math.sin(T*16+j*0.9+k)*3*S*j/8;ctx.lineTo(q.x+vx*L-vy*wv,q.y+vy*L+vx*wv);}ctx.stroke();}}
 }
 function drawBubbles(x0,x1,y0,y1){const S=P.S;
+//#FULL
+  if(STAGES[CS].earth){earthBubbles(x0,x1,y0,y1);return;} // v44 above the clouds a bubble is a storm cloud, in space a rock: the same obstacle
+//#/FULL
   for(const L of[bub.fade,bub.act])for(const b of L){if(b.a<=0||b.x+b.r<x0||b.x-b.r>x1||b.y+b.r<y0||b.y-b.r>y1)continue;
     const R=b.r*(1+(b.wob>0?0.04*Math.sin(T*40)*b.wob/0.35:0));ctx.globalAlpha=Math.min(1,b.a);
     ctx.fillStyle='rgba(150,200,255,0.05)';circ(ctx,b.x,b.y,R);ctx.fill();
@@ -3390,6 +3535,22 @@ function drawBubbles(x0,x1,y0,y1){const S=P.S;
     ctx.strokeStyle='rgba(120,180,255,0.28)';ctx.lineWidth=1.5*S;circ(ctx,b.x,b.y,R);ctx.stroke();
     ctx.strokeStyle='rgba(235,248,255,0.5)';ctx.lineWidth=R*0.05;ctx.beginPath();ctx.arc(b.x,b.y,R*0.6,3.5+0.2*Math.sin(b.ph),4.5+0.2*Math.sin(b.ph));ctx.stroke();}
   ctx.globalAlpha=1;}
+//#FULL
+let EBUB=null; // v44 the Earth's obstacles: two storm clouds and two rocks, drawn once, then scaled
+function earthBubbles(x0,x1,y0,y1){if(!EBUB){EBUB=[];for(let v=0;v<4;v++){const c=mk(256,256),g=c.getContext('2d'),R=100;g.translate(128,128);let q=17+v*31;const rnd=()=>(q=(q*16807)%2147483647)/2147483647;
+    if(v<2){for(let i=0;i<9;i++){const a=i/9*TAU+rnd(),d=R*(0.35+rnd()*0.3),r=R*(0.38+rnd()*0.22),x=Math.cos(a)*d,y=Math.sin(a)*d,gr=g.createRadialGradient(x-r*0.3,y-r*0.3,r*0.1,x,y,r);gr.addColorStop(0,'#dfe6f2');gr.addColorStop(0.7,'#8a96ac');gr.addColorStop(1,'#5a6478');g.fillStyle=gr;circ(g,x,y,r);g.fill();}
+      const gr=g.createRadialGradient(-R*0.2,-R*0.2,R*0.1,0,0,R*0.62);gr.addColorStop(0,'#eef2fa');gr.addColorStop(1,'#9aa6bc');g.fillStyle=gr;circ(g,0,0,R*0.6);g.fill(); // a storm cloud: puffs round a bright top
+      g.strokeStyle='rgba(255,236,120,0.75)';g.lineWidth=5;g.lineJoin='round';g.beginPath();g.moveTo(R*0.05,-R*0.25);g.lineTo(-R*0.12,R*0.05);g.lineTo(R*0.06,R*0.04);g.lineTo(-R*0.1,R*0.32);g.stroke();} // a little lightning
+    else{g.fillStyle='#4a4038';g.beginPath();for(let i=0;i<=20;i++){const a=i/20*TAU,r=R*(0.88+0.1*Math.sin(i*1.7+v)+0.05*Math.sin(i*4.1));i?g.lineTo(Math.cos(a)*r,Math.sin(a)*r):g.moveTo(r,0);}g.closePath();g.fill();
+      const gr=g.createRadialGradient(-R*0.35,-R*0.35,R*0.1,0,0,R);gr.addColorStop(0,'rgba(200,185,165,0.55)');gr.addColorStop(1,'rgba(0,0,0,0.25)');g.fillStyle=gr;g.fill(); // a rock in space: light from one side
+      for(let i=0;i<6;i++){const a=rnd()*TAU,d=rnd()*R*0.6,r=R*(0.08+rnd()*0.12),x=Math.cos(a)*d,y=Math.sin(a)*d;g.fillStyle='rgba(30,24,20,0.55)';circ(g,x,y,r);g.fill();g.strokeStyle='rgba(220,205,185,0.35)';g.lineWidth=2;g.beginPath();g.arc(x,y,r,2.6,5.2);g.stroke();}}
+    EBUB.push(c);}}
+  const sp=P.stage>0?2:0;
+  for(const L of[bub.fade,bub.act])for(const b of L){if(b.a<=0||b.x+b.r<x0||b.x-b.r>x1||b.y+b.r<y0||b.y-b.r>y1)continue;
+    const R=b.r*(1+(b.wob>0?0.04*Math.sin(T*40)*b.wob/0.35:0))*1.28,im=EBUB[sp+((b.ph*3)|0)%2];ctx.globalAlpha=Math.min(1,b.a);
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(sp?b.ph:0);ctx.drawImage(im,-R,-R,R*2,R*2);ctx.restore();} // (a few at a time: save and restore are cheap enough)
+  ctx.globalAlpha=1;}
+//#/FULL
 function drawGas(x0,x1,y0,y1){const S=P.S;
   for(const g of gas){if(g.x+g.r<x0||g.x-g.r>x1||g.y+g.r<y0||g.y-g.r>y1)continue;const a=Math.min(1,g.life/1.2,(g.max-g.life)/0.3+0.2);
     ctx.globalAlpha=0.85*a;ctx.drawImage(GASSPR,g.x-g.r*1.1,g.y-g.r*1.1,g.r*2.2,g.r*2.2);
@@ -3674,7 +3835,7 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
   else if(P.endless){ctx.textAlign='center';ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#ffd86a';ctx.fillText(TX('endless_hud'),W/2,sy+20);ctx.textAlign='left';}
   else if(!P.clearAt&&state!=='clear'){const g=gateLen(),f=BRUSH?P.brN/BR_LIST.length:clamp((P.tailLen-P.st0)/Math.max(1,g-P.st0),0,1);
     ctx.fillStyle='rgba(90,140,170,0.35)';ctx.fillRect(W/2-tw/2,sy+12,tw,3);ctx.fillStyle='#7dffb0';ctx.fillRect(W/2-tw/2,sy+12,tw*f,3);
-    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(BRUSH?TX('br_hud',Math.min(P.brN+1,BR_LIST.length),BR_LIST.length):TX(PIT&&P.stage<STAGE_N.length-1?'gate_p':'gate'),W/2,sy+25);ctx.textAlign='left';}
+    ctx.textAlign='center';ctx.font=`11px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(BRUSH?TX('br_hud',Math.min(P.brN+1,BR_LIST.length),BR_LIST.length):TX(PIT&&P.stage<STAGE_N.length-1?'gate_p':STAGES[CS].grow&&P.stage<STAGE_N.length-1?'gate_g':'gate'),W/2,sy+25);ctx.textAlign='left';}
   // dash + charge
   const ready=P.dashCdT<=0,best=captures.filter(c=>c.cinchT<0).reduce((a,c)=>c.charge>a.charge?c:a,{charge:0});
   let bx,by,br,x0,cy2;
@@ -3797,7 +3958,7 @@ function titleScreen(W,H){
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
   const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
   fitFont(TX('tagline',verL()),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',verL()),W/2,tg);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[STAGES[stgIdx].spiders&&!META.opts.arach?TX('arach_hint'):TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[STAGES[stgIdx].spiders&&!META.opts.arach?TX('arach_hint'):TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].grow?TX('goal_g'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
@@ -3852,7 +4013,7 @@ function optsBody(W,top,bot){
     [TX('o_fx'),TX('fx_'+[1,0.4,0].indexOf(o.fx)),()=>set('fx',cyc([1,0.4,0],o.fx))]];
   if(TOUCH)rows.push([TX('o_ctl'),TX('ctl_'+(o.ctl==='point'?1:0)),()=>set('ctl',o.ctl==='point'?'stick':'point')]);
   if(navigator.vibrate)rows.push([TX('o_vib'),TX(o.vib?'on':'off'),()=>{set('vib',!o.vib);vib(30);}]);
-  rows.push([TX('o_q'),TX('q_'+[-1,3,2,1].indexOf(o.q)),()=>{set('q',cyc([-1,3,2,1],o.q));applyQ();}]);
+  rows.push([TX('o_q'),TX('q_'+[-1,3,2,1].indexOf(o.q)),()=>{set('q',cyc([-1,3,2,1],o.q));applyQ();},false,'q']); // (v44: an id, so a test can find the row)
 //#FULL
   rows.push([TX('o_arach'),TX(o.arach?'on':'off'),()=>{set('arach',!o.arach);ARACH_ON=o.arach;rebuildSpiders();},false,'arach']); // v43.1 arachnophobia mode
 //#/FULL
