@@ -249,8 +249,22 @@ function glowSprite(r,col){r=Math.round(r);const s=mk(r*2,r*2),g=s.getContext('2
   gr.addColorStop(0,col);gr.addColorStop(0.4,col.replace(/[\d.]+\)$/,m=>(parseFloat(m)*0.35).toFixed(3)+')'));gr.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=gr;g.fillRect(0,0,r*2,r*2);return s;}
 function circ(g,x,y,r){g.beginPath();g.arc(x,y,r,0,TAU);}
+// v43.1 arachnophobia mode (the owner: "someone afraid of spiders said they can't play it"). With it on (META.opts.arach, in the settings), every spider and
+// the eight-legged water mite is drawn as a soft round bug with no legs, in its own colours, so the kinds can still be told apart. rebuildSpiders() redraws them.
+let ARACH_ON=false;const SPIDERS=new Set(['spdl','wsilk','wdrop','jorou','spid','mite']);
+function softBug(g,t,fl,ph){const k=t.look||t.k,r=t.r,sq=1+0.06*Math.sin(ph||0),long=k==='jorou'||k==='wdrop',rx=r*(long?1.25:0.95)*sq,ry=r*(long?0.62:0.78)/sq;
+  const C={spdl:['#d8b47a','#f3e2c0'],wsilk:['#b07030','#f3e2c0'],wdrop:['#8a7058','#d8c4a8'],jorou:['#e8c440','#fff3b0'],spid:['#4a4248','#d8d2c8'],mite:['#ff5a4a','#ffb0a0']}[k]||[t.col,t.core];
+  g.fillStyle=fl?'#fff':C[0];g.beginPath();g.ellipse(-r*0.1,0,rx,ry,0,0,TAU);g.fill();
+  if(!fl){g.fillStyle=C[1];g.globalAlpha=0.5;g.beginPath();g.ellipse(-r*0.2,ry*0.22,rx*0.62,ry*0.45,0,0,TAU);g.fill();g.globalAlpha=1; // a paler belly
+    if(k==='jorou'){g.save();g.beginPath();g.ellipse(-r*0.1,0,rx,ry,0,0,TAU);g.clip();g.fillStyle='rgba(30,40,70,0.5)';for(let i=0;i<4;i++)g.fillRect(-r*0.1-rx*0.65+i*rx*0.42,-ry,rx*0.12,ry*2);g.restore();} // its bands, so it still looks like itself
+    if(k==='wsilk'){g.fillStyle='rgba(255,240,210,0.85)';circ(g,-r*0.35,0,r*0.13);g.fill();}
+    for(const sg of[-1,1]){g.fillStyle='#fff';circ(g,rx*0.55-r*0.1,sg*ry*0.36,r*0.2);g.fill();g.fillStyle='#1a1418';circ(g,rx*0.6-r*0.1,sg*ry*0.36,r*0.1);g.fill();} // two round eyes in front
+    g.fillStyle='rgba(255,255,255,0.4)';g.beginPath();g.ellipse(-rx*0.35,-ry*0.45,rx*0.3,ry*0.18,-0.3,0,TAU);g.fill();}
+  g.globalAlpha=1;}
+function rebuildSpiders(){for(const t of ALLT)if(SPIDERS.has(t.look||t.k)){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}}}
 function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that have frames
   const r=t.r,col=fl?'#ffffff':t.col,core=fl?'#ffffff':t.core;
+  if(ARACH_ON&&SPIDERS.has(t.look||t.k)){softBug(g,t,fl,ph);return;}
   switch(t.look||t.k){
   case 'germ':g.fillStyle=col;circ(g,0,0,r);g.fill();g.fillStyle=core;g.globalAlpha=.8;circ(g,-r*.25,-r*.25,r*.38);g.fill();
     g.globalAlpha=.5;g.fillStyle='#000';circ(g,r*.2,r*.15,r*.18);g.fill();break;
@@ -786,8 +800,8 @@ if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'
 if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn','ember','frost','sip'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
-META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick'},META.opts&&typeof META.opts==='object'?META.opts:{});
-if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;
+META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick',arach:false},META.opts&&typeof META.opts==='object'?META.opts:{});
+if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;META.opts.arach=!!META.opts.arach;ARACH_ON=META.opts.arach;if(ARACH_ON)rebuildSpiders(); // v43.1
 META.stats=Object.assign({kills:0,dashKills:0,toxins:0},META.stats&&typeof META.stats==='object'?META.stats:{});
 if(!META.done||typeof META.done!=='object')META.done={};
 META.time=+META.time||0;
@@ -798,7 +812,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v43',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v43.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1035,6 +1049,8 @@ const STR={
  bk_dragf:['暗がりで待ち、近づくと赤く光って飛んでくる','Waits in the dark; come close, it glows red and strikes'],
  bk_isopod:['光らない。殻 2 枚で、ゆっくり這ってくる','Gives no light. Two shells; crawls slowly in'],
  bk_angler:['ボス。ちょうちんだけが光る。光った輪に食いつく','Boss. Only its lure shows. Lunges at a lit coil'],
+ o_arach:['クモをまるい姿に','Arachnophobia'],
+ arach_hint:['クモが苦手なら：設定 →「クモをまるい姿に」','Afraid of spiders? Settings → Arachnophobia'],
  tip_mold:['粘菌','The Slime Mold'],
  tip_mold_s:['網の上は遅い。巻いて切ると、その先が枯れる','Its net slows you. Cut it, and all beyond withers'],
  mold_wither:['網が枯れていく！','The net withers!'],
@@ -1670,7 +1686,7 @@ const STAGES=[
   tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
   waves:WAVES,boss:JAR_BOSS,hunt:[null],titan:[null],toxin:[TOXIN_T[0]],gas:[8],realK:[1],rush:JAR_RUSH,
   book:[[0,'germ','germ'],[0,'kinc','kinc'],[0,'virus','virus'],[0,'kind','kind'],[0,'halt','hop'],[0,'kinh','kinh'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,JAR_RUSH[0],'rush'],[0,JAR_BOSS[0],'kinb']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'pit',n:['蟻地獄','Antlion Pit'],wip:1,pit:1,gate:2100,names:[['すり鉢の底','Pit Bottom'],['すり鉢の中ほど','Pit Slope'],['すり鉢のふち','Pit Rim']], // v37: a forced scroll up the side of an antlion's pit (pitTick). v37.1: the player grows a scale each time the tail is long enough (no bosses on the way); the antlion, the same size all along, is the boss at the rim
+ {id:'pit',n:['蟻地獄','Antlion Pit'],wip:1,pit:1,spiders:1,gate:2100,names:[['すり鉢の底','Pit Bottom'],['すり鉢の中ほど','Pit Slope'],['すり鉢のふち','Pit Rim']], // v37: a forced scroll up the side of an antlion's pit (pitTick). v37.1: the player grows a scale each time the tail is long enough (no bosses on the way); the antlion, the same size all along, is the boss at the rim
   tiers:[[['ant',0,8,0],['sprg',12,3,40],['antl',20,1.2,30],['pill',30,2.2,40]],
          [['grass',0,5,0],['spid',8,2.4,40],['beet',16,2.2,40]],
          [['centi',0,1.2,0],['mantis',8,2.4,40]]],
@@ -1680,11 +1696,11 @@ const STAGES=[
   tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
   waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
   book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago'],[0,YAGO_FORMS[1],'dfly']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'web',n:['蜘蛛の巣','Spider Web'],wip:1,web:1,gate:1500,names:[['網の上','On the Web']], // v39: webs over the ground that slow the snake and that a squeeze cuts (webTick), spiders in numbers, and the Joro Spider
+ {id:'web',n:['蜘蛛の巣','Spider Web'],wip:1,web:1,spiders:1,gate:1500,names:[['網の上','On the Web']], // v39: webs over the ground that slow the snake and that a squeeze cuts (webTick), spiders in numbers, and the Joro Spider
   tiers:[[['spdl',0,8,0],['wjump',15,2.4,40],['wsilk',30,2,50],['wdrop',45,1.5,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.35),...w.slice(2)]),boss:WEB_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:WEB_RUSH,
   book:[[0,'spdl','spdl'],[0,'wjump','wjump'],[0,'wsilk','wsilk'],[0,'wdrop','wdrop'],[0,'wfly','wfly'],[0,WEB_RUSH[0],'rush'],[0,WEB_BOSS[0],'jorou']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'brush',n:['ボスラッシュ','Boss Rush'],wip:1,brush:1,tail0:1600,gate:3200,hp0:200,names:[['決戦場','The Arena']], // v40: nine bosses one after another (BR_LIST), with a breather between; the player starts big and strong
+ {id:'brush',n:['ボスラッシュ','Boss Rush'],wip:1,brush:1,spiders:1,tail0:1600,gate:3200,hp0:200,names:[['決戦場','The Arena']], // v40: nine bosses one after another (BR_LIST), with a breather between; the player starts big and strong
   tiers:[[['germ',0,6,0],['halt',30,2,40],['ppara',60,2,40]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.5),w[2]]),boss:[null],hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
   book:[[0,BOSS_T[0],'boss0'],[0,POND_BOSS[0],'stentor'],[0,BOSS_T[1],'boss1'],[0,WEB_BOSS[0],'jorou'],[0,POND_BOSS[1],'hydra'],[0,JAR_BOSS[0],'kinb'],[0,GIANT_BOSS[0],'yago'],[0,BOSS_T[2],'boss2'],[0,POND_BOSS[2],'ontard']]},
@@ -3781,7 +3797,7 @@ function titleScreen(W,H){
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
   const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
   fitFont(TX('tagline',verL()),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',verL()),W/2,tg);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[STAGES[stgIdx].spiders&&!META.opts.arach?TX('arach_hint'):TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
@@ -3837,10 +3853,13 @@ function optsBody(W,top,bot){
   if(TOUCH)rows.push([TX('o_ctl'),TX('ctl_'+(o.ctl==='point'?1:0)),()=>set('ctl',o.ctl==='point'?'stick':'point')]);
   if(navigator.vibrate)rows.push([TX('o_vib'),TX(o.vib?'on':'off'),()=>{set('vib',!o.vib);vib(30);}]);
   rows.push([TX('o_q'),TX('q_'+[-1,3,2,1].indexOf(o.q)),()=>{set('q',cyc([-1,3,2,1],o.q));applyQ();}]);
+//#FULL
+  rows.push([TX('o_arach'),TX(o.arach?'on':'off'),()=>{set('arach',!o.arach);ARACH_ON=o.arach;rebuildSpiders();},false,'arach']); // v43.1 arachnophobia mode
+//#/FULL
   if(FS_OK)rows.push([TX('o_fs'),TX(isFS()?'on':'off'),toggleFS,true]);
   const w=Math.min(420,W-28),rh=Math.min(48,(bot-top)/rows.length-8),x=W/2-w/2;let y=top+Math.max(0,(bot-top-rows.length*(rh+8))*0.35);
-  for(const [label,val,f,up] of rows){panel(x,y,w,rh,0.85);ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`bold ${Math.min(16,rh*0.4)|0}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(label,x+16,y+rh/2);
-    btn({x:x+w-148,y:y+5,w:142,h:rh-10},val,0);hot.push({x,y,w,h:rh,f,up});y+=rh+8;}
+  for(const [label,val,f,up,id] of rows){panel(x,y,w,rh,0.85);ctx.textAlign='left';ctx.textBaseline='middle';ctx.font=`bold ${Math.min(16,rh*0.4)|0}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(label,x+16,y+rh/2);
+    btn({x:x+w-148,y:y+5,w:142,h:rh-10},val,0);hot.push({x,y,w,h:rh,f,up,id});y+=rh+8;}
   return 1;
 }
 // break a paragraph into lines that fit maxW (Japanese breaks anywhere except before 。、 etc.; English at spaces)
@@ -4137,9 +4156,9 @@ window.__g={get pit(){return PIT;},get splash(){return SPL;},renderSfx,get death
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},get arach(){return ARACH_ON;},lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
-  get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
+  get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k,id:r.id}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO,SUPER};},applyCard,
   spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,cycleStage,get INF(){return INF;},get choices(){return choices?choices.map(c=>(c&&c.id)||''):null;},get stage(){return{cur:CS,sel:stgIdx,list:STAGES.map((s,i)=>({id:s.id,name:s.n,open:stageOpen(i),soon:!!s.soon}))};},spawnTitan,enrage,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
