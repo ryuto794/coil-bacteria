@@ -888,7 +888,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v45',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v46',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1180,6 +1180,13 @@ const STR={
  df_0:['やさしい','Easy'],df_1:['ふつう','Normal'],df_2:['むずかしい','Hard'],df_t:['難易度','Difficulty'],
  df_dna:['DNA ×{0}','DNA ×{0}'],
  end2:['最大コンボ x{0}  /  到達 {1}  /  ボス撃破 {2}','Best combo x{0}  /  Reached {1}  /  Bosses {2}'],
+ end2_t:['最大コンボ x{0}  /  世界 {1}（{2}）  /  ボス撃破 {3}','Best combo x{0}  /  World {1} ({2})  /  Bosses {3}'],
+ tour_name:['世界めぐり','World Tour'],tour_lbl:['エンドレス','Endless'],tour_lock:['（ステージ 1 をクリアで開く）','(clear Stage 1 to open)'],
+ goal_tour:['ボスを倒すと次の世界へ。最後のあとは、強くなって最初から','Beat each boss to move on. After the last, round again, harder'],
+ best_tour:['DNA {0}　最長 {1}　めぐった世界 {2}','DNA {0}   Best {1}   Worlds {2}'],
+ tour_next:['次の世界へ！','On to the next world!'],tour_next_s:['つぎは {0}','Next: {0}'],
+ tour_round:['ひとめぐりした！','Round the world!'],tour_round_s:['{0} 周目へ。敵が強くなる','Round {0}: they get stronger'],
+ tour_in:['世界 {0}','World {0}'],tour_lapn:['{0} 周目','round {0}'],tour_hud:['世界 {0}・{1}：','World {0} · {1}:'],
  end_dna:['DNA +{0}（合計 {1}）','DNA +{0} (total {1})'],
  end_new:['新しく解放：{0}','Newly unlocked: {0}'],
  sep:['、',', '],
@@ -1639,7 +1646,8 @@ function zoomT(){return targetS(P.tailLen)*P.grow;}
 function isPrey(e){return e.pf||!e.boss&&!e.hunter&&!e.titan&&e.t.st<P.stage&&e.t.k!=='toxin';}
 const PREY_XP=0.3; // XP for one outgrown creature, whatever it used to be worth
 function reset(start){
-  if(start){if(LOCKED||!stageOpen(stgIdx))return;useStage(stgIdx);} // a run is always of the stage shown on the title screen
+  if(start){if(LOCKED)return;if(TOURSEL){if(!tourOpen())return;TOUR={lap:0,wi:0,n:1,wl:1,wx:0};useStage(tourList()[0]);}else{if(!stageOpen(stgIdx))return;TOUR=null;useStage(stgIdx);}} // a run is always of the stage shown on the title screen (v46: or the World Tour)
+  else TOUR=null;TW0=0;
   const tl=+Q.get('tail')||(start&&STAGES[CS].tail0)||640; // (v38: a stage may start the tail longer)
   P={x:0,y:0,a:0,spd:195,turn:4.0,hp:100,maxHp:100,inv:0,tailLen:tl,dashCd:2.2,dashT:0,dashCdT:0,dashBuf:0,dashNo:0,hurtT:0,boomAt:-9,lvWait:0,dashAge:0,ghostT:0,
      dashBase:0.55,dashHoldMax:0.85,dashStacks:0,
@@ -1657,18 +1665,10 @@ function reset(start){
   calmUntil=0;bossKills=0;DQ.n=0;DQ.t=0;DQ.c=0;DQ.sx=0;DQ.sy=0;toasts=[];husks=[];goo=[];cores=[];HUSK=null;DEATH=null;slime=[];runRes=null;runNew=[];RUNSEED=Math.random()*1e9|0;gas=[];chests=[];chestRes=null;evtMsg=null;tipQ=[];tipSeen={};items=[];runMis=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];
   skinIdx=Math.max(0,SKINS.findIndex(s=>s.id===META.skin));
   state=start?'play':'title';
-  PIT=null;
-//#FULL
-  if(start&&STAGES[CS].pit){PIT=pitNew();P.magT=6;} // v37 (the full game only)
-  sheds=[]; // v38.10
-  WEBS=start&&STAGES[CS].web?webNew():null; // v39
-  DARK=start&&STAGES[CS].dark?darkNew():null;if(DARK)tip('deep'); // v42
-  MOLD=start&&STAGES[CS].mold?moldNew():null;if(MOLD){tip('mold');moldCore(P.x+40,P.y-260,12);moldCore(P.x-260,P.y+720,6);} // v43 (the first core above the snake: on a phone held upright there is room up and down, not across)
-  if(start&&STAGES[CS].id==='earth')tip('earth'); // v44
-//#/FULL
+  worldInit(start);
   if(start&&APART)tip('giant'); // v38
   if(start&&BRUSH)tip('brush'); // v40
-  if(start&&STAGES[CS].spk)for(let i=0;i<STAGES[CS].spk;i++){const c=CARD('spike');if(c)applyCard(c);} // v42.1 the Deep Sea: the snake starts spiked (the owner: "bigger from the start, or spiky")
+  if(start&&!TOUR&&STAGES[CS].spk)for(let i=0;i<STAGES[CS].spk;i++){const c=CARD('spike');if(c)applyCard(c);} // v42.1 the Deep Sea: the snake starts spiked (the owner: "bigger from the start, or spiky")
   if(start&&STAGES[CS].hp0)P.hp=P.maxHp=STAGES[CS].hp0; // v38.5 the Land of Giants: the player starts big and strong (the owner: "start us off huge and strong")
   resetBubbles();
   if(start&&!PIT)for(let i=0;i<(Q.has('swarm')?26:2);i++)spawnCluster(Q.has('swarm')?12:APART?2:8); // (v38: giants, two by two)
@@ -1718,14 +1718,15 @@ function pickFrom(list,t,flat){let tot=0;const w=list.map(([k,t0,top,ramp])=>{le
 function pickType(){return pickFrom(TIERS[P.stage],T-P.stageT);}
 function pickPrey(){if(PREY_L)return ET[PREY_L[Math.random()*PREY_L.length|0]];const st=P.stage>1&&Math.random()<0.75?P.stage-1:Math.random()*P.stage|0;return pickFrom(TIERS[st],1e9,true);} // mostly from the scale just left, in an even mix of its kinds (so the field is not all round germs)
 const CAP=260;
-function hpScale(){return 1+T/300+P.stage*0.3;}
+function hpScale(){return (1+TNOW()/300+P.stage*0.3)*(1+0.5*LAP());}
+function TNOW(){return T-TW0;} // v46 the time in this world (a run of one stage: the run's time)
 // Creatures keep their size in the world, so they look smaller and smaller as the player grows.
 // From the Cell scale on, real enemies come in three builds: most are ordinary (a little bigger or smaller), one in five is a runt
 // (small, fast, weak) and one in eight a brute (big, slow, hits harder, one more shell if it has any). sc is its size against the table.
 // plain = exactly as the table says (events that want a uniform line, and tests).
 function mkEnemy(t,x,y,plain){const pr=t.st<P.stage&&t.k!=='toxin',fixed=pr||plain||t.k==='toxin'||!!t.L,v=Math.random(),cls=fixed||!P.stage?0:v<0.2?1:v>0.875?2:0;
   const sc=fixed?1:cls===1?rand(0.6,0.74):cls===2?rand(1.5,1.9):rand(0.88,1.16),sh=pr?0:(t.sh||0)+(cls===2&&t.sh?1:0);
-  return{x,y,vx:0,vy:0,t,sc,pr,hp:pr?1:Math.ceil(t.hp*hpScale()*sc*sc),r:t.r*sc,ang:0,spd:t.spd*DF().spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600))*(cls===1?1.4:cls===2?0.72:1),
+  return{x,y,vx:0,vy:0,t,sc,pr,hp:pr?1:Math.ceil(t.hp*hpScale()*sc*sc),r:t.r*sc,ang:0,spd:t.spd*DF().spd*rand(0.85,1.1)*(1+Math.min(0.3,TNOW()/600))*(cls===1?1.4:cls===2?0.72:1),
   dm:cls===1?0.8:cls===2?1.35:1,flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh,shMax:sh,xpB:(1+0.5*sh)*sc,slowT:0,spk:0};}
 function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, anywhere around (also dead ahead: it is there to be run over)
   const Sx=Math.max(P.S,zoomT());let cx,cy,spread;
@@ -1760,7 +1761,7 @@ function spawnWedge(t,x,y){const n=t.wedge,g=t.r*2.7,L=mkEnemy(t,x,y,true);L.ang
 // Peaks and lulls as before, but the peaks keep climbing: the later it gets, the more there is to coil at once.
 let WAVES=[[0,20,1.0],[25,30,0.9],[55,42,0.8,'stream'],[85,18,1.1,'titan'],[110,55,0.75,'toxin'],[150,24,1.0],[180,70,0.7,'ring'],[220,26,1.0,'titan'],[250,85,0.65,'stream'],[290,30,0.9,'hunt'],
  [330,100,0.65,'toxin'],[370,34,0.9,'titan'],[410,115,0.6,'rush'],[450,36,0.9],[490,130,0.6,'ring'],[530,40,0.9,'toxin','titan'],[570,145,0.55,'stream'],[610,44,0.9,'hunt']];
-function waveNow(){const L=WAVES,last=L[L.length-1][0];
+function waveNow(){const L=WAVES,last=L[L.length-1][0],T=TNOW(); // (v46: the world's own clock)
   if(T<last+40){let i=0;for(let k=0;k<L.length;k++)if(T>=L[k][0])i=k;return{w:L[i],key:''+i,mul:1};}
   const k=Math.floor((T-last-40)/40),cyc=Math.floor(k/4)+1,i=L.length-4+(k%4);return{w:L[i],key:i+':'+cyc,mul:1+0.12*cyc};}
 let REAL_K=[1,0.7,0.55]; // the wave table counts germ-sized enemies; bigger scales need fewer real enemies for the same pressure
@@ -1822,14 +1823,34 @@ let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3,BRUSH=false,BR_LIST=[]; 
 // v40 the Boss Rush (stage 7): the bosses of the stages before, the light ones first (the antlion stays in its pit: it needs one)
 BR_LIST=[STAGES[0].boss[0],POND_BOSS[0],STAGES[0].boss[1],WEB_BOSS[0],POND_BOSS[1],JAR_BOSS[0],GIANT_BOSS[0],STAGES[0].boss[2],POND_BOSS[2]];
 //#/FULL
+// the world's own things: the pit, the webs, the dark, the slime mold (at a run's start, and at each new world on the tour)
+function worldInit(start){PIT=null;
+//#FULL
+  if(start&&STAGES[CS].pit){PIT=pitNew();P.magT=6;} // v37 (the full game only)
+  sheds=[]; // v38.10
+  WEBS=start&&STAGES[CS].web?webNew():null; // v39
+  DARK=start&&STAGES[CS].dark?darkNew():null;if(DARK)tip('deep'); // v42
+  MOLD=start&&STAGES[CS].mold?moldNew():null;if(MOLD){tip('mold');moldCore(P.x+40,P.y-260,12);moldCore(P.x-260,P.y+720,6);} // v43 (the first core above the snake: on a phone held upright there is room up and down, not across)
+  if(start&&STAGES[CS].id==='earth')tip('earth'); // v44
+//#/FULL
+}
 function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;BRUSH=!!d.brush;PREY_L=d.prey||null;PREY_XP_S=d.preyXp||PREY_XP;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i,d){if(d===undefined)d=DIFF;if(d!==1){if(!META.bestsD||typeof META.bestsD!=='object')META.bestsD={};const k=STAGES[i].id+'@'+d;return META.bestsD[k]||(META.bestsD[k]={t:0,stage:0,clears:0});} // v45 easy and hard keep records of their own (normal: as before)
   if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
 function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&([0,1,2].some(d=>(bestOf(i-1,d).clears||0)>0)||FORCE_STG===i));} // (v45: a clear on any difficulty) // a stage opens when the one before it has been cleared
-function cycleStage(d){stgIdx=(stgIdx+d+STAGES.length)%STAGES.length;useStage(stgIdx);META.stg=STAGES[stgIdx].id;saveMeta();}
+// v46 the World Tour (the owner: "an endless mode": chosen form "go round the worlds"). The slot after the last stage in the chooser. One run goes through
+// every world in order (the Boss Rush aside); beating the world's last boss moves on to the next world, keeping the level and the cards, and the world
+// starts afresh (its own tail, scales, waves); after the last world it goes round again, harder (TOUR.lap). No end: the run ends when the snake does.
+let TOUR=null,TOURSEL=false,TW0=0; // TOUR: {lap, wi (index into tourList()), n (worlds reached, 1 at the start)}; TOURSEL: the chooser is on the tour; TW0: when this world began (its waves count from it)
+const FORCE_TOUR=Q.has('tour'); // ?tour: the tour chosen and open (for testing)
+function tourList(){const L=[];STAGES.forEach((d,i)=>{if(!d.soon&&!d.full&&!d.brush)L.push(i);});return L;}
+function tourOpen(){return FORCE_TOUR||[0,1,2].some(d=>(bestOf(0,d).clears||0)>0);} // it opens when stage 1 has been cleared
+function tourBest(d){if(d===undefined)d=DIFF;if(!META.tourB||typeof META.tourB!=='object')META.tourB={};return META.tourB[d]||(META.tourB[d]={t:0,w:0,kills:0,combo:0,stage:0});}
+const LAP=()=>TOUR?TOUR.lap:0;
+function cycleStage(d){const n=STAGES.length+1;let k=TOURSEL?STAGES.length:stgIdx;k=(k+d+n)%n;TOURSEL=k===STAGES.length;if(!TOURSEL){stgIdx=k;useStage(stgIdx);}META.stg=TOURSEL?'tour':STAGES[stgIdx].id;saveMeta();}
 const FORCE_STG=Q.has('stage')?(+Q.get('stage')||1)-1:-1; // ?stage=2: open and choose that stage, for testing
-stgIdx=FORCE_STG>0&&STAGES[FORCE_STG]&&!STAGES[FORCE_STG].soon&&!STAGES[FORCE_STG].full?FORCE_STG:Math.max(0,STAGES.findIndex(s=>s.id===META.stg));if(!stageOpen(stgIdx))stgIdx=0;useStage(stgIdx);
+stgIdx=FORCE_STG>0&&STAGES[FORCE_STG]&&!STAGES[FORCE_STG].soon&&!STAGES[FORCE_STG].full?FORCE_STG:Math.max(0,STAGES.findIndex(s=>s.id===META.stg));if(!stageOpen(stgIdx))stgIdx=0;useStage(stgIdx);TOURSEL=FORCE_TOUR||(FORCE_STG<0&&META.stg==='tour'&&tourOpen());
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
   const{w,key,mul}=waveNow();
@@ -1846,11 +1867,11 @@ function waveTick(dt){
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
   let real=0,prey=0;for(const e of enemies){if(e.boss||e.hunter||e.titan||e.dead)continue;if(e.pr||e.fd)prey++;else real++;}
   if(real+prey>=CAP)return;
-  const def=Math.round(w[1]*mul*DF().cnt*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real; // (v45 the difficulty: how many)
+  const def=Math.round(w[1]*mul*DF().cnt*(1+0.25*LAP())*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real; // (v45 the difficulty: how many)
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));
     if(P.kps>6&&def>(def+real)*0.4)P.waveT=Math.min(P.waveT,0.3);} // v23: the screen is being emptied faster than it fills: the next group comes at once
   else if(!APART&&Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle (v38: not giants: a few at a time is the point)
-  if(P.stage||PREY_L){const pd=(PREY_L?Math.min(QL<2?40:60,30+(T/6|0)):Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9)))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
+  if(P.stage||PREY_L){const pd=(PREY_L?Math.min(QL<2?40:60,30+(TNOW()/6|0)):Math.min(QL<2?70:120,Math.round(w[1]*mul*0.9)))-prey;if(pd>0)spawnCluster(Math.min(pd,22),null,true);} // and a field of prey to plough through
 }
 function evt(s,sub,dur,isTip){const t=dur||2.6;evtMsg={s,sub,t,max:t,tip:!!isTip};}
 // first-play tips: each shows the first two times its moment comes up (counted in META.tips), at most once per run.
@@ -1981,7 +2002,7 @@ function pitTick(dt){const S=P.S,half=H*(0.5+CAMY)*S,B=PIT_BOSS[0]; // (half: ho
     return;}
   if(!PIT.go){PIT.go=1;banner={t:2.6,max:2.6,title:TX('pit_in'),sub:TX('pit_in_s')};for(let i=0;i<2;i++)spawnCluster(8);calmUntil=T+0.8;} // the way in is over: the first of them come tumbling down
   if(P.boss||P.clearAt||state!=='play')PIT.y+=(PIT.y-P.y<half*1.15?90:20)*S*dt; // the antlion is out (or the stage is won): the pit sinks away
-  else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,T/300));PIT.v=base+Math.max(0,gap-half*1.12)*2;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws. v38.1, the owner: "race up and you should be able to open the gap a little more": it catches up only past 1.12 screens below, so the jaws may drop out of sight; the bottom edge glows while they come)
+  else{const gap=PIT.y-B.r*0.96-P.y,base=P.spd*S*(PIT_V0+(PIT_V1-PIT_V0)*Math.min(1,TNOW()/300));PIT.v=base+Math.max(0,gap-half*1.12)*2;PIT.y-=PIT.v*dt;} // (v37.1: measured from the tips of its jaws. v38.1, the owner: "race up and you should be able to open the gap a little more": it catches up only past 1.12 screens below, so the jaws may drop out of sight; the bottom edge glows while they come)
   PIT.jx+=(P.x-PIT.jx)*Math.min(1,dt*1.3); // the jaws follow along under the player, a little behind
   if(PIT.bite>0)PIT.bite-=dt;if(PIT.snap>0)PIT.snap-=dt;
   const g=PIT.y-P.y;
@@ -2364,16 +2385,16 @@ function maybeShell(e){const t=e.t;
 function spawnBoss(){
   const t=BRUSH?BR_LIST[P.brN%BR_LIST.length]:BOSS_T[P.stage];if(!t)return; // (v40: in the Boss Rush, the next on the list) // (v37.1: the pit has a boss at its last scale only)
   const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
-  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare||t.molts||t.hits?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
+  const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare||t.molts||t.hits?0:P.bossN?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
   const sh1=sh>0?Math.max(1,sh+DF().boss):0; // (v45 the difficulty: a shell less or more)
   const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)*DF().bhp),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
     sh:sh1,shMax:sh1,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
   enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=dCnt(Math.min(4,t.lives+P.bossN));e.hp0=e.hp;}
-  if(t.naps){e.naps=e.napsMax=dCnt(P.endless?Math.min(5,t.naps+P.bossN):t.naps-1);} // v36 (v38.9: two crushes before the clear, three and more in endless)
-  if(t.molts){e.molts=e.moltMax=dCnt(P.endless?Math.min(4,t.molts+P.bossN):t.molts);e.hp0=e.hp;}
-  if(t.hits){e.hits=e.hitsMax=dCnt(P.endless?Math.min(4,t.hits+P.bossN):t.hits);e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
+  if(t.naps){e.naps=e.napsMax=dCnt(P.bossN?Math.min(5,t.naps+P.bossN):t.naps-1);} // v36 (v38.9: two crushes before the clear, three and more in endless)
+  if(t.molts){e.molts=e.moltMax=dCnt(P.bossN?Math.min(4,t.molts+P.bossN):t.molts);e.hp0=e.hp;}
+  if(t.hits){e.hits=e.hitsMax=dCnt(P.bossN?Math.min(4,t.hits+P.bossN):t.hits);e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
-  if(t.k==='hydra'&&!OLDB){const n=Math.max(2,(P.endless?Math.min(6,4+P.bossN):3)+DF().boss); /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
+  if(t.k==='hydra'&&!OLDB){const n=Math.max(2,(P.bossN?Math.min(6,4+P.bossN):3)+DF().boss); /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
 //#FULL
   if(t.k==='physa'){e.net=[];e.gT=0.5;} // v43 the Slime Mold grows a net of its own
 //#/FULL
@@ -2503,6 +2524,8 @@ function bossDown(e){
   if(BRUSH&&(P.endless||P.brN<BR_LIST.length-1)){P.brN++;if(P.endless){if(P.brN%BR_LIST.length===0)P.bossN++;P.nextBoss=T+8;}else P.brT=T+3.5;dropChest(e.x,e.y,P.brN%2===0); // v40 the Boss Rush: the next boss after a breather (a capsule each time, an evolution every other)
     if(items.length<4){const S=P.S;items.push({x:P.x+Math.cos(P.a)*150*S,y:P.y+Math.sin(P.a)*150*S,k:'heal',life:22,ph:Math.random()*TAU});}evt(TX('br_next'));return;}
   if(P.stage<STAGE_N.length-1){dropChest(e.x,e.y,true);stageUp();} // the last scale's boss ends the stage
+  else if(TOUR){dropChest(e.x,e.y,true);P.tourAt=T+2.6;calmUntil=1e9;P.inv=Math.max(P.inv,4);for(const o of orbs)o.pull=1;for(const q of items)q.pull=1;for(const c of chests)c.pull=1; // v46 the tour: everything on the ground comes in, then the next world
+    const L=tourList(),last=TOUR.wi>=L.length-1;banner=last?{t:3,max:3,title:TX('tour_round'),sub:TX('tour_round_s',TOUR.lap+2)}:{t:2.6,max:2.6,title:TX('tour_next'),sub:TX('tour_next_s',STAGES[L[TOUR.wi+1]].n)};}
   else if(P.endless){P.bossN++;P.nextBoss=T+75;dropChest(e.x,e.y,true);}
   else{P.clearAt=T+1.4;calmUntil=1e9;
 //#FULL
@@ -2524,7 +2547,7 @@ function stageUp(){
 // the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
 function hitHead(raw,by){if(P.inv>0||DEMO||(P.phase&&P.dashT>0))return false;const S=P.S; // Phase Dash: nothing hurts during a dash
   if(P.guard>0){P.guard--;P.guardT=0;P.inv=0.75;sfx('crack');vib(20);rings.push({x:P.x,y:P.y,r:14*S,R:70*S,life:0.35,max:0.35,col:'#9fe8ff',w:5*S});text(P.x,P.y-40*S,TX('blocked'),22,'#9fe8ff',0.9);return false;} // a barrier takes the hit
-  const dm=Math.max(1,Math.round(raw*DF().dmg*(1-0.15*P.horn)*(1-0.1*P.armor))); // (v45 the difficulty)
+  const dm=Math.max(1,Math.round(raw*DF().dmg*(1+0.2*LAP())*(1-0.15*P.horn)*(1-0.1*P.armor))); // (v45 the difficulty)
   P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');hitstop=Math.max(hitstop,0.07);P.hurtT=0.2; // v32: a bite stops the game for a moment, and the edge goes red
  vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);hpHitAt=performance.now();
   text(P.x,P.y-40*S,'-'+dm,30,'#ff4a5c',1.1);const who=by&&(by.name||by.n);if(who)text(P.x,P.y-16*S,who,14,'#ffc0c8',1.1); // how much, and what did it
@@ -2541,14 +2564,24 @@ function die(by){
 // in the full game (the demo: the button says so and cannot be pressed), -1 if there is none (the last stage, or one still being made).
 function nextStage(){const i=CS+1;if(i>=STAGES.length)return -1;const d=STAGES[i];return d.full?-2:d.soon?-1:i;}
 function goNext(){const i=nextStage();if(state!=='clear'||overT<0.6||i<0||!stageOpen(i))return;stgIdx=i;META.stg=STAGES[i].id;saveMeta();reset(true);} // it becomes the stage chosen on the title screen too
+// v46 the tour moves on: the next world (after the last, the first again, one round harder). The level, the cards, HP and the time stay; the world's own
+// size (tail, scale, zoom), its creatures, waves and ground start afresh, as at the start of a run of that stage
+function tourGo(){if(!TOUR)return;const L=tourList();TOUR.wi++;if(TOUR.wi>=L.length){TOUR.wi=0;TOUR.lap++;}TOUR.n++;TOUR.wl=1;TOUR.wx=0;
+  useStage(L[TOUR.wi]);TW0=T;const t0=STAGES[CS].tail0||640,st=stageOf(t0);P.stage=st;const g0=gateLen(),tl=Math.round(Math.min(t0*Math.pow(1.18,(P.lv&&P.lv.tail)||0)*(P.colossus?1.35:1),t0+(g0-t0)*0.5)); // (Longer Tail and Colossus still count, up to halfway to the world's first gate)
+  Object.assign(P,{x:0,y:0,tailLen:tl,stage:st,grow:Math.pow(GROW,st),S:targetS(tl)*Math.pow(GROW,st),stageT:T,st0:tl,trail:[{x:0,y:0,s:0}],serial:1,minSerial:0,loopCd:0,knots:[],lastKnot:null,lastLoop:null,str:0,strT:0,
+    boss:null,hunter:null,rushT:0,rushDue:false,titanDue:false,waveKey:'',waveMin:undefined,waveT:0.5,clearAt:0,tourAt:0,nextBoss:0,bossN:TOUR.lap,brN:0,latPrev:0,bound:0});
+  if(STAGES[CS].hp0&&P.maxHp<STAGES[CS].hp0){P.hp+=STAGES[CS].hp0-P.maxHp;P.maxHp=STAGES[CS].hp0;}P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);P.inv=Math.max(P.inv,2.5); // a little HP back between worlds
+  enemies=[];orbs=[];captures=[];gas=[];chests=[];items=[];booms=[];needles=[];bolts=[];shots=[];spawnQ=[];fires=[];ecaps=[];husks=[];goo=[];cores=[];slime=[];HUSK=null;
+  calmUntil=T+2;worldInit(true);resetBubbles();if(!PIT)for(let i=0;i<2;i++)spawnCluster(APART?2:8);
+  flashT=0.5;shake=Math.max(shake,10);sfx('stage');banner={t:2.8,max:2.8,title:TX('tour_in',TOUR.n),sub:STAGES[CS].n+(TOUR.lap?'  ·  '+TX('tour_lapn',TOUR.lap+1):'')};}
 function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;if(BRUSH){P.brN=0;P.nextBoss=T+10;}calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('endless'),sub:TX('endless_s')};}
 function endRun(clear){if(runRes)return;
-  const b=bestOf(CS),total=Math.floor((Math.floor(kills/25)+Math.floor(P.dnaB||0)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0))*DF().dna),dna=total-P.dnaPaid,rec=[]; // (v45: the difficulty scales the DNA)
+  const b=TOUR?tourBest():bestOf(CS),total=Math.floor((Math.floor(kills/25)+Math.floor(P.dnaB||0)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0)+(TOUR?(TOUR.n-1)*20:0))*DF().dna), /* (v46: the tour, its own records; 20 DNA a world) */dna=total-P.dnaPaid,rec=[]; // (v45: the difficulty scales the DNA)
   if(!P.counted){P.counted=true;META.runs=(META.runs||0)+1;}
   if(META.runs>1){if(T>b.t+1)rec.push('t');if(kills>(b.kills||0))rec.push('k');if(bestCombo>(b.combo||0))rec.push('c');} // new records (not on the very first run)
   META.dna+=dna;P.dnaPaid=total;META.time+=T-P.timePaid;P.timePaid=T;META.stats.kills+=kills-P.killsPaid;P.killsPaid=kills;
-  if(T>b.t)b.t=Math.floor(T);if(kills>(b.kills||0))b.kills=kills;if(bestCombo>(b.combo||0))b.combo=bestCombo;if(P.stage>b.stage)b.stage=P.stage;
+  if(T>b.t)b.t=Math.floor(T);if(kills>(b.kills||0))b.kills=kills;if(bestCombo>(b.combo||0))b.combo=bestCombo;if(P.stage>b.stage)b.stage=P.stage;if(TOUR&&TOUR.n>(b.w||0))b.w=TOUR.n;
   if(clear){b.clears=(b.clears||0)+1;P.cleared=true;}
   if(META.stats.kills>=3000)mission('kills');
   saveMeta();runRes={dna,clear,newU:runNew.slice(),rec,mis:runMis.slice()};
@@ -2683,7 +2716,9 @@ function crackShell(e,n){if(budsOn(e)){if(!(e.gT>T)){e.gT=T+1.2;text(e.x,e.y-e.r
 function enrage(e){const S=P.S,nm=e.t.name,t=e.t.rage;e.rage=1;e.t=t;e.sh=0;e.hp=Math.ceil(t.hp*hpScale());e.cap=null;e.freeT=T+2;e.hq=3;e.hT=0.9;e.hn=0;e.bite=0.5;e.flash=0.3;
   text(e.x,e.y-t.w-14*S,TX('kin_rage'),32,'#ff8a8a',1.8);evt(TX('ev_rage',nm),TX('ev_rage_s'),3.2);rings.push({x:e.x,y:e.y,r:t.w,R:t.w*3,life:0.5,max:0.5,col:'#ff6a7a',w:6*S});
   for(let k=-2;k<=2;k++)burst(e.x+Math.cos(e.ang)*k*t.L*0.4,e.y+Math.sin(e.ang)*k*t.L*0.4,10,'#ff8a8a',300,0.7,4);shake=Math.max(shake,14);sfx('boss');}
-function addXP(v){P.xp+=v*P.xpMul;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=Math.round(40+P.lvl*10+P.lvl*P.lvl*1.5);pendingLv++;}}
+const xpN=l=>Math.round(40+l*10+l*l*1.5); // the XP a level takes
+function addXP(v){const g=v*P.xpMul;P.xp+=g;while(P.xp>=P.xpNeed){P.xp-=P.xpNeed;P.lvl++;P.xpNeed=xpN(P.lvl);pendingLv++;}
+  if(TOUR){TOUR.wx+=g;while(TOUR.wx>=xpN(TOUR.wl)){TOUR.wx-=xpN(TOUR.wl);TOUR.wl++;growTail(LV_GROW());}}} // v46 on the tour the tail grows on a curve of its own that starts again in each world (the card level goes on, slower and slower; the tail must not wait for it)
 function dash(){
   if(state!=='play')return;
   if(P.dashCdT>0){if(!DEMO){if(P.dashCdT<=0.2)P.dashBuf=0.2;else{P.dashNo=0.3;sfx('nodash');}}return;} // v32: kept if it is nearly ready; otherwise the button shakes
@@ -2934,9 +2969,9 @@ function rollChoices(){
 function openLevel(){rollChoices();state='level';sfx(choices.some(c=>c&&c.r===3)?'chest':'level');if(DEMO)pick(Math.random()*choices.length|0);}
 function reroll(){if(state!=='level'||P.reroll<=0)return;P.reroll--;rollChoices();} // two per run
 // skip: take no card. There are no card slots to protect, so a plain skip would never be worth it; it heals a little instead.
-function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';growTail(LV_GROW());text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
+function skipCard(){if(state!=='level')return;if(P.lineAsk===1)P.lineAsk=2;P.hp=Math.min(P.maxHp,P.hp+15);pendingLv--;choices=null;state='play';if(!TOUR)growTail(LV_GROW());text(P.x,P.y-40*P.S,'+15 HP',22,'#9dffc4',1);}
 function pick(i){if(!choices||!choices[i])return;sfx('ui');if(P.lineAsk===1)P.lineAsk=2;applyCard(choices[i]);pendingLv--;choices=null;state='play';
-  growTail(LV_GROW()); // tail grows a little every level (v38.6: hardly at all in the pit, where you grow by taking in)
+  if(!TOUR)growTail(LV_GROW()); // tail grows a little every level (v38.6: hardly at all in the pit, where you grow by taking in) (v46: on the tour, see addXP)
   text(P.x,P.y-40*P.S,'LEVEL UP!',24,'#ffe680',1);burst(P.x,P.y,30,'#ffe680',260,0.7,3);}
 function cardRects(W,H){
   if(NARROW){const cw=Math.min(380,W-28),ch=90,gap=12,x=W/2-cw/2,y0=H/2-(ch*3+gap*2)/2+20;return[0,1,2].map(i=>({x,y:y0+i*(ch+gap),w:cw,h:ch}));}
@@ -2995,6 +3030,7 @@ function update(dt){
   // boss gate + clear
   if(!P.boss&&!P.clearAt&&(P.endless?T>=P.nextBoss:BRUSH?T>=P.brT:P.tailLen>=gateLen())){if((PIT||STAGES[CS].grow)&&!P.endless&&P.stage<STAGE_N.length-1)stageUp();else spawnBoss();} // (v37.1 the pit: growing is the way up; only the antlion is a boss)
   if(P.clearAt&&T>=P.clearAt){P.clearAt=0;state='clear';overT=0;endRun(true);sfx('clear');return;}
+  if(P.tourAt&&T>=P.tourAt&&!choices&&!chestRes){P.tourAt=0;tourGo();} // v46 (not while a card or capsule screen is up)
   // spawn: VS-style waves with peaks, lulls and events
   waveTick(dt);rushTick(dt);ecapTick(dt);
 //#FULL
@@ -3833,8 +3869,9 @@ function hudDraw(W,H){const k=uiK(),hb=NARROW?18:16,HY=NARROW?20:16; // HY: how 
   // timer + scale
   const ty=(NARROW?90:34)+HY;
   ctx.textAlign='center';ctx.font=`900 ${NARROW?22:28}px ${FONT}`;ctx.fillStyle='#e8f6ff';ctx.fillText(fmtT(T),W/2,ty);
-  const parts2=[TX('scale')];STAGE_N.forEach((_,i)=>{if(i)parts2.push('→');parts2.push(stageName(i));}); // odd slots are the scale names
-  ctx.font=`bold ${NARROW?12:13}px ${FONT}`;let tw=0;const ws=parts2.map(p=>{const w=ctx.measureText(p).width+6;tw+=w;return w;});
+  const parts2=[TOUR?TX('tour_hud',TOUR.n,STAGES[CS].n):TX('scale')];STAGE_N.forEach((_,i)=>{if(i)parts2.push('→');parts2.push(stageName(i));}); // odd slots are the scale names
+  let fz=NARROW?12:13;ctx.font=`bold ${fz}px ${FONT}`;let tw=0;let ws=parts2.map(p=>{const w=ctx.measureText(p).width+6;tw+=w;return w;});
+  if(tw>W-16){fz=Math.max(9,fz*(W-16)/tw)|0;ctx.font=`bold ${fz}px ${FONT}`;tw=0;ws=parts2.map(p=>{const w=ctx.measureText(p).width+6;tw+=w;return w;});} // (v46: the tour's longer label)
   let x=W/2-tw/2;const sy=ty+(NARROW?24:28);ctx.textAlign='left';
   parts2.forEach((p,i)=>{const si=i%2?(i-1)/2:-1;ctx.fillStyle=si<0?'#7f9db8':si===P.stage?'#eaffb0':si<P.stage?'#5f9c78':'#4a6070';
     if(si===P.stage){ctx.fillStyle='rgba(120,255,170,0.18)';ctx.fillRect(x-3,sy-10,ws[i],20);ctx.fillStyle='#eaffb0';}
@@ -3969,7 +4006,7 @@ function titleScreen(W,H){
     ctx.font=`bold 13px ${FONTS[0]}`;ctx.fillStyle=i===LI?'#ffffff':'#8fb8d8';ctx.fillText(s,x+g.w/4,g.y+g.h/2+1);});
   const lf=Math.min(L.tight?46:64,L.tw/3.9,(ty-8)/0.9),tg=ty+Math.round(lf*0.62+12);titleLogo(W/2,ty,lf); // the logo (the name is in it)
   fitFont(TX('tagline',verL()),Math.min(14,fs)|0,'normal',W-24);ctx.fillStyle='#8fb8d8';ctx.fillText(TX('tagline',verL()),W/2,tg);
-  if(!L.tight){ctx.fillStyle='#e8f6ff';[STAGES[stgIdx].spiders&&!META.opts.arach?TX('arach_hint'):TX(TOUCH?'how_touch':'how_mouse'),STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].grow?TX('goal_g'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
+  if(!L.tight){ctx.fillStyle='#e8f6ff';[(STAGES[stgIdx].spiders||TOURSEL&&EDITION!=='demo')&&!META.opts.arach?TX('arach_hint'):TX(TOUCH?'how_touch':'how_mouse'),TOURSEL?TX('goal_tour'):STAGES[stgIdx].pit?TX('goal_p'):STAGES[stgIdx].grow?TX('goal_g'):STAGES[stgIdx].brush?TX('goal_b',BR_LIST.length):STAGE_N.length>1?TX('goal',STAGE_N.length):TX('goal1')].forEach((l,i)=>{fitFont(l,fs|0,'bold',W-24);ctx.fillText(l,W/2,tg+42+i*L.step);});}
   const k=SKINS[skinIdx],own=META.skins.includes(k.id),p=L.panel,now=performance.now();panel(p.x,p.y,p.w,p.h,0.88);
   const hue=k.h<0?(now/20)%360:k.h,cx=W/2+58,cy=p.y+42,tb=skinTab(k,-1); // the skin as it looks in play, owned or not: the same colours as the body, and its own head and eyes
   for(let j=19;j>=0;j--){const x=cx-22-j*7,y=cy+Math.sin(j*0.5+now/300)*6;ctx.fillStyle=beadCol(k,tb,j,now/1000,hue);ctx.beginPath();ctx.arc(x,y,(2.5+(1-j/20)*4)*1.3,0,TAU);ctx.fill();}
@@ -3980,17 +4017,17 @@ function titleScreen(W,H){
   ctx.textAlign='center';ctx.font=`900 17px ${FONT}`;ctx.fillStyle=own?'#eafff2':'#9fb3c4';ctx.fillText(k.n+(own&&META.skin===k.id?TX('in_use'):''),W/2,p.y+75);
   if(!own){const can=META.dna>=k.cost;btn(L.buy,TX(can?'buy':'need',k.cost),0,!can);}
   else{ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('skin_n',skinIdx+1,SKINS.length),W/2,p.y+p.h-24);}
-  btn(L.start,TX(TOUCH?'start':'start_key'),1,!stageOpen(stgIdx));
+  btn(L.start,TX(TOUCH?'start':'start_key'),1,TOURSEL?!tourOpen():!stageOpen(stgIdx));
   {const r=L.diff,c=DF().col;panel(r.x,r.y,r.w,r.h,0.9);ctx.strokeStyle=c;ctx.lineWidth=2;rrect(r.x+1,r.y+1,r.w-2,r.h-2,10);ctx.stroke(); // v45 the difficulty: tap to change
     ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`bold 11px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TX('df_t')+' ▸',r.x+r.w/2,r.y+15);
     fitFont(TX('df_'+DIFF),17,900,r.w-10);ctx.fillStyle=c;ctx.fillText(TX('df_'+DIFF),r.x+r.w/2,r.y+33);
     if(DIFF!==1){ctx.font=`bold 10px ${FONT}`;ctx.fillStyle=DIFF===2?'#ffd166':'#9fb3c4';ctx.fillText(TX('df_dna',DF().dna),r.x+r.w/2,r.y+48);}}
-  const b=stageOpen(stgIdx)?bestOf(stgIdx):{t:0,stage:0,clears:0};
-  const f1=TX('best',META.dna,fmtT(b.t),stageName(b.stage||0),b.clears||0);
+  const b=TOURSEL?tourBest():stageOpen(stgIdx)?bestOf(stgIdx):{t:0,stage:0,clears:0};
+  const f1=TOURSEL?TX('best_tour',META.dna,fmtT(b.t),b.w||0):TX('best',META.dna,fmtT(b.t),stageName(b.stage||0),b.clears||0);
   fitFont(f1,13,'bold',W-20);ctx.fillStyle='#bfe3ff';ctx.fillText(f1,W/2,L.start.y+L.start.h+26);
   ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('mis_n',MISSIONS.filter(misDone).length,MISSIONS.length),W/2,L.start.y+L.start.h+46);
   [['b_help','help'],['b_book','book'],['b_mis','recs'],['b_opts','opts']].forEach(([s,m],i)=>hotBtn(L.menu[i],TX(s),0,()=>openMenu(m)));
-  {const s=L.stg,d=STAGES[stgIdx],open=stageOpen(stgIdx),box=s.h>60,nm=TX('stg_n',stgIdx+1),why=d.full?TX('stg_full'):d.soon?TX('stg_soon'):!open?TX('stg_lock',stgIdx):d.wip?TX('stg_wip'):''; // the stage chooser (drawn after the menu buttons, so their order among the buttons stays)
+  {const s=L.stg,d=TOURSEL?{n:TX('tour_name')}:STAGES[stgIdx],open=TOURSEL?tourOpen():stageOpen(stgIdx),box=s.h>60,nm=TOURSEL?TX('tour_lbl'):TX('stg_n',stgIdx+1),why=TOURSEL?(open?'':TX('tour_lock')):d.full?TX('stg_full'):d.soon?TX('stg_soon'):!open?TX('stg_lock',stgIdx):d.wip?TX('stg_wip'):''; // (v46: or the World Tour) // the stage chooser (drawn after the menu buttons, so their order among the buttons stays)
     panel(s.x,s.y,s.w,s.h,0.88);ctx.textAlign='center';ctx.textBaseline='middle';
     if(box){ctx.font=`bold 12px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(nm,s.x+s.w/2,s.y+18);fitFont(d.n,16,900,s.w-10);ctx.fillStyle=open?'#eafff2':'#7f93a6';ctx.fillText(d.n,s.x+s.w/2,s.y+42);
       if(why){fitFont(why,11,'normal',s.w-8);ctx.fillStyle='#ffd166';ctx.fillText(why,s.x+s.w/2,s.y+64);}
@@ -4268,7 +4305,7 @@ function endScreen(W,H,clear){
   if(!tight){const sub=clear?TX('clear_s',(BRUSH?BR_LIST[BR_LIST.length-1]:BOSS_T[BOSS_T.length-1]).name):by==='gas'?TX('cause_gas'):by?TX('cause',by.name||by.n):'';
     if(sub){fitFont(sub,15,'bold',W-24);ctx.fillStyle=clear?'#b6ffd2':'#ffb3bb';ctx.fillText(sub,W/2,y0+40);}}
   const l1=(DIFF!==1?TX('df_'+DIFF)+'  /  ':'')+TX('end1',fmtT(T),kills,P.lvl);fitFont(l1,NARROW?16:19,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
-  const l2=TX('end2',bestCombo,stageName(P.stage),bossKills);fitFont(l2,NARROW?15:17,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+(tight?26:30));
+  const l2=TOUR?TX('end2_t',bestCombo,TOUR.n,STAGES[CS].n,bossKills):TX('end2',bestCombo,stageName(P.stage),bossKills);fitFont(l2,NARROW?15:17,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+(tight?26:30));
   if(R){
     if(!tight&&R.rec.length){const s=TX('rec',R.rec.map(k=>TX('rec_'+k)).join(TX('sep')));fitFont(s,15,900,W-24);ctx.fillStyle='#ffe680';ctx.fillText(s,W/2,y0+138);}
     const l3=TX('end_dna',R.dna,META.dna);fitFont(l3,NARROW?17:19,900,W-24);ctx.fillStyle='#8fd0ff';ctx.fillText(l3,W/2,tight?y+54:y0+170);
@@ -4332,7 +4369,7 @@ window.__g={get pit(){return PIT;},get splash(){return SPL;},renderSfx,get death
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},get arach(){return ARACH_ON;},get diff(){return DIFF;},setDiff:d=>{DIFF=d;},DIFFS,lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},get arach(){return ARACH_ON;},get diff(){return DIFF;},get tour(){return TOUR;},get tourSel(){return TOURSEL;},tourGo,tourList,setDiff:d=>{DIFF=d;},DIFFS,lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k,id:r.id}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),diff:px(T.diff),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
