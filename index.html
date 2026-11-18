@@ -163,6 +163,9 @@ const ETYPES=[
   {k:'siph',n:['クダクラゲ','Siphonophore'],st:0,r:12,hp:4,spd:96,dmg:6,xp:3,col:'#ff7fd0',core:'#fff0fa',glow:'rgba(255,130,210,0.5)',mv:'weave',chain:5,lum:2.3,lc:'#ff7ad0',lb:2.6},
   {k:'dragf',n:['ホウライエソ','Viperfish'],st:0,sh:1,r:20,hp:10,spd:66,dmg:14,xp:9,col:'#1c1a26',core:'#ff3a50',glow:'rgba(255,60,80,0.35)',rot:1,mv:'sentry',sense:250,lum:0.9,lc:'#ff8a5a'}, // waits in the dark (only its lure shows); come close and it glows red and strikes
   {k:'isopod',n:['ダイオウグソクムシ','Giant Isopod'],st:0,sh:2,r:30,hp:18,spd:44,dmg:12,xp:12,col:'#c9c0d4',core:'#4a4058',glow:'rgba(220,210,235,0.3)',rot:1,fr:4}, // no light of its own: it shows only where light falls on it (slow, so that is fair)
+  // stage 9 (v43, the Slime Mold): the net itself is the foe. moldTick grows it from its cores, a knot at a time, toward the snake; critters of the forest floor besides
+  {k:'snode',n:['粘菌の網','Slime Net'],st:0,r:14,hp:4,spd:0,dmg:3,xp:1,col:'#f2c418',core:'#ff9a1a',glow:'rgba(255,215,60,0.4)',mv:'stuck'}, // a knot of the net (e.par: the knot or core it grew from)
+  {k:'smold',n:['粘菌の芯','Slime Core'],st:0,sh:2,r:34,hp:24,spd:0,dmg:8,xp:16,col:'#efb012',core:'#ff7a10',glow:'rgba(255,190,40,0.45)',mv:'stuck',fr:4}, // a core: its net grows from it (e.net); it spits spores
  //#/FULL
 ];
 // toxin bacteria: slow, leave poison gas (punishes circling in one spot)
@@ -233,6 +236,8 @@ const GIANT_BOSS=[{k:'yago',st:0,L:170,w:70,r:70,hp:320,spd:58,dmg:26,xp:900,col
  WEB_RUSH=[{k:'rush',look:'spdl',st:0,r:9,hp:1,spd:0,dmg:4,xp:1,col:'#d8b47a',core:'#3a2610',glow:'rgba(230,200,140,0.45)',name:['子グモの群れ','Spiderling Swarm'],rot:1,fr:4}],
  DEEP_BOSS=[{k:'angler',st:0,r:68,hp:320,spd:58,dmg:24,xp:900,col:'#3b2a22',core:'#fff0c0',glow:'rgba(255,225,150,0.3)',name:['チョウチンアンコウ','Anglerfish'],sh:0,hits:2,turn:1,thru:1}], // v42.1 thru: bubbles do not stop it (a lunge at light has to land). v42: in the dark only its lure shows; it lunges at light (a standing coil); squeezed twice (hits). turn: anglerMove sets which way it faces
  DEEP_RUSH=[{k:'rush',look:'hotaru',st:0,r:13,hp:1,spd:0,dmg:4,xp:1,col:'#5a46c8',core:'#e8d8ff',glow:'rgba(150,110,255,0.45)',name:['ホタルイカの群れ','Firefly Squid Swarm'],rot:1,lum:2.6,lc:'#9a7cff'}],
+ MOLD_BOSS=[{k:'physa',st:0,r:84,hp:360,spd:46,dmg:22,xp:900,col:'#f2be16',core:'#ff7a10',glow:'rgba(255,200,50,0.4)',name:['粘菌の本体','The Slime Mold'],sh:0,hits:2,turn:1,thru:1,fr:4}], // v43: reaches out, then flows along the arm; squeezed, it splits (physaMove)
+ MOLD_RUSH=[{k:'rush',look:'ant',st:0,r:10,hp:1,spd:0,dmg:5,xp:1,col:'#d0563c',core:'#3a0e08',glow:'rgba(230,100,70,0.5)',name:['アリの大群','Ant Swarm'],rot:1,fr:4}],
  GIANT_WAVES=[[0,3,2.0],[25,4,1.8],[55,5,1.6],[85,3,2.0],[105,6,1.5],[140,3,2.0],[160,7,1.4],[200,4,2.0],[225,8,1.3],[265,4,2.0],[290,9,1.2],[330,5,2.0],[360,10,1.2],[400,5,2.0]];
 const PIT_BOSS=[{k:'alion',st:2,r:380,L:456,w:266,res:0.45,hp:1600,spd:40,dmg:26,xp:1500,col:'#c8a070',core:'#4a2e14',glow:'rgba(225,185,120,0.22)',name:['アリジゴク','Antlion'],sh:0,bare:1,thru:1,rot:1}], // v37.1 (the owner): "at first it is far too huge to stand up to; as you grow you can at last fight it", and no shell
  // fewer at the peaks than stage 1 (the pit eats what falls behind, and the player cannot stay to coil), and 'stream' is a fall of ants from above
@@ -713,6 +718,21 @@ function drawBody(g,t,fl,ph){ // ph: animation phase (0..TAU) for the types that
       g.fillStyle='#d8e8a0';for(const sg of[-1,1]){circ(g,r*0.42,sg*r*0.42,r*0.06);g.fill();}g.fillStyle='#000';for(const sg of[-1,1]){circ(g,r*0.43,sg*r*0.42,r*0.03);g.fill();}}
     g.strokeStyle=fl?'#fff':'#6a5040';g.lineWidth=Math.max(1.5,r*0.05);g.lineCap='round';g.beginPath();g.moveTo(r*0.35,0);g.quadraticCurveTo(r*0.95,-r*0.25,r*1.4,0);g.stroke();
     g.fillStyle=fl?'#fff':'#fff6d0';circ(g,r*1.45,0,r*0.1);g.fill();break;}
+// v43 the Slime Mold: knots, cores, and the whole of it (from above)
+  case 'snode':{ // a knot: a glossy yellow lump, a little uneven
+    g.fillStyle=col;g.beginPath();for(let i=0;i<=12;i++){const a=i/12*TAU,q=r*(0.86+0.12*Math.sin(i*2.7));i?g.lineTo(Math.cos(a)*q,Math.sin(a)*q):g.moveTo(q,0);}g.closePath();g.fill();
+    if(!fl){g.fillStyle='rgba(255,250,200,0.6)';g.beginPath();g.ellipse(-r*0.25,-r*0.3,r*0.32,r*0.2,-0.5,0,TAU);g.fill();g.fillStyle=core;circ(g,r*0.1,r*0.12,r*0.22);g.fill();}break;}
+  case 'smold':case 'physa':{const p=ph||0,big=(t.look||t.k)==='physa',N=big?11:7; // a core (and the whole slime mold): a lobed sheet, veins fanning out to its edge, an orange heart
+    const rad=a=>r*(0.8+0.12*Math.sin(N*a+p)+0.05*Math.sin((N+4)*a-p*2)+(big?0.1*Math.max(0,Math.cos(a)):0));
+    g.fillStyle=fl?'#fff':'#c48a06';g.beginPath();for(let i=0;i<=64;i++){const a=i/64*TAU,q=rad(a)*1.06;i?g.lineTo(Math.cos(a)*q,Math.sin(a)*q):g.moveTo(q,0);}g.closePath();g.fill();
+    {const gr=g.createRadialGradient(0,0,r*0.1,0,0,r);gr.addColorStop(0,fl?'#fff':'#ffe066');gr.addColorStop(1,col);g.fillStyle=gr;}
+    g.beginPath();for(let i=0;i<=64;i++){const a=i/64*TAU,q=rad(a);i?g.lineTo(Math.cos(a)*q,Math.sin(a)*q):g.moveTo(q,0);}g.closePath();g.fill();
+    if(!fl){g.strokeStyle='rgba(200,120,0,0.55)';g.lineWidth=Math.max(1,r*0.05);g.lineCap='round';g.beginPath();
+      for(let i=0;i<N;i++){const a=(i+0.5)/N*TAU+Math.sin(p+i)*0.05,q=rad(a)*0.92;g.moveTo(Math.cos(a)*r*0.25,Math.sin(a)*r*0.25);g.quadraticCurveTo(Math.cos(a+0.2)*q*0.6,Math.sin(a+0.2)*q*0.6,Math.cos(a)*q,Math.sin(a)*q);
+        for(const sg of[-1,1]){g.moveTo(Math.cos(a)*q*0.7,Math.sin(a)*q*0.7);g.lineTo(Math.cos(a+sg*0.18)*q*0.95,Math.sin(a+sg*0.18)*q*0.95);}}g.stroke();
+      g.fillStyle=core;g.globalAlpha=0.85;circ(g,0,0,r*(big?0.24:0.3));g.fill();if(big)for(const [x,y,z] of[[0.3,-0.25,0.1],[-0.3,0.2,0.09],[0.15,0.35,0.08]]){circ(g,r*x,r*y,r*z);g.fill();}g.globalAlpha=1;
+      g.fillStyle='rgba(255,252,210,0.55)';g.beginPath();g.ellipse(-r*0.3,-r*0.35,r*0.28,r*0.14,-0.6,0,TAU);g.fill();}break;}
+
 //#/FULL
   case 'virion':{g.strokeStyle=col;g.lineWidth=Math.max(1.5,r*.12);g.fillStyle=fl?'#fff':'#eafff6'; // a small six-sided particle with a knob on each corner
     for(let i=0;i<6;i++){const a=i/6*TAU;g.beginPath();g.moveTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);g.lineTo(Math.cos(a)*r*1.2,Math.sin(a)*r*1.2);g.stroke();circ(g,Math.cos(a)*r*1.2,Math.sin(a)*r*1.2,r*.13);g.fill();}
@@ -735,10 +755,10 @@ function alionHead(g,r,open,fl){g.lineCap='round';g.lineJoin='round';
       g.fillStyle=fl?'#fff':'#1a0e06';circ(g,r*0.52,sg*r*0.3,r*0.06);g.fill();}
 }
 //#/FULL
-function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='hotaru'?t.r*1.4:k==='lantf'?t.r*1.55:k==='jelly'?t.r*1.6:k==='siph'?t.r*1.1:k==='dragf'?t.r*2.0:k==='isopod'?t.r*1.6:k==='angler'?t.r*1.62:k==='yago'?t.L*1.12:k==='dfly'?t.L*1.1:k==='spdl'?t.r*1.9:k==='wsilk'?t.r*1.75:k==='wdrop'?t.r*2.05:k==='wfly'?t.r*1.6:k==='jorou'?t.r*2.9:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='dragf'?(t.r*0.62+8)*2:k==='yago'?(t.w*1.45+8)*2:k==='dfly'?(t.L*1.02+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
+function bodySprite(t,fl,ph){const k=t.look||t.k,q=t.res||1,ext=k==='snode'?t.r*1.05:k==='smold'?t.r*1.3:k==='physa'?t.r*1.3:k==='hotaru'?t.r*1.4:k==='lantf'?t.r*1.55:k==='jelly'?t.r*1.6:k==='siph'?t.r*1.1:k==='dragf'?t.r*2.0:k==='isopod'?t.r*1.6:k==='angler'?t.r*1.62:k==='yago'?t.L*1.12:k==='dfly'?t.L*1.1:k==='spdl'?t.r*1.9:k==='wsilk'?t.r*1.75:k==='wdrop'?t.r*2.05:k==='wfly'?t.r*1.6:k==='jorou'?t.r*2.9:k==='grass'?t.r*1.25:k==='mantis'?t.r*1.25:k==='centi'?t.r*1.4:k==='centh'?t.r*2:k==='ant'?t.r*1.45:k==='pill'?t.r*1.3:k==='sprg'?t.r*1.5:k==='spid'?t.r*1.45:k==='beet'?t.r*1.45:k==='alion'?t.r*1.75:k==='tard'?t.r*1.55:k==='tardt'?t.r*1.2:k==='plan'?t.L*1.12:k==='chiro'?t.L*1.08:k==='asel'?t.L*1.32:k==='snail'?t.r*1.45:k==='tadp'?t.L*1.06:k==='kin'?t.r*1.8:k==='naup'?t.r*1.75:k==='cope'?t.L*1.3:k==='ostr'?t.r*1.4:k==='nema'?t.L*1.06:k==='bosm'?t.r*1.6:k==='mite'?t.r*1.7:k==='mosq'?t.L*1.08:k==='halt'?t.r*1.6:k==='roti'?t.r*1.7:k==='comb'?t.L*1.15:k==='vort'?t.r*1.3:k==='stentor'?t.r*1.5:k==='daph'?t.L*1.32:k==='moon'?t.r*1.85:k==='chromo'?t.r*1.18:k==='chroma'?t.r*1.95:k==='anti'?t.r*1.5:k==='dna'?t.L*1.04:k==='para'?t.L*1.1:k==='eugl'?t.L*1.55:k==='helio'?t.r*1.95:k==='rod'?t.r*3.3:k==='spiro'?t.r*2.75:k==='phage'?t.r*2.1:k==='mimi'?t.r*1.22:k==='virion'?t.r*1.4:k==='mito'?t.r*1.2:k==='toxin'||k==='bomb'||k==='neutro'||k==='bcell'?t.r*1.35:k==='divider'?t.r*1.15:k==='wbc'?t.r*1.25:t.r,S=(ext+8)*2*q,SH=k==='dragf'?(t.r*0.62+8)*2:k==='yago'?(t.w*1.45+8)*2:k==='dfly'?(t.L*1.02+8)*2:k==='plan'?(t.w*1.35+8)*2:k==='chiro'?(t.w*3.4+8)*2:k==='asel'?(t.w*1.4+8)*2:k==='tadp'?(t.w*1.1+8)*2*q:k==='cope'?(t.w*3.3+8)*2:k==='nema'?(t.w*3.3+8)*2:k==='mosq'?(t.w*1.6+8)*2*q:k==='roti'?(t.r*1.0+8)*2:k==='comb'?(t.w*2.7+8)*2:k==='daph'?(t.w*1.6+8)*2*q:k==='chroma'?(t.r*0.72+8)*2:k==='dna'?(t.w*1.1+8)*2:k==='rod'?(t.r*1.02+8)*2:k==='spiro'?(t.r*1.05+8)*2:k==='para'?(t.w*1.25+8)*2*q:k==='eugl'?(t.w*1.12+8)*2*q:S,s=mk(S,SH),g=s.getContext('2d');g.translate(S/2,SH/2);if(q!==1)g.scale(q,q);drawBody(g,t,fl,ph);return s;} // long shapes get a sprite as flat as they are: empty pixels still cost time to draw
 const ALLT=[...ETYPES,...BOSS_T,...TOXIN_T,...HUNT_T.filter(Boolean),...TITAN_T,...BODY_RUSH];
 //#FULL
-ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS,...YAGO_FORMS,...WEB_BOSS,...WEB_RUSH,...DEEP_BOSS,...DEEP_RUSH);
+ALLT.push(...POND_BOSS,...POND_TITAN,DAPH_R,...POND_HUNT.filter(Boolean),...POND_RUSH,...JAR_BOSS,...JAR_RUSH,...PIT_BOSS,...GIANT_BOSS,...YAGO_FORMS,...WEB_BOSS,...WEB_RUSH,...DEEP_BOSS,...DEEP_RUSH,...MOLD_BOSS,...MOLD_RUSH);
 //#/FULL
 for(const t of ALLT){t.spr=bodySprite(t,0);t.fspr=t.res?t.spr:bodySprite(t,1);t.gspr=glowSprite(Math.min(64,t.r*2.6),t.glow);t.gR=t.r*2.6;
   if(t.fr){t.frames=[];for(let i=0;i<t.fr;i++)t.frames.push(bodySprite(t,0,i/t.fr*TAU));}} // frames: a wave running along the body, flagella whipping, legs scuttling
@@ -778,7 +798,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v42.1',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v43',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1015,6 +1035,15 @@ const STR={
  bk_dragf:['暗がりで待ち、近づくと赤く光って飛んでくる','Waits in the dark; come close, it glows red and strikes'],
  bk_isopod:['光らない。殻 2 枚で、ゆっくり這ってくる','Gives no light. Two shells; crawls slowly in'],
  bk_angler:['ボス。ちょうちんだけが光る。光った輪に食いつく','Boss. Only its lure shows. Lunges at a lit coil'],
+ tip_mold:['粘菌','The Slime Mold'],
+ tip_mold_s:['網の上は遅い。巻いて切ると、その先が枯れる','Its net slows you. Cut it, and all beyond withers'],
+ mold_wither:['網が枯れていく！','The net withers!'],
+ mold_core:['芯を倒した！ 網ごと枯れる','Core down! Its whole net withers'],
+ boss_in_m:['{0}：{1} 回締める。足を伸ばして流れてくる','{0}: squeeze it {1} times. It reaches out, then flows'],
+ physa_split:['分裂した！','It split in two!'],
+ bk_snode:['広がる黄色い網。上は遅く、結び目は痛い','A spreading yellow net. Slows you; its knots sting'],
+ bk_smold:['網の芯。殻 2 枚。倒すと網ごと枯れる','The net\'s core. Two shells. Kill it: the net withers'],
+ bk_physa:['ボス。足を伸ばして流れてくる。締めると分裂','Boss. Reaches out, then flows. Squeezed, it splits'],
  bk_ant:['いちばん多い。砂の坂を転がり落ちてくる','The most common. They come tumbling down the slope'],
  bk_antl:['アリの行列。先頭がうねり、後ろがついてくる','A column of ants. The leader snakes, the rest follow'],
  bk_sprg:['止まっては、尾のばねで跳ねる','Sits still, then springs off with its tail'],
@@ -1243,7 +1272,7 @@ const STR={
 };
 loc(BOSS_T,'name');loc(ETYPES,'n');loc(TOXIN_T,'n');loc(HUNT_T.filter(Boolean),'name');loc(TITAN_T,'name');loc(BODY_RUSH,'name');
 //#FULL
-loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(YAGO_FORMS,'name');loc(WEB_BOSS,'name');loc(WEB_RUSH,'name');loc(DEEP_BOSS,'name');loc(DEEP_RUSH,'name');loc(JAR_RUSH,'name');
+loc(POND_BOSS,'name');loc(POND_TITAN,'name');loc([DAPH_R],'name');loc(POND_HUNT.filter(Boolean),'name');loc(POND_RUSH,'name');loc(JAR_BOSS,'name');loc(PIT_BOSS,'name');loc(GIANT_BOSS,'name');loc(YAGO_FORMS,'name');loc(WEB_BOSS,'name');loc(WEB_RUSH,'name');loc(DEEP_BOSS,'name');loc(DEEP_RUSH,'name');loc(MOLD_BOSS,'name');loc(MOLD_RUSH,'name');loc(JAR_RUSH,'name');
 //#/FULL
 // ?lang=ja|en wins, then the saved choice, then the browser's language
 {const saved=[Q.get('lang'),META.lang].map(v=>LANGS.indexOf(v)).find(i=>i>=0),nav=(navigator.languages&&navigator.languages[0])||navigator.language||'';
@@ -1488,7 +1517,7 @@ addEventListener('blur',pauseGame);
 
 // ---------- state ----------
 let state='title',P,enemies,orbs,parts,texts,rings,captures,ghosts,T,kills,bestCombo,spawnT,shake,hitstop,choices,overT,pendingLv,flashT,banner;
-const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,WEBS=null,DARK=null,DQ={n:0,sx:0,sy:0,c:0,t:0},KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
+const SHK=[0,0],PIT_V0=0.2,PIT_V1=0.34,PIT_BAND=150,PIT_SLIDE=26,CAMY=0.15;let PIT=null,WEBS=null,DARK=null,MOLD=null,DQ={n:0,sx:0,sy:0,c:0,t:0},KILLOK=false,slime=[],DEATH=null,husks=[],goo=[],cores=[],HUSK=null,shakeA=0,shakeLast=0,shakeDirSet=false,shakePh=0,calmUntil=0,bossKills=0,toasts=[],runRes=null,runNew=[],RUNSEED=1,skinIdx=0,gas=[],chests=[],chestRes=null,chestT0=0,evtMsg=null;
 function stageOf(len){return Math.min(STAGE_N.length-1,len>=STAGE_TAIL[2]?2:len>=STAGE_TAIL[1]?1:0);}
 function targetS(len){return clamp(Math.pow(len/640,0.5),1,2.8);} // weaker zoom-out: the tail visibly grows
 // The camera. The tail pulls it back gently (targetS); every scale the player moves up multiplies it by GROW.
@@ -1522,6 +1551,7 @@ function reset(start){
   sheds=[]; // v38.10
   WEBS=start&&STAGES[CS].web?webNew():null; // v39
   DARK=start&&STAGES[CS].dark?darkNew():null;if(DARK)tip('deep'); // v42
+  MOLD=start&&STAGES[CS].mold?moldNew():null;if(MOLD){tip('mold');moldCore(P.x+40,P.y-260,12);moldCore(P.x-260,P.y+720,6);} // v43 (the first core above the snake: on a phone held upright there is room up and down, not across)
 //#/FULL
   if(start&&APART)tip('giant'); // v38
   if(start&&BRUSH)tip('brush'); // v40
@@ -1662,8 +1692,12 @@ const STAGES=[
   tiers:[[['hotaru',0,8,0],['lantf',10,1.6,30],['jelly',18,1.8,40],['siph',30,1.2,40],['dragf',40,2,50],['isopod',55,1.6,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.15),...w.slice(2)]),boss:DEEP_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:DEEP_RUSH,
   book:[[0,'hotaru','hotaru'],[0,'lantf','lantf'],[0,'jelly','jelly'],[0,'siph','siph'],[0,'dragf','dragf'],[0,'isopod','isopod'],[0,DEEP_RUSH[0],'rush'],[0,DEEP_BOSS[0],'angler']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'mold',n:['粘菌','Slime Mold'],wip:1,mold:1,tail0:900,gate:1900,hp0:130,names:[['朽ち木の上','On the Rotting Log']], // v43: the net is the foe (moldTick): it creeps toward the snake from its cores; cut it and what lies beyond withers; the Slime Mold itself is the boss
+  tiers:[[['sprg',0,5,0],['ant',15,3,40],['antl',40,1,40]]],
+  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.4),...w.slice(2)]),boss:MOLD_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:MOLD_RUSH,
+  book:[[0,'snode','snode'],[0,'smold','smold'],[0,'sprg','sprg'],[0,'ant','ant'],[0,'antl','antl'],[0,MOLD_RUSH[0],'rush'],[0,MOLD_BOSS[0],'physa']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
 //#/FULL
-//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1}, // in the demo: names only, shown as in the full game
+//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1},{id:'mold',n:['粘菌','Slime Mold'],full:1}, // in the demo: names only, shown as in the full game
 ];
 loc(STAGES,'n');
 let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3,BRUSH=false,BR_LIST=[]; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
@@ -2101,6 +2135,78 @@ function anglerFx(e){const S=P.S,q=e.bq;
   if(q===3&&!e.cap){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.9,e.y-e.r*1.3+Math.sin(a)*e.r*0.25,7*S,'#ffe680');}}
   if(!(e.dim>T)){const L=anglerLure(e),r=(q===1?36:22)*S*(1+0.15*Math.sin(T*6));ctx.globalCompositeOperation='lighter';ctx.drawImage(lumSpr('#ffe9a0'),L.x-r,L.y-r,r*2,r*2);ctx.globalCompositeOperation='source-over';
     ctx.fillStyle='#fffbe8';circ(ctx,L.x,L.y,4.5*S);ctx.fill();}} // the lure: always a bright point, even in the dark
+// v43 the Slime Mold (stage 9; the owner, of the idea: "the slime mold fights you; the slime itself, hammer and tongs"). Cores (smold) sit on the ground and grow
+// a net of knots (snode), a knot at a time (moldGrow), creeping toward the snake. Each knot hangs from the knot or core it grew from (e.par). Cut a knot (a squeeze)
+// and all that grew from it withers (moldTick: it greys, and pops a moment later, a ring at a time outward); kill a core and its whole net withers. Over a vein the
+// snake is slowed (P.molded); a knot stings. A core near the snake swells and spits spores (shots: the tail stops them). New cores come, ahead of the snake.
+// The boss is the Slime Mold itself (physaMove): it reaches out an arm, then flows along it, leaving a trail of net; squeezed, it splits off two new cores.
+const MOLD_MAX=96;
+function moldNew(){return {cT:4,msgT:0,pend:[],trail:null,seen:[]};}
+function moldNode(x,y,par,core){const n=mkEnemy(ET.snode,x,y,true);n.fd=1;n.par=par;n.core=core;n.born=T;n.ang=Math.random()*TAU;enemies.push(n);if(core.net)core.net.push(n);return n;}
+function moldCore(x,y,pre){const c=mkEnemy(ET.smold,x,y,true);c.fd=1;c.net=[];c.gT=rand(0.2,0.8);c.spT=rand(2.5,4.5);c.spq=0; /* (spT, spq: not sT and sq, which a stream and the sun animalcule use) */enemies.push(c);MOLD.seen.push(c);for(let i=0;i<(pre||0);i++)moldGrow(c,true);return c;}
+function moldGrow(c,wild){const net=c.net=c.net.filter(n=>!n.dead&&!n.wit);if(net.length>=(c.boss?40:34))return false;
+  for(let tries=0;tries<3;tries++)if(moldTry(c,net,wild))return true;return false;} // (three tries: a spot by the head or on another knot is passed over)
+function moldTry(c,net,wild){let par=c,best=1e9;for(let k=0;k<3;k++){const q=net.length&&Math.random()<0.85?net[(Math.random()*net.length)|0]:c,d=Math.hypot(q.x-P.x,q.y-P.y);if(d<best){best=d;par=q;}} // it creeps toward the snake: the nearest of three picks grows
+  const a=wild?Math.random()*TAU:Math.atan2(P.y-par.y,P.x-par.x)+rand(-1.1,1.1),L=rand(55,80)*(par===c?1+c.r/40:1),x=par.x+Math.cos(a)*L,y=par.y+Math.sin(a)*L;
+  if(Math.hypot(x-P.x,y-P.y)<70*P.S)return false;for(const n of net)if(Math.abs(n.x-x)<32&&Math.abs(n.y-y)<32)return false;
+  moldNode(x,y,par,c);return true;}
+function segD(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1,k=Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/l));return Math.hypot(px-ax-vx*k,py-ay-vy*k);}
+function moldTick(dt){const D=MOLD,S=P.S;D.msgT-=dt;
+  for(const [x,y,k] of D.pend)moldCore(x,y,k);D.pend.length=0; // cores split off the boss (made here, not in the middle of the loop over the enemies)
+  if(D.trail){const q=D.trail;D.trail=null;let par=q.e;for(const f of[0.72,0.46,0.2])par=moldNode(q.x0+(q.x1-q.x0)*f,q.y0+(q.y1-q.y0)*f,par,q.e);} // the trail the boss leaves as it flows
+  let nodes=0,on=false,wn=0,wx=0,wy=0;const VR=(9+10)*S;
+  for(const e of enemies){if(e.dead)continue;if(e.net&&!e.boss){e.vx=e.vy=0;}if(e.t.k!=='snode')continue;nodes++;e.vx=e.vy=0; // (the net is stuck to the ground: no knocking it about, or the veins stretch)
+    if(!e.wit&&(e.par.dead||e.par.wit)){e.wit=T;wn++;wx+=e.x;wy+=e.y;} // cut off from its core: it withers (a ring at a time, outward)
+    if(e.wit){if(T-e.wit>0.45)kill(e,0.6);continue;}
+    if(!on&&!e.cap&&segD(P.x,P.y,e.x,e.y,e.par.x,e.par.y)<VR)on=true;} // a vein under the head holds it
+  if(on&&!P.molded)tip('mold');P.molded=on;
+  if(wn>=6&&D.msgT<=0){D.msgT=3;text(wx/wn,wy/wn,TX('mold_wither'),18,'#ffe680',1.1);}
+  for(const c of D.seen)if(c.dead&&!c.told){c.told=1;if(Math.hypot(c.x-P.x,c.y-P.y)<1200*S&&!c.boss){text(c.x,c.y-c.r-14*S,TX('mold_core'),20,'#ffe680',1.4);P.dnaB=(P.dnaB||0)+3;}} // (a core left far behind is only dropped)
+  D.seen=D.seen.filter(c=>!c.told);
+  const cs=enemies.filter(e=>e.net&&!e.dead);let cores=0;
+  for(const c of cs){const d=Math.hypot(P.x-c.x,P.y-c.y);if(!c.boss)cores++;
+    c.gT-=dt;if(c.gT<=0){c.gT=c.boss?0.3:rand(0.35,0.6)*(d>900*S?1.6:1);if(nodes<MOLD_MAX&&d<1400*S&&moldGrow(c))nodes++;}
+    if(c.boss||c.cap||c.frz>0||P.freezeT>0)continue;
+    if(c.spq>0){c.spq-=dt;if(c.spq<=0){const v=170*S;for(let i=0;i<5;i++){const a=c.spa+(i-2)*0.22;shots.push({x:c.x+Math.cos(a)*c.r,y:c.y+Math.sin(a)*c.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:2.6,dmg:6,by:c.t});}
+        c.spT=rand(4,6);burst(c.x,c.y,10,'#ffe066',160,0.4,3);sfx('brood');}}
+    else if(d<540*S){c.spT-=dt;if(c.spT<=0){c.spq=0.8;c.spa=Math.atan2(P.y-c.y,P.x-c.x);}}} // it swells (a red fan shows where), then spits spores
+  D.cT-=dt;if(D.cT<=0){D.cT=5;if(cores<(T>60?3:2)){const a=P.a+rand(-1.3,1.3),R=rand(650,850)*S;moldCore(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R,4);}}} // new cores, ahead
+function drawMold(x0,x1,y0,y1){const S=P.S;ctx.lineCap='round';
+  for(const w of[0,1]){let any=false;ctx.beginPath();
+    for(const e of enemies){if(e.dead||e.t.k!=='snode'||!e.wit!==!w)continue;const p=e.par;if(Math.max(e.x,p.x)<x0||Math.min(e.x,p.x)>x1||Math.max(e.y,p.y)<y0||Math.min(e.y,p.y)>y1)continue;
+      const k=Math.min(1,(T-e.born)/0.35);ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+(e.x-p.x)*k,p.y+(e.y-p.y)*k);any=true;} // a new vein grows out to its knot
+    if(!any)continue;
+    if(w){ctx.strokeStyle='rgba(140,130,100,0.55)';ctx.lineWidth=6*S;ctx.stroke();continue;} // withering: grey
+    ctx.strokeStyle='rgba(110,70,0,0.55)';ctx.lineWidth=13*S;ctx.stroke();ctx.strokeStyle='#e8b812';ctx.lineWidth=8*S;ctx.stroke();
+    if(QL>=1){ctx.setLineDash([10*S,14*S]);ctx.lineDashOffset=-Math.sin(T*0.8)*70*S;ctx.strokeStyle='rgba(255,245,170,0.7)';ctx.lineWidth=3*S;ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;}} // the streaming that runs back and forth in a slime mold's veins
+  for(const c of enemies){if(c.dead||!(c.spq>0))continue;const f=1-c.spq/0.8; // a core about to spit: it swells; red lines where the spores will go
+    ctx.strokeStyle=`rgba(255,70,80,${(0.45+0.4*Math.sin(T*30)).toFixed(3)})`;ctx.lineWidth=2.5*S;ctx.setLineDash([10*S,8*S]);ctx.beginPath();
+    for(let i=0;i<5;i++){const a=c.spa+(i-2)*0.22;ctx.moveTo(c.x+Math.cos(a)*c.r,c.y+Math.sin(a)*c.r);ctx.lineTo(c.x+Math.cos(a)*360*S,c.y+Math.sin(a)*360*S);}ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(255,210,90,0.8)';ctx.lineWidth=3*S;circ(ctx,c.x,c.y,c.r*(1.1+0.35*f));ctx.stroke();}}
+// the Slime Mold itself. 0: it creeps toward the snake; 1: it reaches out an arm (0.85 s, 0.6 once half spent: a red line and ring where it will flow to);
+// 2: its body flows along the arm (0.45 s; it leaves a trail of net behind); 3: it rests, spent (stars: the time to coil it). Past half it also spits a ring of spores
+// as it rests. Squeezed (but the last time): it breaks free, its net withers, and it splits off two new cores.
+function physaMove(e,dx,dy,d,s,dt,S,half){if(e.hitNow)physaHit(e);const face=a=>{e.ang+=angDiff(e.ang,a)*Math.min(1,dt*5);};
+  if(!e.bq){MV[0]=dx/d*s*0.6;MV[1]=dy/d*s*0.6;face(Math.atan2(dy,dx));
+    if(e.bT<=0){if(d<760*S){const v=P.spd*S*0.5,tx=P.x+Math.cos(P.a)*v,ty=P.y+Math.sin(P.a)*v,ex=tx-e.x,ey=ty-e.y,L0=Math.hypot(ex,ey)+1,L=Math.min(L0+e.r*0.5,480*S);
+        e.tx=e.x+ex/L0*L;e.ty=e.y+ey/L0*L;e.bq=1;e.bT=e.bM=half?0.6:0.85;sfx('latch');}else e.bT=0.5;}return true;}
+  if(e.bq===1){MV[0]=MV[1]=0;face(Math.atan2(e.ty-e.y,e.tx-e.x));
+    if(e.bT<=0){const D=Math.hypot(e.tx-e.x,e.ty-e.y)+1;e.bq=2;e.bT=0.45;e.lv=D/0.45;e.ldx=(e.tx-e.x)/D;e.ldy=(e.ty-e.y)/D;if(MOLD)MOLD.trail={e,x0:e.x,y0:e.y,x1:e.tx,y1:e.ty};sfx('dash');}return true;}
+  if(e.bq===2){MV[0]=e.ldx*e.lv;MV[1]=e.ldy*e.lv;if(e.bT<=0){e.bq=3;e.bT=half?1.5:2.0;shake=Math.max(shake,8);burst(e.x,e.y,20,'#ffd84a',260,0.5,3);
+      if(half){const v=150*S,a0=Math.random()*TAU;for(let i=0;i<10;i++){const a=a0+i/10*TAU;shots.push({x:e.x+Math.cos(a)*e.r,y:e.y+Math.sin(a)*e.r,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:2.8,dmg:8,by:e.t});}sfx('brood');}}return true;}
+  MV[0]=MV[1]=0;if(e.bT<=0){e.bq=0;e.bT=rand(2.2,3.2)*(half?0.7:1);}return true;}
+function physaHit(e){const S=P.S,c=e.cap;e.hits--;e.hp=Math.min(e.hp,e.hp0*e.hits/e.hitsMax);e.hitNow=0;
+  if(c&&c.cinchT<0){for(const q of enemies)if(q.cap===c)q.cap=null;c.done=true;}
+  e.cap=null;e.freeT=T+1.6;e.bq=0;e.bT=2.4;e.flash=0.4;const a=Math.atan2(e.y-P.y,e.x-P.x);e.vx+=Math.cos(a)*380*S;e.vy+=Math.sin(a)*380*S;
+  for(const n of e.net||[])if(!n.dead&&!n.wit)n.wit=T; // its net withers
+  if(MOLD)for(const sg of[-1,1]){const b=a+sg*1.3;MOLD.pend.push([e.x+Math.cos(b)*e.r*2.4,e.y+Math.sin(b)*e.r*2.4,3]);} // and it splits: two new cores
+  text(e.x,e.y-e.r-16*S,TX('physa_split'),26,'#ffe680',1.3);text(e.x,e.y-e.r-44*S,TX('king_left',e.hits),22,'#ffd9a8',1.4);
+  hitstop=Math.max(hitstop,0.1);shake=Math.max(shake,16);burst(e.x,e.y,36,'#ffe066',360,0.8,4);rings.push({x:e.x,y:e.y,r:e.r,R:e.r*3.5,life:0.5,max:0.5,col:'#ffe066',w:7*S});sfx('boss');}
+function physaFx(e){const S=P.S,q=e.bq;
+  if(q===1){const k=1-Math.max(0,e.bT)/(e.bM||0.85),dx=e.tx-e.x,dy=e.ty-e.y,D=Math.hypot(dx,dy)+1,ux=dx/D,uy=dy/D; // the arm reaching out, and where the body will flow
+    ctx.strokeStyle='rgba(232,184,18,0.9)';ctx.lineWidth=e.r*0.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(e.x+ux*e.r*0.6,e.y+uy*e.r*0.6);ctx.lineTo(e.x+ux*(e.r*0.6+(D-e.r*0.6)*k),e.y+uy*(e.r*0.6+(D-e.r*0.6)*k));ctx.stroke();
+    ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=3*S;ctx.setLineDash([12*S,10*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();circ(ctx,e.tx,e.ty,e.r*0.9);ctx.stroke();ctx.setLineDash([]);}
+  if(q===3&&!e.cap){for(let i=0;i<3;i++){const a=T*5+i*TAU/3;star4(e.x+Math.cos(a)*e.r*0.9,e.y-e.r*1.3+Math.sin(a)*e.r*0.25,7*S,'#ffe680');}}}
 //#/FULL
 function maybeShell(e){const t=e.t;
   if((t.k==='blob'&&T>40&&Math.random()<0.035)||(t.sh&&Math.random()<0.06)){e.sh=e.shMax=(t.sh||0)+1;e.spd*=0.8;e.xpB=1+1.5*e.sh;e.elite=true;}
@@ -2117,7 +2223,10 @@ function spawnBoss(){
   if(t.hits){e.hits=e.hitsMax=P.endless?Math.min(4,t.hits+P.bossN):t.hits;e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
   if(t.k==='hydra'&&!OLDB){const n=P.endless?Math.min(6,4+P.bossN):3; /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
-  banner={t:3,max:3,title:BRUSH?TX('br_in',P.brN%BR_LIST.length+1,BR_LIST.length):TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX(t.k==='angler'?'boss_in_a':'boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
+//#FULL
+  if(t.k==='physa'){e.net=[];e.gT=0.5;} // v43 the Slime Mold grows a net of its own
+//#/FULL
+  banner={t:3,max:3,title:BRUSH?TX('br_in',P.brN%BR_LIST.length+1,BR_LIST.length):TX('boss_in'),sub:t.lives?TX('boss_in_k',t.name,e.lives):e.buds?TX('boss_in_h',t.name,e.buds.length):t.naps?TX('boss_in_t',t.name,e.naps):t.molts?TX('boss_in_y',t.name,e.molts+1):t.hits?TX(t.k==='angler'?'boss_in_a':t.k==='physa'?'boss_in_m':'boss_in_w',t.name,e.hits):PIT?TX('boss_in_p',t.name,sh):TX('boss_in_s',t.name,sh)};shake=Math.max(shake,8);sfx('boss');
 }
 // Hydra: arms that rest spread out round the body. One that is near the head's path draws back (0.5 s; a red line shows where it will go), shoots out to
 // where the head is heading, and comes home. q: 0 resting, 1 drawing back, 2 shooting out, 3 coming home. No more than two are out at a time.
@@ -2190,6 +2299,7 @@ function bossMove(e,dx,dy,d,s,dt,S){const k=e.t.k;
   if(k==='dfly')return dflyMove(e,dx,dy,d,s,dt,S,half); // v38.10
   if(k==='jorou')return jorouMove(e,dx,dy,d,s,dt,S,half); // v39
   if(k==='angler')return anglerMove(e,dx,dy,d,s,dt,S,half); // v42
+  if(k==='physa')return physaMove(e,dx,dy,d,s,dt,S,half); // v43
 //#/FULL
   return false;}
 // Hydra: tumbles head over heels (as real ones do) to a spot near the player (a dotted arc shows where), then rests a moment. Arms rest while it tumbles
@@ -2202,7 +2312,7 @@ function hydraHop(e,dx,dy,d,dt,S,half){
 function drawBossFx(e){const S=P.S,q=e.bq;if(budsOn(e)){ctx.strokeStyle=`rgba(255,220,150,${0.35+0.2*Math.sin(T*4)})`;ctx.lineWidth=4*S;ctx.setLineDash([12*S,10*S]);ctx.lineDashOffset=-T*30*S;circ(ctx,e.x,e.y,e.r*1.25);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;} // v35: guarded by its buds
   if(!q||OLDB)return;const k=e.t.k;
 //#FULL
-  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}if(k==='dfly'){dflyFx(e);return;}if(k==='jorou'){jorouFx(e);return;}if(k==='angler'){anglerFx(e);return;}
+  if(k==='alion'){alionFx(e);return;}if(k==='yago'){yagoFx(e);return;}if(k==='dfly'){dflyFx(e);return;}if(k==='jorou'){jorouFx(e);return;}if(k==='angler'){anglerFx(e);return;}if(k==='physa'){physaFx(e);return;}
 //#/FULL
  
   if(k==='blob'&&q===1){const L=P.spd*S*1.4*0.6+e.r,f=1-e.bT/0.75;ctx.strokeStyle=`rgba(255,70,80,${0.45+0.4*Math.sin(T*30)})`;ctx.lineWidth=e.r*0.9;ctx.lineCap='round';ctx.setLineDash([16*S,12*S]);ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.cdx*L,e.y+e.cdy*L);ctx.stroke();ctx.setLineDash([]);
@@ -2492,7 +2602,7 @@ function explode(cap){
       if(e.t.revive&&!e.tun){tunOf(e);dorm++;continue;} // v36 a tardigrade: squeezed, it does not die, it goes dormant
       if(e.naps){if(!(e.sleepT>0)){bossNap(e);dorm++;}continue;} // v36 the Predatory Tardigrade: squeezed, it goes dormant (crush it with the head)
 //#FULL
-      if(e.hits>1){(e.t.k==='angler'?anglerHit:spiderHit)(e);continue;} // v39 the Joro Spider: a squeeze but the last sets spiderlings loose
+      if(e.hits>1){(e.t.k==='angler'?anglerHit:e.t.k==='physa'?physaHit:spiderHit)(e);continue;} // v39 the Joro Spider: a squeeze but the last sets spiderlings loose
       if(e.molts>0){bossMolt(e);continue;} // v38.10 the Dragonfly Nymph: squeezed, it sheds its skin and slips out bigger (the last time it takes wing)
 //#/FULL
       if(e.lives>1){kingHit(e);continue;} // the King of the Jar: a squeeze takes one of its lives
@@ -2691,7 +2801,7 @@ function update(dt){
   else if(kx||ky)desired=Math.atan2(ky,kx);
   else{const dx=mx-W/2,dy=my-headSY();if(dx*dx+dy*dy>100)desired=Math.atan2(dy,dx);}
   const tr=P.turn*(P.dashT>0?1.3:1)*dt;P.a+=clamp(angDiff(P.a,desired),-tr,tr);
-  const sp=P.spd*S*(P.dashT>0?2.3:Math.pow(LATCH_SLOW,Math.min(2,P.latPrev||0))*(P.slimed?0.6:1)*(P.webbed?0.6:1)*(P.bound>0?0.35:1)); // phages on the tail drag; a snail's slime holds (v34)
+  const sp=P.spd*S*(P.dashT>0?2.3:Math.pow(LATCH_SLOW,Math.min(2,P.latPrev||0))*(P.slimed?0.6:1)*(P.webbed?0.6:1)*(P.bound>0?0.35:1)*(P.molded?0.7:1)); // (v43: a slime mold's vein holds it) phages on the tail drag; a snail's slime holds (v34)
   P.x+=Math.cos(P.a)*sp*dt;P.y+=Math.sin(P.a)*sp*dt;
   // Dash stretch: while dashing, and for a moment after, the tail tip stays where it is, so the body is longer. Then it eases back
   if(P.dashT>0)P.strT=STR_HOLD;
@@ -2731,6 +2841,7 @@ function update(dt){
 //#FULL
   if(WEBS)webTick(dt); // v39
   if(DARK)darkTick(dt); // v42
+  if(MOLD)moldTick(dt); // v43
 //#/FULL
   if(DQ.n&&T-DQ.t>0.25){text(DQ.sx/DQ.c,DQ.sy/DQ.c+26*P.S,TX('dna_pop',DQ.n),20,'#ffd86a',1.3);DQ.n=DQ.t=DQ.c=DQ.sx=DQ.sy=0;} // v41 the DNA from strong ones, shown together for a squeeze, a little under the middle of them (the squeeze number is above)
   gasTick(dt);slimeTick(dt);chestTick();itemTick(dt);if(state!=='play')return;
@@ -2796,7 +2907,7 @@ function update(dt){
     if(e.titan){if(!(e.bite>0)&&capD(e,P.x,P.y)<e.t.w+headR&&hitHead(e.t.dmg,e.t))e.bite=0.8;continue;} // a titan hurts along its whole body, and a dash is no help
     if(!e.hide&&(e.t.L?capD(e,P.x,P.y)<e.t.w+headR:d<e.r+(e.pr||e.t.crush?crushR:headR))){ // a long body is hit anywhere along it
       if(e.pr||(e.t.crush&&!e.rush)){kill(e,1);burst(e.x,e.y,4,e.pr?'#b6ffd2':e.t.core,120,0.3,2);continue;} // outgrown: run over, no harm done (v42.1: and a firefly squid in the deep, scattered by the head)
-      if(!e.t.dmg&&!e.tun)continue; // (v39: a fly in a web does no harm)
+      if((!e.t.dmg&&!e.tun)||e.wit)continue; // (v39: a fly in a web does no harm. v43: nor a withering knot)
       if(e.tun){tunCrush(e);continue;} // v36 a dormant tardigrade: the head crushes it (no harm done)
       if(e.naps&&e.sleepT>0){bossCrush(e);continue;} // v36 the Predatory Tardigrade, dormant: the head crushes it
       if(P.iceage&&e.frz>0&&!e.sh&&!e.boss&&!e.hunter){kill(e,1);burst(e.x,e.y,8,'#d6f4ff',200,0.4,3);continue;} // Ice Age: a frozen enemy shatters under the head
@@ -3151,7 +3262,8 @@ const BGS=[[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{bas
   [{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}], // v38 the Land of Giants: deep green water, the net of light from far above
   [{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}],
   [{base:'#150a12',mote:'rgba(255,190,150,0.09)',k:'clay',a:0.32}],
-  [{base:'#03070f',mote:'rgba(170,200,255,0.06)',k:'sand',a:0.12}]]; /* v42 the Deep Sea: dark silt on the floor (only where the light falls) */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
+  [{base:'#03070f',mote:'rgba(170,200,255,0.06)',k:'sand',a:0.12}],
+  [{base:'#130c05',mote:'rgba(255,225,140,0.07)',k:'clay',a:0.34}]]; /* v42 the Deep Sea: dark silt on the floor (only where the light falls). v43 the Slime Mold: the bark of a rotting log */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
 function bgOf(){const L=BGS[CS]||BGS[0];return L[Math.min(L.length-1,P?P.stage|0:0)];}
 // the whole background (ground, tiles, and the jar's shade) is drawn small, at half the screen's size, then stretched over the screen in one go:
 // the tiles are soft, so they lose nothing, and the screen is filled once, as the plain ground was before (filling it two or three times was slow on fine screens)
@@ -3307,6 +3419,7 @@ function render(){
   drawBubbles(vx0,vx1,vy0,vy1);
 //#FULL
   if(WEBS)drawWebs(vx0,vx1,vy0,vy1); // v39
+  if(MOLD)drawMold(vx0,vx1,vy0,vy1); // v43
 //#/FULL
   drawSlime(vx0,vx1,vy0,vy1);drawGas(vx0,vx1,vy0,vy1);if(!DARK){drawChests();drawItems();} // (v42: in the dark, the pickups are drawn over it)
   if(goo.length){for(const g of goo){const k=g.life/g.max;ctx.globalAlpha=Math.min(1,k*1.8)*0.9;ctx.fillStyle=g.col;circ(ctx,g.x,g.y,g.r*(0.45+0.55*k));ctx.fill();}ctx.globalAlpha=1;} // v31: what is left of what burst
@@ -3363,7 +3476,7 @@ function render(){
   ctx.globalAlpha=1;
   for(const e of enemies){const m=e.boss?e.r*2:0;if(e.titan||e.hide||e.x<vx0-m||e.x>vx1+m||e.y<vy0-m||e.y>vy1+m)continue;const t=e.t;
     const s=e.alt?(e.flash>0?e.alt.fspr:e.alt.spr):e.flash>0?t.fspr:t.frames?t.frames[((T*14+e.ph*3)|0)%t.fr]:t.spr,wb=Math.sin(T*(t.k==='amoeba'?3:8)+e.ph)*(t.k==='amoeba'?0.12:0.05),kk=(e.alt?e.r/e.alt.r:e.sc)/((e.alt||t).res||1)*(e.pop>0?1-e.pop:1),w=s.width*kk*(1+wb),h=s.height*kk*(1-wb); // (v34 e.alt: drawn as another type, scaled to its size: the boss curled up)
-    ctx.globalAlpha=e.pr?0.72:e.sn===0&&t.mv==='sentry'?0.78:1;
+    ctx.globalAlpha=e.pr?0.72:e.wit?0.4:e.sn===0&&t.mv==='sentry'?0.78:1;
     if(t.kin&&e.tr){if(e.rage){ctx.fillStyle=`rgba(255,40,50,${(0.2+0.1*Math.sin(T*9)).toFixed(3)})`;circ(ctx,e.x,e.y,e.r*1.9);ctx.fill();}drawHead(e.x,e.y,e.ha,e.r/11,1,KIN_SK[t.kc].h,false,KIN_SK[t.kc]);if(e.flash>0){ctx.fillStyle='rgba(255,255,255,0.65)';circ(ctx,e.x,e.y,e.r);ctx.fill();}} // one of the player's own kind: a real head
     else if(t.rot||t.spin||t.turn){const c=Math.cos(e.ang)*WK,sn=Math.sin(e.ang)*WK;ctx.setTransform(c,sn,-sn,c,WK*e.x+WOX,WK*e.y+WOY);ctx.drawImage(s,-w/2,-h/2,w,h);ctx.setTransform(WK,0,0,WK,WOX,WOY);} // turned sprites: the matrix is set directly (cheaper than save / restore, and there are many)
     else ctx.drawImage(s,e.x-w/2,e.y-h/2,w,h);
@@ -4024,7 +4137,7 @@ window.__g={get pit(){return PIT;},get splash(){return SPL;},renderSfx,get death
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
     return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
