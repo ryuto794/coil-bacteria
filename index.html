@@ -869,6 +869,13 @@ if(!Array.isArray(META.skins)||!META.skins.includes('green'))META.skins=['green'
 if(!Array.isArray(META.unlocked))META.unlocked=[];for(const id of ['spike','volt','horn','ember','frost','sip'])if(!META.unlocked.includes(id))META.unlocked.push(id); // open from the first run
 if(!META.best||typeof META.best!=='object')META.best={t:0,stage:0,clears:0};
 // added in v7; every key is optional so older saves still load
+// v45 difficulty (the owner: "three levels; numbers only; more DNA for hard"). Normal is the game as it was. dmg: what a hit takes; cnt: how many
+// come (the wave table's numbers); spd: how fast they move; heal: what a heal item gives; boss: shells -1 / +1, and squeezes (lives, crushes,
+// molts, hits, buds) +1 on hard (on easy, three or more come down by one); bhp: the boss's HP; dna: the DNA a run gives
+const DIFFS=[{dmg:0.6,cnt:0.8,spd:0.92,heal:1.3,boss:-1,bhp:0.8,dna:0.8,col:'#8fe8a8'},{dmg:1,cnt:1,spd:1,heal:1,boss:0,bhp:1,dna:1,col:'#9fd0ff'},{dmg:1.35,cnt:1.3,spd:1.08,heal:0.8,boss:1,bhp:1.25,dna:1.5,col:'#ff9080'}];
+let DIFF=Q.has('diff')?Math.max(0,Math.min(2,+Q.get('diff')|0)):(META.diff===0||META.diff===2?META.diff:1); // ?diff=0|1|2: for testing, not saved
+const DF=()=>DIFFS[DIFF],dCnt=n=>DF().boss>0?n+1:DF().boss<0?Math.max(Math.min(n,2),n-1):n; // a boss's count of squeezes, on this difficulty
+function cycleDiff(d){DIFF=(DIFF+(d||1)+3)%3;if(!Q.has('diff')){META.diff=DIFF;saveMeta();}}
 META.opts=Object.assign({vol:0.7,fx:1,vib:true,q:-1,ctl:'stick',arach:false},META.opts&&typeof META.opts==='object'?META.opts:{});
 if(![0,0.35,0.7,1].includes(META.opts.vol))META.opts.vol=0.7;if(![1,0.4,0].includes(META.opts.fx))META.opts.fx=1;if(![-1,3,2,1].includes(META.opts.q))META.opts.q=-1;META.opts.vib=!!META.opts.vib;META.opts.arach=!!META.opts.arach;ARACH_ON=META.opts.arach;if(ARACH_ON)rebuildSpiders(); // v43.1
 META.stats=Object.assign({kills:0,dashKills:0,toxins:0},META.stats&&typeof META.stats==='object'?META.stats:{});
@@ -881,7 +888,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v44',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v45',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1170,6 +1177,8 @@ const STR={
  cont_mouse:['クリック / Enter で続ける','Click / Enter to continue'],
  // end of run
  end1:['生存 {0}  /  撃破 {1}  /  Lv {2}','Survived {0}  /  Kills {1}  /  Lv {2}'],
+ df_0:['やさしい','Easy'],df_1:['ふつう','Normal'],df_2:['むずかしい','Hard'],df_t:['難易度','Difficulty'],
+ df_dna:['DNA ×{0}','DNA ×{0}'],
  end2:['最大コンボ x{0}  /  到達 {1}  /  ボス撃破 {2}','Best combo x{0}  /  Reached {1}  /  Bosses {2}'],
  end_dna:['DNA +{0}（合計 {1}）','DNA +{0} (total {1})'],
  end_new:['新しく解放：{0}','Newly unlocked: {0}'],
@@ -1515,7 +1524,7 @@ addEventListener('keydown',e=>{
   if(state==='clear'&&k==='e')goEndless();
   if(state==='clear'&&(k==='n'||k==='enter'))goNext();
   if(state==='chest'&&k==='enter')closeChest();
-  if(state==='title'){if(k==='enter')reset(true);else if(k==='arrowleft')cycleSkin(-1);else if(k==='arrowright')cycleSkin(1);else if(k==='b')buySkin();else if(k==='l')setLang(1-LI,true);}
+  if(state==='title'){if(k==='d')cycleDiff(1);if(k==='enter')reset(true);else if(k==='arrowleft')cycleSkin(-1);else if(k==='arrowright')cycleSkin(1);else if(k==='b')buySkin();else if(k==='l')setLang(1-LI,true);}
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 cv.addEventListener('mousedown',e=>{mx=(e.clientX-OFF.x);my=(e.clientY-OFF.y);if(e.button===0){mdown=true;act('click');}});
@@ -1716,7 +1725,7 @@ function hpScale(){return 1+T/300+P.stage*0.3;}
 // plain = exactly as the table says (events that want a uniform line, and tests).
 function mkEnemy(t,x,y,plain){const pr=t.st<P.stage&&t.k!=='toxin',fixed=pr||plain||t.k==='toxin'||!!t.L,v=Math.random(),cls=fixed||!P.stage?0:v<0.2?1:v>0.875?2:0;
   const sc=fixed?1:cls===1?rand(0.6,0.74):cls===2?rand(1.5,1.9):rand(0.88,1.16),sh=pr?0:(t.sh||0)+(cls===2&&t.sh?1:0);
-  return{x,y,vx:0,vy:0,t,sc,pr,hp:pr?1:Math.ceil(t.hp*hpScale()*sc*sc),r:t.r*sc,ang:0,spd:t.spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600))*(cls===1?1.4:cls===2?0.72:1),
+  return{x,y,vx:0,vy:0,t,sc,pr,hp:pr?1:Math.ceil(t.hp*hpScale()*sc*sc),r:t.r*sc,ang:0,spd:t.spd*DF().spd*rand(0.85,1.1)*(1+Math.min(0.3,T/600))*(cls===1?1.4:cls===2?0.72:1),
   dm:cls===1?0.8:cls===2?1.35:1,flash:0,cap:null,dead:false,ph:Math.random()*TAU,sh,shMax:sh,xpB:(1+0.5*sh)*sc,slowT:0,spk:0};}
 function spawnCluster(n,at,prey){ // prey: a loose field of outgrown creatures, anywhere around (also dead ahead: it is there to be run over)
   const Sx=Math.max(P.S,zoomT());let cx,cy,spread;
@@ -1815,8 +1824,9 @@ BR_LIST=[STAGES[0].boss[0],POND_BOSS[0],STAGES[0].boss[1],WEB_BOSS[0],POND_BOSS[
 //#/FULL
 function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;STAGE_N=d.names;TIERS=d.tiers;WAVES=d.waves;BOSS_T=d.boss;HUNT_T=d.hunt;TITAN_T=d.titan;TOXIN_T=d.toxin;GAS_DPS=d.gas;REAL_K=d.realK;BOOK=d.book;RUSH_T=d.rush;APART=!!d.apart;BRUSH=!!d.brush;PREY_L=d.prey||null;PREY_XP_S=d.preyXp||PREY_XP;return true;}
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
-function bestOf(i){if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
-function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&((bestOf(i-1).clears||0)>0||FORCE_STG===i));} // a stage opens when the one before it has been cleared
+function bestOf(i,d){if(d===undefined)d=DIFF;if(d!==1){if(!META.bestsD||typeof META.bestsD!=='object')META.bestsD={};const k=STAGES[i].id+'@'+d;return META.bestsD[k]||(META.bestsD[k]={t:0,stage:0,clears:0});} // v45 easy and hard keep records of their own (normal: as before)
+  if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
+function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&([0,1,2].some(d=>(bestOf(i-1,d).clears||0)>0)||FORCE_STG===i));} // (v45: a clear on any difficulty) // a stage opens when the one before it has been cleared
 function cycleStage(d){stgIdx=(stgIdx+d+STAGES.length)%STAGES.length;useStage(stgIdx);META.stg=STAGES[stgIdx].id;saveMeta();}
 const FORCE_STG=Q.has('stage')?(+Q.get('stage')||1)-1:-1; // ?stage=2: open and choose that stage, for testing
 stgIdx=FORCE_STG>0&&STAGES[FORCE_STG]&&!STAGES[FORCE_STG].soon&&!STAGES[FORCE_STG].full?FORCE_STG:Math.max(0,STAGES.findIndex(s=>s.id===META.stg));if(!stageOpen(stgIdx))stgIdx=0;useStage(stgIdx);
@@ -1836,7 +1846,7 @@ function waveTick(dt){
   P.waveT-=dt;if(P.waveT>0)return;P.waveT=w[2];
   let real=0,prey=0;for(const e of enemies){if(e.boss||e.hunter||e.titan||e.dead)continue;if(e.pr||e.fd)prey++;else real++;}
   if(real+prey>=CAP)return;
-  const def=Math.round(w[1]*mul*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real;
+  const def=Math.round(w[1]*mul*DF().cnt*(P.boss||P.hunter?0.6:1)*REAL_K[P.stage])-real; // (v45 the difficulty: how many)
   if(def>0){spawnCluster(Math.min(def,14));if(def>14)spawnCluster(Math.min(def-14,14));if(def>28)spawnCluster(Math.min(def-28,14));
     if(P.kps>6&&def>(def+real)*0.4)P.waveT=Math.min(P.waveT,0.3);} // v23: the screen is being emptied faster than it fills: the next group comes at once
   else if(!APART&&Math.random()<0.5)spawnCluster(1+(Math.random()*2|0)); // above the minimum: only a trickle (v38: not giants: a few at a time is the point)
@@ -1898,7 +1908,7 @@ function gasTick(dt){
   for(const g of gas){g.life-=dt;g.r+=(g.R-g.r)*Math.min(1,dt*1.6);}compact(gas,g=>g.life>0);
   let inG=false;for(const g of gas){const dx=P.x-g.x,dy=P.y-g.y,rr=g.r*0.85;if(g.life>0.25&&dx*dx+dy*dy<rr*rr){inG=true;break;}}
   P.gasT=inG?P.gasT+dt:0;
-  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*(1-0.4*P.anti)*(1-0.1*P.armor)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'-'+Math.max(1,Math.round(GAS_DPS[P.stage]*(1-0.4*P.anti)*(1-0.1*P.armor)*0.5))+' '+TX('poison'),16,'#d8f070',0.5);}
+  if(inG&&!DEMO&&state==='play'){P.hp-=GAS_DPS[P.stage]*DF().dmg*(1-0.4*P.anti)*(1-0.1*P.armor)*dt;P.gasEver=true;P.gasTick-=dt;if(P.gasTick<=0){P.gasTick=0.5;text(P.x,P.y-30*P.S,'-'+Math.max(1,Math.round(GAS_DPS[P.stage]*(1-0.4*P.anti)*(1-0.1*P.armor)*0.5))+' '+TX('poison'),16,'#d8f070',0.5);}
     if(P.hp<=0)die('gas');}
 }
 // ---------- capsules (VS-style chests): bosses carry evolutions ----------
@@ -1931,7 +1941,7 @@ function dropTick(e){ // from kill(): roughly one pickup per 75 kills, never fro
 function itemTick(dt){const vp=1100*P.S*dt;for(const q of items)if(q.pull&&q.life>0){const dx=P.x-q.x,dy=P.y-q.y,d=Math.hypot(dx,dy)+0.01,v=Math.min(d,vp);q.x+=dx/d*v;q.y+=dy/d*v;}for(const c of chests)if(c.pull){const dx=P.x-c.x,dy=P.y-c.y,d=Math.hypot(dx,dy)+0.01,v=Math.min(d,vp);c.x+=dx/d*v;c.y+=dy/d*v;} // v41 pulled in by a magnet
   for(const it of items){it.life-=dt;const dx=P.x-it.x,dy=P.y-it.y,pr=28*P.S;if(it.life>0&&dx*dx+dy*dy<pr*pr){it.life=0;useItem(it);}}compact(items,it=>it.life>0);}
 function useItem(it){const S=P.S,col=ITEM_COL[it.k];burst(it.x,it.y,24,col,260,0.6,3);rings.push({x:it.x,y:it.y,r:8*S,R:90*S,life:0.4,max:0.4,col,w:4*S});sfx('item');
-  if(it.k==='heal'){const h=Math.round(Math.max(25,P.maxHp*0.25))+8*P.stage;P.hp=Math.min(P.maxHp,P.hp+h);text(P.x,P.y-40*S,'+'+h+' HP',24,'#9dffc4',1.1);} // v20: a quarter of max HP (25 at least), a little more at each scale
+  if(it.k==='heal'){const h=Math.round((Math.max(25,P.maxHp*0.25)+8*P.stage)*DF().heal);P.hp=Math.min(P.maxHp,P.hp+h);text(P.x,P.y-40*S,'+'+h+' HP',24,'#9dffc4',1.1);} // v20: a quarter of max HP (25 at least), a little more at each scale
   else if(it.k==='mag'){for(const o of orbs)o.pull=1;for(const q of items)if(q!==it){q.pull=1;q.fall=0;q.life=Math.max(q.life,6);}for(const c of chests)c.pull=1;text(P.x,P.y-40*S,TX('it_mag'),20,'#9fd4ff',1);} // v41: every item and capsule on the field too
   else if(it.k==='shd'){P.guard=Math.min(3,P.guard+1);text(P.x,P.y-40*S,TX('it_shd'),20,col,1);}
   else{P.freezeT=4;rings.push({x:P.x,y:P.y,r:20*S,R:700*S,life:0.6,max:0.6,col,w:6*S});text(P.x,P.y-40*S,TX('it_ice'),22,col,1.2);}}
@@ -2355,14 +2365,15 @@ function spawnBoss(){
   const t=BRUSH?BR_LIST[P.brN%BR_LIST.length]:BOSS_T[P.stage];if(!t)return; // (v40: in the Boss Rush, the next on the list) // (v37.1: the pit has a boss at its last scale only)
   const Sx=Math.max(P.S,zoomT()),a=P.a+(Math.random()<0.5?1:-1)*rand(1.3,2.2);
   const d=Math.hypot(W,H)/2*Sx+t.r+60*Sx,sh=t.lives||t.naps||t.bare||t.molts||t.hits?0:P.endless?Math.min(8,t.sh+P.bossN):Math.max(Math.min(2,t.sh),Math.round(t.sh*0.67)); // endless: each return has one more shell (or life) and more HP. v38.9 the run to the clear: a third fewer shells (3 -> 2, 4 -> 3, 5 -> 3). The owner: "three scales, each boss long. The length can come after the clear, in endless"
-  const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
-    sh,shMax:sh,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
-  enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=Math.min(4,t.lives+P.bossN);e.hp0=e.hp;}
-  if(t.naps){e.naps=e.napsMax=P.endless?Math.min(5,t.naps+P.bossN):t.naps-1;} // v36 (v38.9: two crushes before the clear, three and more in endless)
-  if(t.molts){e.molts=e.moltMax=P.endless?Math.min(4,t.molts+P.bossN):t.molts;e.hp0=e.hp;}
-  if(t.hits){e.hits=e.hitsMax=P.endless?Math.min(4,t.hits+P.bossN):t.hits;e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
+  const sh1=sh>0?Math.max(1,sh+DF().boss):0; // (v45 the difficulty: a shell less or more)
+  const e={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,vx:0,vy:0,t,hp:Math.round(t.hp*(1+0.5*P.bossN)*DF().bhp),r:t.r,ang:0,spd:t.spd,flash:0,cap:null,dead:false,ph:0,
+    sh:sh1,shMax:sh1,sc:1,xpB:1,slowT:0,spk:0,boss:true,lastCrack:-99,regenT:0,minT:6};
+  enemies.push(e);P.boss=e;if(t.lives){e.lives=e.livesMax=dCnt(Math.min(4,t.lives+P.bossN));e.hp0=e.hp;}
+  if(t.naps){e.naps=e.napsMax=dCnt(P.endless?Math.min(5,t.naps+P.bossN):t.naps-1);} // v36 (v38.9: two crushes before the clear, three and more in endless)
+  if(t.molts){e.molts=e.moltMax=dCnt(P.endless?Math.min(4,t.molts+P.bossN):t.molts);e.hp0=e.hp;}
+  if(t.hits){e.hits=e.hitsMax=dCnt(P.endless?Math.min(4,t.hits+P.bossN):t.hits);e.hp0=e.hp;} // v39 squeezes to go (the Joro Spider) // v38.10 molts to go (one more each return in endless, 4 at most)
   if(PIT){e.x=PIT.jx;e.y=PIT.y+t.r*0.3;e.ang=-Math.PI/2;e.bq=8;e.bT=1.3;e.freeT=T+1.4;} // v37 the antlion climbs out of its pit
-  if(t.k==='hydra'&&!OLDB){const n=P.endless?Math.min(6,4+P.bossN):3; /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
+  if(t.k==='hydra'&&!OLDB){const n=Math.max(2,(P.endless?Math.min(6,4+P.bossN):3)+DF().boss); /* (v38.9: three buds before the clear, five and more in endless) */e.buds=[];e.regrown=0;for(let i=0;i<n;i++)hydraBud(e,i/n*TAU+0.3);} // v35: the Hydra comes with its buds round it
 //#FULL
   if(t.k==='physa'){e.net=[];e.gT=0.5;} // v43 the Slime Mold grows a net of its own
 //#/FULL
@@ -2513,7 +2524,7 @@ function stageUp(){
 // the head takes a hit (contact or a shot). false while the grace time after a hit is running, and in auto-play
 function hitHead(raw,by){if(P.inv>0||DEMO||(P.phase&&P.dashT>0))return false;const S=P.S; // Phase Dash: nothing hurts during a dash
   if(P.guard>0){P.guard--;P.guardT=0;P.inv=0.75;sfx('crack');vib(20);rings.push({x:P.x,y:P.y,r:14*S,R:70*S,life:0.35,max:0.35,col:'#9fe8ff',w:5*S});text(P.x,P.y-40*S,TX('blocked'),22,'#9fe8ff',0.9);return false;} // a barrier takes the hit
-  const dm=Math.max(1,Math.round(raw*(1-0.15*P.horn)*(1-0.1*P.armor)));
+  const dm=Math.max(1,Math.round(raw*DF().dmg*(1-0.15*P.horn)*(1-0.1*P.armor))); // (v45 the difficulty)
   P.hp-=dm;P.inv=0.75;shake=Math.max(shake,8);sfx('hurt');hitstop=Math.max(hitstop,0.07);P.hurtT=0.2; // v32: a bite stops the game for a moment, and the edge goes red
  vib(50);burst(P.x,P.y,14,'#ff6070',200,0.4,3);hpHitAt=performance.now();
   text(P.x,P.y-40*S,'-'+dm,30,'#ff4a5c',1.1);const who=by&&(by.name||by.n);if(who)text(P.x,P.y-16*S,who,14,'#ffc0c8',1.1); // how much, and what did it
@@ -2533,7 +2544,7 @@ function goNext(){const i=nextStage();if(state!=='clear'||overT<0.6||i<0||!stage
 function goEndless(){if(state!=='clear')return;state='play';runRes=null;P.endless=true;P.bossN=1;P.nextBoss=T+45;if(BRUSH){P.brN=0;P.nextBoss=T+10;}calmUntil=T+4;P.inv=Math.max(P.inv,2);P.waveT=0.5;
   banner={t:2.6,max:2.6,title:TX('endless'),sub:TX('endless_s')};}
 function endRun(clear){if(runRes)return;
-  const b=bestOf(CS),total=Math.floor(kills/25)+Math.floor(P.dnaB||0)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0),dna=total-P.dnaPaid,rec=[];
+  const b=bestOf(CS),total=Math.floor((Math.floor(kills/25)+Math.floor(P.dnaB||0)+bossKills*25+P.stage*10+Math.floor(T/30)+((clear||P.cleared)?100:0))*DF().dna),dna=total-P.dnaPaid,rec=[]; // (v45: the difficulty scales the DNA)
   if(!P.counted){P.counted=true;META.runs=(META.runs||0)+1;}
   if(META.runs>1){if(T>b.t+1)rec.push('t');if(kills>(b.kills||0))rec.push('k');if(bestCombo>(b.combo||0))rec.push('c');} // new records (not on the very first run)
   META.dna+=dna;P.dnaPaid=total;META.time+=T-P.timePaid;P.timePaid=T;META.stats.kills+=kills-P.killsPaid;P.killsPaid=kills;
@@ -3945,10 +3956,10 @@ function titleLayout(W,H){const pw=Math.min(340,W-30),ph=128,px=W/2-pw/2,bw=Math
   for(let i=0;i<4;i++)mb.push(col?{x:px-12-mw,y:py+i*40,w:mw,h:34}:{x:px+(i%2)*(mw+8),y:py+ph+188+(i>>1)*44,w:mw,h:38});
   return{ty,tw,fs,step,tight,panel:{x:px,y:py,w:pw,h:ph},left:{x:px,y:py,w:58,h:ph},right:{x:px+pw-58,y:py,w:58,h:ph},buy:{x:W/2-95,y:py+ph-42,w:190,h:32},
     stg:col?{x:px+pw+12,y:py,w:Math.max(96,Math.min(132,W-px-pw-22)),h:ph}:{x:px,y:py+ph+12,w:pw,h:40}, // the stage chooser: a row under the skins, or a box to their right on a short, wide screen
-    start:{x:W/2-bw/2,y:py+ph+(col?20:64),w:bw,h:56},lang:{x:W-10-lw,y:10,w:lw,h:34},menu:mb};}
+    diff:{x:W/2-bw/2,y:py+ph+(col?20:64),w:Math.round(bw*0.34),h:56},start:{x:W/2-bw/2+Math.round(bw*0.34)+8,y:py+ph+(col?20:64),w:bw-Math.round(bw*0.34)-8,h:56}, /* v45 the difficulty beside Start */lang:{x:W-10-lw,y:10,w:lw,h:34},menu:mb};}
 function cycleSkin(d){skinIdx=(skinIdx+d+SKINS.length)%SKINS.length;const k=SKINS[skinIdx];if(META.skins.includes(k.id)){META.skin=k.id;saveMeta();}}
 function buySkin(){const k=SKINS[skinIdx];if(META.skins.includes(k.id)||META.dna<k.cost)return;META.dna-=k.cost;META.skins.push(k.id);META.skin=k.id;saveMeta();}
-function titleAct(W,H,x,y){const L=titleLayout(W,H);if(inR(L.lang,x,y))setLang(x<L.lang.x+L.lang.w/2?0:1,true);else if(inR(L.left,x,y))cycleSkin(-1);else if(inR(L.right,x,y))cycleSkin(1);else if(inR(L.buy,x,y))buySkin();else if(inR(L.start,x,y))reset(true);}
+function titleAct(W,H,x,y){const L=titleLayout(W,H);if(inR(L.lang,x,y))setLang(x<L.lang.x+L.lang.w/2?0:1,true);else if(inR(L.left,x,y))cycleSkin(-1);else if(inR(L.right,x,y))cycleSkin(1);else if(inR(L.buy,x,y))buySkin();else if(inR(L.diff,x,y)){cycleDiff(1);sfx('ui');}else if(inR(L.start,x,y))reset(true);}
 function titleScreen(W,H){
   ctx.fillStyle='rgba(2,8,22,0.74)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.textBaseline='middle';
   const L=titleLayout(W,H),fs=L.fs,ty=L.ty,g=L.lang;
@@ -3970,6 +3981,10 @@ function titleScreen(W,H){
   if(!own){const can=META.dna>=k.cost;btn(L.buy,TX(can?'buy':'need',k.cost),0,!can);}
   else{ctx.font=`12px ${FONT}`;ctx.fillStyle='#7f9db8';ctx.fillText(TX('skin_n',skinIdx+1,SKINS.length),W/2,p.y+p.h-24);}
   btn(L.start,TX(TOUCH?'start':'start_key'),1,!stageOpen(stgIdx));
+  {const r=L.diff,c=DF().col;panel(r.x,r.y,r.w,r.h,0.9);ctx.strokeStyle=c;ctx.lineWidth=2;rrect(r.x+1,r.y+1,r.w-2,r.h-2,10);ctx.stroke(); // v45 the difficulty: tap to change
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`bold 11px ${FONT}`;ctx.fillStyle='#8fb8d8';ctx.fillText(TX('df_t')+' ▸',r.x+r.w/2,r.y+15);
+    fitFont(TX('df_'+DIFF),17,900,r.w-10);ctx.fillStyle=c;ctx.fillText(TX('df_'+DIFF),r.x+r.w/2,r.y+33);
+    if(DIFF!==1){ctx.font=`bold 10px ${FONT}`;ctx.fillStyle=DIFF===2?'#ffd166':'#9fb3c4';ctx.fillText(TX('df_dna',DF().dna),r.x+r.w/2,r.y+48);}}
   const b=stageOpen(stgIdx)?bestOf(stgIdx):{t:0,stage:0,clears:0};
   const f1=TX('best',META.dna,fmtT(b.t),stageName(b.stage||0),b.clears||0);
   fitFont(f1,13,'bold',W-20);ctx.fillStyle='#bfe3ff';ctx.fillText(f1,W/2,L.start.y+L.start.h+26);
@@ -4045,7 +4060,7 @@ let bookTab=0; // 0 = enemies, 1 = the forms of each line
 function bookBody(W,top,bot){const tbw=Math.min(150,(W-40)/2);
   hotBtn({x:W/2-tbw-4,y:top-2,w:tbw,h:30},TX('bk_tab0'),bookTab===0?1:0,()=>{bookTab=0;menuPage=0;});hotBtn({x:W/2+4,y:top-2,w:tbw,h:30},TX('bk_tab1'),bookTab===1?1:0,()=>{bookTab=1;menuPage=0;});top+=38;
   if(bookTab===1)return formsBody(W,top,bot);
-  const seen=Math.max(bestOf(CS).stage||0,menuFrom==='pause'?P.stage:0),cols=NARROW?1:2,gap=20,tw=Math.min(W-24,860),cw=(tw-(cols-1)*gap)/cols,x0=W/2-tw/2,rh=50,hh=30;
+  const seen=Math.max(...[0,1,2].map(d=>bestOf(CS,d).stage||0),menuFrom==='pause'?P.stage:0),cols=NARROW?1:2,gap=20,tw=Math.min(W-24,860),cw=(tw-(cols-1)*gap)/cols,x0=W/2-tw/2,rh=50,hh=30;
   const rows=[];for(let s=0;s<STAGE_N.length;s++){rows.push({head:s});for(const b of BOOK)if(b[0]===s)rows.push({b});}
   let page=0,col=0,y=top;const place=[];
   for(const r of rows){const h=r.b?rh:hh;if((y+h>bot&&y>top)||(!r.b&&y+hh+rh>bot)){col++;y=top;if(col>=cols){col=0;page++;}}place.push({r,page,col,y});y+=h;}
@@ -4252,7 +4267,7 @@ function endScreen(W,H,clear){
   ctx.font=`900 ${Math.min(tight?36:50,W/7.5)|0}px ${FONT}`;ctx.fillStyle=clear?'#eaffb0':'#ff6070';ctx.fillText(clear?TX('clear'):'GAME OVER',W/2,y0);
   if(!tight){const sub=clear?TX('clear_s',(BRUSH?BR_LIST[BR_LIST.length-1]:BOSS_T[BOSS_T.length-1]).name):by==='gas'?TX('cause_gas'):by?TX('cause',by.name||by.n):'';
     if(sub){fitFont(sub,15,'bold',W-24);ctx.fillStyle=clear?'#b6ffd2':'#ffb3bb';ctx.fillText(sub,W/2,y0+40);}}
-  const l1=TX('end1',fmtT(T),kills,P.lvl);fitFont(l1,NARROW?16:19,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
+  const l1=(DIFF!==1?TX('df_'+DIFF)+'  /  ':'')+TX('end1',fmtT(T),kills,P.lvl);fitFont(l1,NARROW?16:19,'bold',W-24);ctx.fillStyle='#e8f6ff';ctx.fillText(l1,W/2,y);
   const l2=TX('end2',bestCombo,stageName(P.stage),bossKills);fitFont(l2,NARROW?15:17,'bold',W-24);ctx.fillStyle='#b6ffd2';ctx.fillText(l2,W/2,y+(tight?26:30));
   if(R){
     if(!tight&&R.rec.length){const s=TX('rec',R.rec.map(k=>TX('rec_'+k)).join(TX('sep')));fitFont(s,15,900,W-24);ctx.fillStyle='#ffe680';ctx.fillText(s,W/2,y0+138);}
@@ -4317,10 +4332,10 @@ window.__g={get pit(){return PIT;},get splash(){return SPL;},renderSfx,get death
   tail:Math.round(P.tailLen),grow:+P.grow.toFixed(2),prey:enemies.filter(e=>e.pr).length,S:+P.S.toFixed(2),stage:P.stage,touch:TOUCH,dashT:+P.dashT.toFixed(2),dashCdT:+P.dashCdT.toFixed(2),dashBase:P.dashBase,dashStacks:P.dashStacks,xpNeed:P.xpNeed,xp:P.xp,
   a:+P.a.toFixed(3),mx,my,types:[...new Set(enemies.map(e=>e.t.k))].join(','),
   boss:P.boss?{name:P.boss.t.name,sh:P.boss.sh}:null,gas:gas.length,chests:chests.length,QL,parts:parts.length,toxins:enemies.filter(e=>e.t.k==='toxin').length,wave:P.waveKey,lv:JSON.stringify(P.lv),shelled:enemies.filter(e=>e.sh>0&&!e.boss).length,bubbles:bub.act.length,bossKills,rush:+(P.rushT||0).toFixed(1),calm:Math.max(0,calmUntil-T)};},
-  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},get arach(){return ARACH_ON;},lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
+  get P(){return P;},get meta(){return META;},get choices(){return choices;},get E(){return enemies;},get dark(){return DARK;},get mold(){return MOLD;},get arach(){return ARACH_ON;},get diff(){return DIFF;},setDiff:d=>{DIFF=d;},DIFFS,lumOf:e=>lumOf(e),dash,addXP,spawnBoss,stageUp,reset,onLoop,cinch,SQ:{DASH_R,DASH_D,LINK_R,LINK_D,LINK_XP},get skin(){return skin().id;},cardIcon,get allCards(){return [...UPG,...RARE,...SUPER,...EVO,...INF];},get skins(){return SKINS.map(s=>({id:s.id,tier:s.tier|0,cost:s.cost,own:META.skins.includes(s.id),eye:s.eye||'',pat:s.pat||(s.cols?'band':'')}));},setSkin(id){tryOn=SKINS.find(s=>s.id===id)||null;return !!tryOn;},cycleSkin,trace(pts){const n=P.loops;for(const q of pts){P.x=q[0];P.y=q[1];advanceTrail(0.016);}return P.loops-n;},get caps(){return captures;},spawnToxin,dropChest,waveEvent,rush:startRush,get ecaps(){return ecaps;},spawnWedge(k,x,y){const n=enemies.length;spawnWedge(ET[k],x,y);return enemies.slice(n);},puff,setLang,get lang(){return LANGS[LI];},
   // layout in real pixels for headless checks: clickable areas plus the title / card / end-screen rectangles
   get ui(){const k=uiK(),uw=W/k,uh=H/k,px=r=>({x:r.x*k,y:r.y*k,w:r.w*k,h:r.h*k,cx:(r.x+r.w/2)*k,cy:(r.y+r.h/2)*k,id:r.id}),T=titleLayout(uw,uh),E=endLayout(uw,uh);
-    return{k,menu,hot:hot.map(px),title:{start:px(T.start),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
+    return{k,menu,hot:hot.map(px),title:{start:px(T.start),diff:px(T.diff),left:px(T.left),right:px(T.right),buy:px(T.buy),lang:px(T.lang)},cards:cardRects(uw,uh).map(px),end:{retry:px(E.retry),title:px(E.title),next:E.nx?px(E.next):null}};},
   sfx,SFX,audioUnlock,get audio(){return AC?AC.state:'none';},pauseGame,resumeGame,openMenu,toggleFS,goEndless,reroll,skipCard,get items(){return items;},useItem,die,mission,get missions(){return MISSIONS.map(m=>({id:m.id,done:misDone(m)}));},shareRun,get run(){return runRes;},get cards(){return{UPG,RARE,EVO,SUPER};},applyCard,
   spawnAt(k,x,y){const e=mkEnemy(ET[k],x,y,true);enemies.push(e);return e;},spawnChain(k,x,y,n){const i=enemies.length;spawnChain(ET[k],x,y,n);return enemies.slice(i);},LATCH_SLOW,cycleStage,get INF(){return INF;},get choices(){return choices?choices.map(c=>(c&&c.id)||''):null;},get stage(){return{cur:CS,sel:stgIdx,list:STAGES.map((s,i)=>({id:s.id,name:s.n,open:stageOpen(i),soon:!!s.soon}))};},spawnTitan,enrage,get titans(){return enemies.filter(e=>e.titan);},get stick(){return stick;},ignite,freeze,get fires(){return fires.length;},spawnHunter,spawnCluster,get booms(){return booms.length;},get roster(){return TIERS;},waveNow,zoomT,isPrey,
   shock,get shots(){return shots;},hitHead,MAXC,get needles(){return needles.length;},get bolts(){return bolts.length;},evoReady(){const e=EVO.find(e=>evoCan(e)&&!e.has());return e?e.id:null;}};
