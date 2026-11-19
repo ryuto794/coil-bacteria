@@ -888,7 +888,7 @@ function saveMeta(){if(!SAVE)return;try{localStorage.setItem(META_KEY,JSON.strin
 // ---------- language (ja / en) ----------
 // Every piece of on-screen text is written as [日本語, English]. Screen text lives in STR and is read with TX(key, ...values).
 // Names inside data tables (cards, bosses, skins) are [ja, en] too; loc() turns them into getters, so u.n / t.name follow the language.
-const LANGS=['ja','en'],VER='v46',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
+const LANGS=['ja','en'],VER='v47',EDITION='full'; // EDITION: 'full', or 'demo' in the web demo (tools/build.mjs writes it)
 let LI=0;
 function loc(list,...keys){for(const o of list)for(const k of keys){const v=o[k];if(Array.isArray(v))Object.defineProperty(o,k,{get:()=>v[LI]});}}
 function TX(k,...a){let s=STR[k][LI];for(let i=0;i<a.length;i++)s=s.split('{'+i+'}').join(a[i]);return s;}
@@ -1780,42 +1780,42 @@ const STAGES=[
   book:[[0,'ppara','germ'],[0,'peug','orbit'],[0,'halt','hop'],[0,'roti','pull'],[0,'comb','rake'],[0,'vort','spring'],[0,TOXIN_T[0],'toxin'],[0,POND_BOSS[0],'stentor'],[0,POND_TITAN[0],'daph'],
         [1,'naup','kick'],[1,'bosm','wedge'],[1,'cope','skip'],[1,'nema','whip'],[1,'ostr','brittle'],[1,'volv','volv'],[1,'volvd','volvd'],[1,TOXIN_T[1],'toxin'],[1,POND_RUSH[1],'rush'],[1,POND_HUNT[1],'wbc'],[1,POND_BOSS[1],'hydra'],[1,'hbud','hbud'],[1,POND_TITAN[1],'titan'],
         [2,'plan','plan'],[2,'planh','planh'],[2,'chiro','chiro'],[2,'tard','tard'],[2,'asel','asel'],[2,'snail','snail'],[2,'mosqs','mosqs'],[2,TOXIN_T[2],'toxin'],[2,POND_RUSH[2],'rush'],[2,POND_HUNT[2],'wbc'],[2,POND_BOSS[2],'ontard'],[2,POND_TITAN[2],'tadp']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'jar',n:['蠱毒','Kodoku'],wip:1,names:[['壺の底','The Jar']], // v29: the player's own kind, many of them, among other creatures; the boss is a giant one
-  tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
-  waves:WAVES,boss:JAR_BOSS,hunt:[null],titan:[null],toxin:[TOXIN_T[0]],gas:[8],realK:[1],rush:JAR_RUSH,
-  book:[[0,'germ','germ'],[0,'kinc','kinc'],[0,'virus','virus'],[0,'kind','kind'],[0,'halt','hop'],[0,'kinh','kinh'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,JAR_RUSH[0],'rush'],[0,JAR_BOSS[0],'kinb']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'mold',n:['粘菌','Slime Mold'],wip:1,mold:1,tail0:900,gate:1900,hp0:130,names:[['朽ち木の上','On the Rotting Log']], // v43: the net is the foe (moldTick): it creeps toward the snake from its cores; cut it and what lies beyond withers; the Slime Mold itself is the boss
+  tiers:[[['sprg',0,5,0],['ant',15,3,40],['antl',40,1,40]]],
+  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.4),...w.slice(2)]),boss:MOLD_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:MOLD_RUSH,
+  book:[[0,'snode','snode'],[0,'smold','smold'],[0,'sprg','sprg'],[0,'ant','ant'],[0,'antl','antl'],[0,MOLD_RUSH[0],'rush'],[0,MOLD_BOSS[0],'physa']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'pit',n:['蟻地獄','Antlion Pit'],wip:1,pit:1,spiders:1,gate:2100,names:[['すり鉢の底','Pit Bottom'],['すり鉢の中ほど','Pit Slope'],['すり鉢のふち','Pit Rim']], // v37: a forced scroll up the side of an antlion's pit (pitTick). v37.1: the player grows a scale each time the tail is long enough (no bosses on the way); the antlion, the same size all along, is the boss at the rim
   tiers:[[['ant',0,8,0],['sprg',12,3,40],['antl',20,1.2,30],['pill',30,2.2,40]],
          [['grass',0,5,0],['spid',8,2.4,40],['beet',16,2.2,40]],
          [['centi',0,1.2,0],['mantis',8,2.4,40]]],
   waves:PIT_WAVES,boss:[null,null,PIT_BOSS[0]],hunt:[null,null,null],titan:[null,null,null],toxin:[null,null,null],gas:[8,10,12],realK:[1,0.85,0.75],rush:[null,null,null],
   book:[[0,'ant','ant'],[0,'antl','antl'],[0,'sprg','sprg'],[0,'pill','pill'],[1,'grass','grass'],[1,'spid','spid'],[1,'beet','beet'],[2,'centi','centi'],[2,'mantis','mantis'],[2,PIT_BOSS[0],'alion']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:1500,gate:2600,hp0:200,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
-  tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
-  waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
-  book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago'],[0,YAGO_FORMS[1],'dfly']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'web',n:['蜘蛛の巣','Spider Web'],wip:1,web:1,spiders:1,gate:1500,names:[['網の上','On the Web']], // v39: webs over the ground that slow the snake and that a squeeze cuts (webTick), spiders in numbers, and the Joro Spider
   tiers:[[['spdl',0,8,0],['wjump',15,2.4,40],['wsilk',30,2,50],['wdrop',45,1.5,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.35),...w.slice(2)]),boss:WEB_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:WEB_RUSH,
   book:[[0,'spdl','spdl'],[0,'wjump','wjump'],[0,'wsilk','wsilk'],[0,'wdrop','wdrop'],[0,'wfly','wfly'],[0,WEB_RUSH[0],'rush'],[0,WEB_BOSS[0],'jorou']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'brush',n:['ボスラッシュ','Boss Rush'],wip:1,brush:1,spiders:1,tail0:1600,gate:3200,hp0:200,names:[['決戦場','The Arena']], // v40: nine bosses one after another (BR_LIST), with a breather between; the player starts big and strong
-  tiers:[[['germ',0,6,0],['halt',30,2,40],['ppara',60,2,40]]],
-  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.5),w[2]]),boss:[null],hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
-  book:[[0,BOSS_T[0],'boss0'],[0,POND_BOSS[0],'stentor'],[0,BOSS_T[1],'boss1'],[0,WEB_BOSS[0],'jorou'],[0,POND_BOSS[1],'hydra'],[0,JAR_BOSS[0],'kinb'],[0,GIANT_BOSS[0],'yago'],[0,BOSS_T[2],'boss2'],[0,POND_BOSS[2],'ontard']]},
+ {id:'jar',n:['蠱毒','Kodoku'],wip:1,names:[['壺の底','The Jar']], // v29: the player's own kind, many of them, among other creatures; the boss is a giant one
+  tiers:[[['germ',0,8,0],['kinc',6,3.5,30],['virus',20,3,50],['kind',30,2,40],['halt',45,2,60],['kinh',55,1.3,50],['bomb',90,1,80]]],
+  waves:WAVES,boss:JAR_BOSS,hunt:[null],titan:[null],toxin:[TOXIN_T[0]],gas:[8],realK:[1],rush:JAR_RUSH,
+  book:[[0,'germ','germ'],[0,'kinc','kinc'],[0,'virus','virus'],[0,'kind','kind'],[0,'halt','hop'],[0,'kinh','kinh'],[0,'bomb','bomb'],[0,TOXIN_T[0],'toxin'],[0,JAR_RUSH[0],'rush'],[0,JAR_BOSS[0],'kinb']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'giant',n:['巨人の国','Land of Giants'],wip:1,tail0:1500,gate:2600,hp0:200,apart:1,preyXp:0.8,prey:['germ','halt','ppara','naup'],names:[['巨人の池','Giants\' Pond']], // v38: all giants (the owner's idea). The player starts long (tail0) and grows to gate
+  tiers:[[['gpara',0,6,0],['geugl',10,4,30],['gdaph',25,3,40],['gmosq',40,3,40],['ghelio',60,2,50],['gtadp',80,2,60]]],
+  waves:GIANT_WAVES,boss:GIANT_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
+  book:[[0,'gpara','gpara'],[0,'geugl','geugl'],[0,'gdaph','gdaph'],[0,'gmosq','gmosq'],[0,'ghelio','ghelio'],[0,'gtadp','gtadp'],[0,GIANT_BOSS[0],'yago'],[0,YAGO_FORMS[1],'dfly']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'deep',n:['深海','Deep Sea'],wip:1,dark:1,tail0:1000,gate:2000,hp0:150,spk:2,names:[['光の届かない海','The Lightless Deep']], // v42: dark water (drawDark): only the snake's own light, what glows, and the inside of a coil show; the Anglerfish lunges at light
   tiers:[[['hotaru',0,8,0],['lantf',10,1.6,30],['jelly',18,1.8,40],['siph',30,1.2,40],['dragf',40,2,50],['isopod',55,1.6,50]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*1.15),...w.slice(2)]),boss:DEEP_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:DEEP_RUSH,
   book:[[0,'hotaru','hotaru'],[0,'lantf','lantf'],[0,'jelly','jelly'],[0,'siph','siph'],[0,'dragf','dragf'],[0,'isopod','isopod'],[0,DEEP_RUSH[0],'rush'],[0,DEEP_BOSS[0],'angler']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
- {id:'mold',n:['粘菌','Slime Mold'],wip:1,mold:1,tail0:900,gate:1900,hp0:130,names:[['朽ち木の上','On the Rotting Log']], // v43: the net is the foe (moldTick): it creeps toward the snake from its cores; cut it and what lies beyond withers; the Slime Mold itself is the boss
-  tiers:[[['sprg',0,5,0],['ant',15,3,40],['antl',40,1,40]]],
-  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.4),...w.slice(2)]),boss:MOLD_BOSS,hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:MOLD_RUSH,
-  book:[[0,'snode','snode'],[0,'smold','smold'],[0,'sprg','sprg'],[0,'ant','ant'],[0,'antl','antl'],[0,MOLD_RUSH[0],'rush'],[0,MOLD_BOSS[0],'physa']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
  {id:'earth',n:['地球','Earth'],wip:1,grow:1,earth:1,tail0:1000,gates:[1700],gate:2500,hp0:150,names:[['雲の上','Above the Clouds'],['宇宙','Outer Space']], // v44 the last stage: grown into, not won into (grow: at the gate the snake grows, with no boss, as in the pit); the Earth at the end
   tiers:[[['bird',0,5,0],['plane',8,2,30],['balloon',20,1.5,40],['heli',35,1.6,40]],[['junk',0,5,0],['meteor',0,3,20],['sat',10,1.6,30],['ufo',20,1.6,40],['rocket',35,1.4,40]]],
   waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.9),...w.slice(2)]),boss:EARTH_BOSS,hunt:[null,null],titan:[null,null],toxin:[null,null],gas:[8,9],realK:[1,0.9],rush:EARTH_RUSH,
   book:[[0,'bird','bird'],[0,'plane','plane'],[0,'balloon','balloon'],[0,'heli','heli'],[0,EARTH_RUSH[0],'rush'],[1,'junk','junk'],[1,'meteor','meteor'],[1,'sat','sat'],[1,'ufo','ufo'],[1,'rocket','rocket'],[1,EARTH_RUSH[1],'rush'],[1,EARTH_BOSS[1],'earth']].map(([s,t,k])=>[s,typeof t==='string'?ET[t]:t,k])},
+ {id:'brush',n:['ボスラッシュ','Boss Rush'],wip:1,brush:1,spiders:1,tail0:1600,gate:3200,hp0:200,names:[['決戦場','The Arena']], // v40: nine bosses one after another (BR_LIST), with a breather between; the player starts big and strong
+  tiers:[[['germ',0,6,0],['halt',30,2,40],['ppara',60,2,40]]],
+  waves:WAVES.map(w=>[w[0],Math.round(w[1]*0.5),w[2]]),boss:[null],hunt:[null],titan:[null],toxin:[null],gas:[8],realK:[1],rush:[null],
+  book:[[0,BOSS_T[0],'boss0'],[0,POND_BOSS[0],'stentor'],[0,BOSS_T[1],'boss1'],[0,WEB_BOSS[0],'jorou'],[0,POND_BOSS[1],'hydra'],[0,JAR_BOSS[0],'kinb'],[0,GIANT_BOSS[0],'yago'],[0,BOSS_T[2],'boss2'],[0,POND_BOSS[2],'ontard']]},
 //#/FULL
-//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1},{id:'mold',n:['粘菌','Slime Mold'],full:1},{id:'earth',n:['地球','Earth'],full:1}, // in the demo: names only, shown as in the full game
+//#DEMO {id:'pond',n:['池の水','Pond Water'],full:1},{id:'mold',n:['粘菌','Slime Mold'],full:1},{id:'pit',n:['蟻地獄','Antlion Pit'],full:1},{id:'web',n:['蜘蛛の巣','Spider Web'],full:1},{id:'jar',n:['蠱毒','Kodoku'],full:1},{id:'giant',n:['巨人の国','Land of Giants'],full:1},{id:'deep',n:['深海','Deep Sea'],full:1},{id:'earth',n:['地球','Earth'],full:1},{id:'brush',n:['ボスラッシュ','Boss Rush'],full:1}
 ];
 loc(STAGES,'n');
 let CS=0,stgIdx=0,APART=false,PREY_L=null,PREY_XP_S=0.3,BRUSH=false,BR_LIST=[]; // the stage being played, and the one shown on the title screen. v38: APART (giants: each comes on its own), PREY_L (types that drift about as prey from the start)
@@ -1838,7 +1838,7 @@ function useStage(i){const d=STAGES[i];if(!d||d.soon||d.full)return false;CS=i;S
 // Records are kept per stage. Stage 1 keeps the old place (META.best), so a save from before there were stages reads as stage 1.
 function bestOf(i,d){if(d===undefined)d=DIFF;if(d!==1){if(!META.bestsD||typeof META.bestsD!=='object')META.bestsD={};const k=STAGES[i].id+'@'+d;return META.bestsD[k]||(META.bestsD[k]={t:0,stage:0,clears:0});} // v45 easy and hard keep records of their own (normal: as before)
   if(!i)return META.best;if(!META.bests||typeof META.bests!=='object')META.bests={};const id=STAGES[i].id;return META.bests[id]||(META.bests[id]={t:0,stage:0,clears:0});}
-function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&([0,1,2].some(d=>(bestOf(i-1,d).clears||0)>0)||FORCE_STG===i));} // (v45: a clear on any difficulty) // a stage opens when the one before it has been cleared
+function stageOpen(i){return i===0||(!STAGES[i].soon&&!STAGES[i].full&&([0,1,2].some(d=>(bestOf(i-1,d).clears||0)>0||(bestOf(i,d).t||0)>0)||FORCE_STG===i));} // (v47: or it has been played before: the stages were put in a new order, and a save keeps what it had reached) // (v45: a clear on any difficulty) // a stage opens when the one before it has been cleared
 // v46 the World Tour (the owner: "an endless mode": chosen form "go round the worlds"). The slot after the last stage in the chooser. One run goes through
 // every world in order (the Boss Rush aside); beating the world's last boss moves on to the next world, keeping the level and the cards, and the world
 // starts afresh (its own tail, scales, waves); after the last world it goes round again, harder (TOUR.lap). No end: the run ends when the snake does.
@@ -1849,7 +1849,7 @@ function tourOpen(){return FORCE_TOUR||[0,1,2].some(d=>(bestOf(0,d).clears||0)>0
 function tourBest(d){if(d===undefined)d=DIFF;if(!META.tourB||typeof META.tourB!=='object')META.tourB={};return META.tourB[d]||(META.tourB[d]={t:0,w:0,kills:0,combo:0,stage:0});}
 const LAP=()=>TOUR?TOUR.lap:0;
 function cycleStage(d){const n=STAGES.length+1;let k=TOURSEL?STAGES.length:stgIdx;k=(k+d+n)%n;TOURSEL=k===STAGES.length;if(!TOURSEL){stgIdx=k;useStage(stgIdx);}META.stg=TOURSEL?'tour':STAGES[stgIdx].id;saveMeta();}
-const FORCE_STG=Q.has('stage')?(+Q.get('stage')||1)-1:-1; // ?stage=2: open and choose that stage, for testing
+const FORCE_STG=Q.has('stage')?(isNaN(+Q.get('stage'))?STAGES.findIndex(s=>s.id===Q.get('stage')):(+Q.get('stage')||1)-1):-1; // (v47: or its id: ?stage=jar) // ?stage=2: open and choose that stage, for testing
 stgIdx=FORCE_STG>0&&STAGES[FORCE_STG]&&!STAGES[FORCE_STG].soon&&!STAGES[FORCE_STG].full?FORCE_STG:Math.max(0,STAGES.findIndex(s=>s.id===META.stg));if(!stageOpen(stgIdx))stgIdx=0;useStage(stgIdx);TOURSEL=FORCE_TOUR||(FORCE_STG<0&&META.stg==='tour'&&tourOpen());
 function waveTick(dt){
   if(T<calmUntil||P.clearAt)return;
@@ -3459,17 +3459,17 @@ function bgTile(k){if(BG_T[k])return BG_T[k];let t;
   else t=vorTile(256,16,37,(e,d1,r)=>e<1.4?[8,4,2,215]:e<2.6?[220,150,95,60]:[120+r*40|0,72+r*25|0,42,Math.round(26+r*34)]); // cracks, a lit edge beside them, clay a little different in each piece
   return BG_T[k]=t;}
 // per stage, per scale: the ground, the motes, which tile, how strong
-const BGS=[[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{base:'#0a0c2a',mote:'rgba(180,160,255,0.12)',k:'cells',a:0.15},{base:'#100a28',mote:'rgba(220,160,255,0.12)',k:'cells',a:0.14}],
-  [{base:'#03161b',mote:'rgba(150,240,210,0.12)',k:'light',a:0.11},{base:'#04171a',mote:'rgba(190,240,170,0.12)',k:'light',a:0.1},{base:'#051611',mote:'rgba(200,230,150,0.12)',k:'light',a:0.1}],
-  [{base:'#100906',mote:'rgba(255,180,120,0.09)',k:'clay',a:0.5}],
-  [{base:'#22170b',mote:'rgba(255,215,150,0.1)',k:'sand',a:0.26}], // v37 the pit: ripples in the sand
-  [{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}], // v38 the Land of Giants: deep green water, the net of light from far above
-  [{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}],
-  [{base:'#150a12',mote:'rgba(255,190,150,0.09)',k:'clay',a:0.32}],
-  [{base:'#03070f',mote:'rgba(170,200,255,0.06)',k:'sand',a:0.12}],
-  [{base:'#130c05',mote:'rgba(255,225,140,0.07)',k:'clay',a:0.34}],
-  [{base:'#14295a',mote:'rgba(235,245,255,0.12)',k:'cloud',a:0.2},{base:'#02030a',mote:'rgba(255,255,255,0.6)',k:'cells',a:0.02}]]; /* v44 Earth: a night sky above the clouds, then space and its stars.  v42 the Deep Sea: dark silt on the floor (only where the light falls). v43 the Slime Mold: the bark of a rotting log */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
-function bgOf(){const L=BGS[CS]||BGS[0];return L[Math.min(L.length-1,P?P.stage|0:0)];}
+const BGS={body:[{base:'#050f2a',mote:'rgba(150,170,255,0.12)',k:'cells',a:0.16},{base:'#0a0c2a',mote:'rgba(180,160,255,0.12)',k:'cells',a:0.15},{base:'#100a28',mote:'rgba(220,160,255,0.12)',k:'cells',a:0.14}],
+  pond:[{base:'#03161b',mote:'rgba(150,240,210,0.12)',k:'light',a:0.11},{base:'#04171a',mote:'rgba(190,240,170,0.12)',k:'light',a:0.1},{base:'#051611',mote:'rgba(200,230,150,0.12)',k:'light',a:0.1}],
+  jar:[{base:'#100906',mote:'rgba(255,180,120,0.09)',k:'clay',a:0.5}],
+  pit:[{base:'#22170b',mote:'rgba(255,215,150,0.1)',k:'sand',a:0.26}], // v37 the pit: ripples in the sand
+  giant:[{base:'#061510',mote:'rgba(190,225,160,0.1)',k:'light',a:0.15}], // v38 the Land of Giants: deep green water, the net of light from far above
+  web:[{base:'#0b0f15',mote:'rgba(225,235,255,0.08)',k:'cells',a:0.06}],
+  brush:[{base:'#150a12',mote:'rgba(255,190,150,0.09)',k:'clay',a:0.32}],
+  deep:[{base:'#03070f',mote:'rgba(170,200,255,0.06)',k:'sand',a:0.12}],
+  mold:[{base:'#130c05',mote:'rgba(255,225,140,0.07)',k:'clay',a:0.34}],
+  earth:[{base:'#14295a',mote:'rgba(235,245,255,0.12)',k:'cloud',a:0.2},{base:'#02030a',mote:'rgba(255,255,255,0.6)',k:'cells',a:0.02}]}; /* v44 Earth: a night sky above the clouds, then space and its stars.  v42 the Deep Sea: dark silt on the floor (only where the light falls). v43 the Slime Mold: the bark of a rotting log */ // v39 the Spider Web: a dark garden at night (the webs are drawn over it). v40 the Boss Rush: a dark red arena
+function bgOf(){const L=BGS[STAGES[CS].id]||BGS.body; /* (v47: by the stage's id: the stages were put in a new order) */return L[Math.min(L.length-1,P?P.stage|0:0)];}
 // the whole background (ground, tiles, and the jar's shade) is drawn small, at half the screen's size, then stretched over the screen in one go:
 // the tiles are soft, so they lose nothing, and the screen is filled once, as the plain ground was before (filling it two or three times was slow on fine screens)
 let BGC=null,BGX=null,BGV=null,BGVK='';
@@ -3481,7 +3481,7 @@ function drawBgLow(cx,cy,Z){const k=0.5,w=Math.max(8,Math.ceil(W*k)),h=Math.max(
   if(b.k==='light'){const t=performance.now()/1000;tl((t*9*S)%TW,(t*5*S)%TW,b.a);tl(-(t*7*S)%TW+TW*0.37,(t*6*S)%TW+TW*0.61,b.a*0.8);} // two nets drifting apart: the light shimmers
   else tl(0,0,b.a);
   g.globalAlpha=1;g.setTransform(1,0,0,1,0,0);
-  if(CS===2){if(BGVK!==w+'x'+h){BGVK=w+'x'+h;BGV=document.createElement('canvas');BGV.width=w;BGV.height=h;const q=BGV.getContext('2d'),gr=q.createRadialGradient(w/2,h/2,Math.min(w,h)*0.25,w/2,h/2,Math.hypot(w,h)*0.6);gr.addColorStop(0,'rgba(40,20,8,0)');gr.addColorStop(1,'rgba(0,0,0,0.5)');q.fillStyle=gr;q.fillRect(0,0,w,h);}g.drawImage(BGV,0,0);} // the jar: dark at the edges, as if looking down into it (only the ground; the living are not darkened)
+  if(STAGES[CS].id==='jar'){if(BGVK!==w+'x'+h){BGVK=w+'x'+h;BGV=document.createElement('canvas');BGV.width=w;BGV.height=h;const q=BGV.getContext('2d'),gr=q.createRadialGradient(w/2,h/2,Math.min(w,h)*0.25,w/2,h/2,Math.hypot(w,h)*0.6);gr.addColorStop(0,'rgba(40,20,8,0)');gr.addColorStop(1,'rgba(0,0,0,0.5)');q.fillStyle=gr;q.fillRect(0,0,w,h);}g.drawImage(BGV,0,0);} // the jar: dark at the edges, as if looking down into it (only the ground; the living are not darkened)
   ctx.drawImage(BGC,0,0,W,H);}
 const motes=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),z:rand(0.2,0.7),r:rand(1,3)}));
 // The head shows what has been taken. Spike line: rim spikes, Horns, armour and longer spikes with Spine Coat, red eyes with Demon Spines.
