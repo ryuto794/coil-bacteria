@@ -58,7 +58,7 @@ Claude Code / 後任開発者向けの完全引き継ぎ資料。コードの関
 | 日替わりのお題 | **入れない**（オーナー判断） |
 | 系統進化 | **v9: トゲ系と電流系。** それぞれカード → 進化 1 → 進化 2 と進み、進むほど頭と尾の見た目がいかつくなる。進化はボスのカプセルで起きるので、1 つの系統を最後まで進めるにはボス 2 体分が要る |
 | XP の回収 | 後半ほど吸い寄せアイテムが多く落ちる（v9）。回収が面倒という声への対応 |
-| 配信順 | まず Web（CrazyGames / itch.io）→ 後で Godot 4 移植して Steam |
+| 配信順 | まず Web（CrazyGames / itch.io）→ 後で Godot 4 移植して Steam（**v46 のあと見直し中**: 移さずにアプリに包む案を推奨。`REQUIREMENTS.md` 7.5 の D13） |
 | 収益 | スキン中心（Web は広告視聴アンロック、Steam は DLC）。CrazyGames の IAP は Xsolla 招待制 |
 
 個人・金銭情報は本リポジトリに書かないこと（公開リポジトリ）。
@@ -1541,7 +1541,7 @@ frame(now) {
 | **12月中旬〜** | 友達テスト（本 Pages リンクを LINE で共有） |
 | **2026年12月末** | CrazyGames **Basic Launch** 申請（目標: 平均プレイ 10分+、D1 リテンション 10–15%）。itch.io も並行 |
 | **2027年1–2月** | CrazyGames **Full Launch**（SDK 組み込み）。メトリクスが良ければ |
-| **以降** | **Godot 4 + GDScript** へ移植（SteamPipe + GodotSteam） |
+| **以降** | **Godot 4 + GDScript** へ移植（SteamPipe + GodotSteam）。v46 のあと見直し中（`REQUIREMENTS.md` 7.5 の D13: 包む案を推奨） |
 | **2027年4月上旬** | Steam ページ公開（Coming Soon）。Steam Direct 手数料・審査リードタイムに注意 |
 | **Next Fest** | 2027年6月開催想定。登録締切 **2027-04-25**（要再確認） |
 | **〜2027年9月** | Steam 発売目安 |
